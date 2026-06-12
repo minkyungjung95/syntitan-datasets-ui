@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>Row Augmentation Animation</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --grid: #d8dde3;
+        --header-bg: #f4f5f7;
+        --header-text: #5b6573;
+        --text: #1f2937;
+        --aug-bg: #e8f1ff;
+        --aug-text: #1f3a8a;
+        --card-bg: #ffffff;
+        --accent: #7c6df7;
+        --accent-press: #6453e0;
+      }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #f6f7f9;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+        color: var(--text);
+      }
+
+      .stage {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .card {
+        width: 416px;
+        height: 186px;
+        background: var(--card-bg);
+        border-radius: 12px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+        padding: 14px 20px 0;
+        box-sizing: border-box;
+      }
+
+      /* ============ Button (+ 증강) ============ */
+      .aug-btn {
+        position: absolute;
+        top: 28px;
+        left: 50%;
+        transform: translate(-50%, 0) scale(1);
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 12px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        border-radius: 999px;
+        box-shadow:
+          0 1px 2px rgba(124,109,247,0.25),
+          0 6px 14px rgba(124,109,247,0.18);
+        opacity: 0;
+        animation: btnLifecycle 5s ease-in-out infinite;
+        white-space: nowrap;
+      }
+      .aug-btn .plus {
+        font-weight: 700;
+        font-size: 12px;
+        line-height: 1;
+        opacity: 0.9;
+      }
+
+      @keyframes btnLifecycle {
+        0%    { opacity: 0; transform: translate(-50%, 4px)  scale(0.96); background: var(--accent); }
+        6%    { opacity: 1; transform: translate(-50%, 0)    scale(1);    background: var(--accent); }
+        14%   { opacity: 1; transform: translate(-50%, 0)    scale(1);    background: var(--accent); }    /* ~700ms */
+        /* Press — fast & snappy */
+        16%   { opacity: 1; transform: translate(-50%, 0)    scale(0.92); background: var(--accent-press); } /* ~800ms */
+        17%   { opacity: 1; transform: translate(-50%, 0)    scale(1.05); background: var(--accent-press); } /* ~850ms rebound */
+        18%   { opacity: 0; transform: translate(-50%, -3px) scale(0.94); background: var(--accent); }     /* ~900ms gone (pop) */
+        100%  { opacity: 0; transform: translate(-50%, -3px) scale(0.94); background: var(--accent); }
+      }
+
+      /* ============ Table ============ */
+      .table-wrap {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        border-radius: 6px 6px 0 0;
+        border: 1px solid var(--grid);
+        border-bottom: none;
+        background: var(--bg);
+        animation: loopFade 5s ease-in-out infinite;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      thead th {
+        background: var(--header-bg);
+        color: var(--header-text);
+        font-weight: 600;
+        text-align: left;
+        padding: 4px 10px;
+        border-bottom: 1px solid var(--grid);
+        font-size: 9px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      tbody td {
+        padding: 3px 10px;
+        border-bottom: 1px solid var(--grid);
+        border-right: 1px solid var(--grid);
+        line-height: 1.35;
+      }
+      tbody td:last-child { border-right: none; }
+      tbody tr:last-child td { border-bottom: none; }
+
+      tbody tr.original td {
+        background: #fff;
+        color: var(--text);
+      }
+
+      tbody tr.aug td {
+        background: var(--aug-bg);
+        color: var(--aug-text);
+      }
+
+      /* The augmented rows snap into existence with a slight overshoot.
+         All animations sit inside the parent loopFade (5s) cycle. */
+      tbody tr.aug {
+        animation: rowGrow 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        opacity: 0;
+      }
+
+      tbody tr.aug td {
+        padding-top: 0;
+        padding-bottom: 0;
+        line-height: 0;
+        overflow: hidden;
+        animation: cellExpand 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      @keyframes cellExpand {
+        0%   { padding-top: 0;   padding-bottom: 0;   line-height: 0;    }
+        100% { padding-top: 3px; padding-bottom: 3px; line-height: 1.35; }
+      }
+
+      @keyframes rowGrow {
+        0%   { opacity: 0; }
+        40%  { opacity: 1; }
+        100% { opacity: 1; }
+      }
+
+      /* Loop fade — at end of cycle wrapper briefly fades so the
+         augmented rows visually "reset" for the next loop. */
+      @keyframes loopFade {
+        0%, 88%  { opacity: 1; }
+        96%      { opacity: 0; }
+        100%     { opacity: 1; }
+      }
+
+      /* Tight stagger — feels like a single block snapping in, not 4 separate rows.
+         Starts after the button "pops" off at ~900ms. */
+      tr.aug:nth-of-type(4)    { animation-delay: 1.05s; }
+      tr.aug:nth-of-type(5)    { animation-delay: 1.13s; }
+      tr.aug:nth-of-type(6)    { animation-delay: 1.21s; }
+      tr.aug:nth-of-type(7)    { animation-delay: 1.29s; }
+
+      tr.aug:nth-of-type(4) td { animation-delay: 1.05s; }
+      tr.aug:nth-of-type(5) td { animation-delay: 1.13s; }
+      tr.aug:nth-of-type(6) td { animation-delay: 1.21s; }
+      tr.aug:nth-of-type(7) td { animation-delay: 1.29s; }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <div class="card">
+        <button class="aug-btn" type="button" aria-hidden="true" tabindex="-1">
+          <span class="plus">+</span><span>증강</span>
+        </button>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Age</th>
+                <th>Class</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="original"><td>001</td><td>27</td><td>A</td></tr>
+              <tr class="original"><td>002</td><td>34</td><td>B</td></tr>
+              <tr class="original"><td>003</td><td>41</td><td>A</td></tr>
+
+              <tr class="aug"><td>004</td><td>29</td><td>C</td></tr>
+              <tr class="aug"><td>005</td><td>31</td><td>B</td></tr>
+              <tr class="aug"><td>006</td><td>26</td><td>B</td></tr>
+              <tr class="aug"><td>007</td><td>38</td><td>C</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

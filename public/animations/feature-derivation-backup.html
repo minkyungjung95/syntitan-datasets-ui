@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>Augmentation Animations — Column + Row</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --grid: #d8dde3;
+        --header-bg: #f4f5f7;
+        --header-text: #5b6573;
+        --text: #1f2937;
+        --new-bg: #e8f1ff;
+        --new-bg-head: #dbe9ff;
+        --new-text: #1f3a8a;
+        --src-border: #93beff;
+        --aug-bg: #e8f1ff;
+        --aug-text: #1f3a8a;
+        --card-bg: #ffffff;
+        --accent: #2B7FFF;
+        --accent-press: #155CDF;
+        --tip-bg: #1a1d23;
+      }
+
+      html, body {
+        margin: 0; padding: 0;
+        background: #f6f7f9;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+        color: var(--text);
+      }
+
+      .stage {
+        width: 100vw; min-height: 100vh;
+        display: flex; align-items: center; justify-content: center;
+        gap: 28px 28px;
+        flex-wrap: wrap;
+        padding: 40px 20px;
+        box-sizing: border-box;
+      }
+      .card-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .card-wrap.last { order: 99; }
+      .card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1f2937;
+        padding-left: 4px;
+        letter-spacing: -0.01em;
+      }
+      .card-title small {
+        display: inline-block;
+        margin-left: 6px;
+        font-size: 10.5px;
+        font-weight: 500;
+        color: #7b7e85;
+      }
+
+      .card {
+        width: 416px; height: 186px;
+        background: var(--card-bg);
+        border-radius: 12px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+        overflow: hidden;
+        position: relative;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+      }
+
+      /* ============ 표 — 작게 시작 → 줌아웃하며 커짐 ============ */
+      .table-wrap {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        border-radius: 6px;
+        border: 1px solid var(--grid);
+        background: var(--bg);
+        transform-origin: center center;
+        animation: tableZoom 5s ease-in-out infinite;
+      }
+
+      @keyframes tableZoom {
+        0%, 14%  { transform: scale(0.88); opacity: 1; }
+        28%      { transform: scale(1);    opacity: 1; }
+        88%      { transform: scale(1);    opacity: 1; }
+        96%      { transform: scale(1);    opacity: 0; }
+        100%     { transform: scale(0.88); opacity: 0; }
+      }
+
+      /* ============ 표 base ============ */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10.5px;
+        font-variant-numeric: tabular-nums;
+        table-layout: fixed;
+      }
+      thead th {
+        background: var(--header-bg);
+        color: var(--header-text);
+        font-weight: 600;
+        text-align: left;
+        padding: 4px 7px;
+        border-bottom: 1px solid var(--grid);
+        font-size: 8.5px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        border-right: 1px solid var(--grid);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      thead th:last-child { border-right: none; }
+      tbody td {
+        padding: 7px 7px;
+        border-bottom: 1px solid var(--grid);
+        border-right: 1px solid var(--grid);
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: #fff;
+        color: var(--text);
+      }
+      tbody td:last-child { border-right: none; }
+      tbody tr:last-child td { border-bottom: none; }
+
+      /* ============ 아이콘 버튼 (좌상단 floating) ============ */
+      .icon-btn { display: none; }
+      .cursor { display: none; }
+      .icon-btn-orig {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        width: 42px;
+        height: 42px;
+        background: #dfe9ff;
+        border-radius: 12px;
+        border: none;
+        box-shadow: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 3;
+        animation: btnPress 5s ease-in-out infinite;
+      }
+      .icon-btn svg { display: block; }
+
+      @keyframes btnPress {
+        0%       { opacity: 0; transform: scale(0.94); background: #dfe9ff; }
+        6%       { opacity: 1; transform: scale(1);    background: #dfe9ff; }
+        24%      { opacity: 1; transform: scale(1);    background: #dfe9ff; }
+        26%      { opacity: 1; transform: scale(0.92); background: #c7d8ff; }
+        27%      { opacity: 1; transform: scale(1.04); background: #c7d8ff; }
+        28%      { opacity: 1; transform: scale(1);    background: #dfe9ff; }
+        36%      { opacity: 0; transform: scale(1);    background: #dfe9ff; }
+        100%     { opacity: 0; transform: scale(1);    background: #dfe9ff; }
+      }
+
+      /* ============ 마우스 커서 (포인터) ============ */
+      .cursor {
+        position: absolute;
+        width: 22px;
+        height: 26px;
+        z-index: 4;
+        opacity: 0;
+        top: 70%;
+        left: 75%;
+        pointer-events: none;
+        animation: cursorMove 5s ease-in-out infinite;
+      }
+      .cursor svg { display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25)); }
+
+      @keyframes cursorMove {
+        0%       { opacity: 0; top: 70%;  left: 75%; }
+        4%       { opacity: 1; top: 70%;  left: 75%; }
+        16%      { opacity: 1; top: 30px; left: 30px; }    /* 버튼 위 도착 */
+        24%      { opacity: 1; top: 30px; left: 30px; }    /* 호버 유지 (툴팁 노출 시점) */
+        26%      { opacity: 1; top: 32px; left: 30px; }    /* 클릭 시 살짝 눌림 */
+        27%      { opacity: 1; top: 30px; left: 30px; }
+        34%      { opacity: 1; top: 30px; left: 30px; }
+        42%      { opacity: 0; top: 70%;  left: 75%; }     /* 페이드 아웃 — 자연스럽게 빠짐 */
+        100%     { opacity: 0; top: 70%;  left: 75%; }
+      }
+
+      /* ====================================================================
+         CARD 1 — 컬럼 증강 (Feature Derivation)
+         5컬럼 → 7컬럼으로 슝
+         ==================================================================== */
+      .card-feature .src-col {
+        animation: srcGlow 5s ease-in-out infinite;
+      }
+      @keyframes srcGlow {
+        0%, 22%  { background: #fff; box-shadow: inset 0 0 0 0 var(--src-border); }
+        28%      { background: #f3f8ff; box-shadow: inset 0 0 0 1px var(--src-border); }
+        36%      { background: #e8f1ff; box-shadow: inset 0 0 0 1px var(--src-border); }
+        44%      { background: #fff;    box-shadow: inset 0 0 0 0 var(--src-border); }
+        100%     { background: #fff;    box-shadow: inset 0 0 0 0 var(--src-border); }
+      }
+
+      /* 신규 컬럼 — 클릭 후 차례 슝 등장 (RpA, Band, IncQ, Score) */
+      .card-feature thead th.new-col,
+      .card-feature tbody td.new-col {
+        background: var(--new-bg);
+        color: var(--new-text);
+        opacity: 0;
+        transform: translateX(14px);
+        animation: newColEnter 5s ease-in-out infinite;
+      }
+      .card-feature thead th.new-col { background: var(--new-bg-head); }
+
+      @keyframes newColEnter {
+        0%, 28%  { opacity: 0; transform: translateX(14px); }
+        34%      { opacity: 1; transform: translateX(0); }
+        88%      { opacity: 1; transform: translateX(0); }
+        96%      { opacity: 0; transform: translateX(0); }
+        100%     { opacity: 0; transform: translateX(14px); }
+      }
+
+      .card-feature thead th:nth-child(4),
+      .card-feature tbody td:nth-child(4) { animation-delay: 0s; }
+      .card-feature thead th:nth-child(5),
+      .card-feature tbody td:nth-child(5) { animation-delay: 0.07s; }
+      .card-feature thead th:nth-child(6),
+      .card-feature tbody td:nth-child(6) { animation-delay: 0.14s; }
+      .card-feature thead th:nth-child(7),
+      .card-feature tbody td:nth-child(7) { animation-delay: 0.21s; }
+
+      /* 셀 안의 값은 별도 효과 없이 부모(.new-col)의 페이드인에 자연스럽게 따름 */
+      .card-feature .new-val { display: inline-block; }
+
+      @keyframes fpop1 {
+        0%, 38%  { opacity: 0; transform: translateY(4px) scale(0.96); }
+        42%      { opacity: 1; transform: translateY(0)   scale(1.06); }
+        45%      { opacity: 1; transform: translateY(0)   scale(1); }
+        88%      { opacity: 1; }
+        96%      { opacity: 0; }
+        100%     { opacity: 0; }
+      }
+      @keyframes fpop2 {
+        0%, 42%  { opacity: 0; transform: translateY(4px) scale(0.96); }
+        46%      { opacity: 1; transform: translateY(0)   scale(1.06); }
+        49%      { opacity: 1; transform: translateY(0)   scale(1); }
+        88%      { opacity: 1; }
+        96%      { opacity: 0; }
+        100%     { opacity: 0; }
+      }
+      @keyframes fpop3 {
+        0%, 46%  { opacity: 0; transform: translateY(4px) scale(0.96); }
+        50%      { opacity: 1; transform: translateY(0)   scale(1.06); }
+        53%      { opacity: 1; transform: translateY(0)   scale(1); }
+        88%      { opacity: 1; }
+        96%      { opacity: 0; }
+        100%     { opacity: 0; }
+      }
+      @keyframes fpop4 {
+        0%, 50%  { opacity: 0; transform: translateY(4px) scale(0.96); }
+        54%      { opacity: 1; transform: translateY(0)   scale(1.06); }
+        57%      { opacity: 1; transform: translateY(0)   scale(1); }
+        88%      { opacity: 1; }
+        96%      { opacity: 0; }
+        100%     { opacity: 0; }
+      }
+
+      /* ====================================================================
+         CARD 2 — 행 증강 (Row Augmentation)
+         3행 → 7행으로 쫀득하게 추가 (줌아웃과 함께)
+         ==================================================================== */
+      /* 행 증강 카드 — 다른 카드와 같은 5s 사이클로 반복 */
+      .card-row { order: 99; }
+      /* 행 등장 효과 제거 — 처음부터 모두 visible, 스크롤만 */
+      .card-row tbody tr.aug { animation: none !important; opacity: 1 !important; }
+      .card-row tbody tr.aug td { animation: none !important; padding: 7px 7px !important; line-height: 1.3 !important; }
+      .card-row .table-wrap {
+        max-height: 130px;
+        overflow: hidden;
+        border-bottom: none;
+        border-radius: 6px;
+      }
+      .card-row table {
+        animation: tableScrollUp 5s ease-in-out infinite;
+      }
+      @keyframes tableScrollUp {
+        0%, 22%  { transform: translateY(0); opacity: 1; }
+        62%      { transform: translateY(-300px); opacity: 1; }
+        85%      { transform: translateY(-300px); opacity: 1; }
+        94%      { transform: translateY(-300px); opacity: 0; }
+        100%     { transform: translateY(0);      opacity: 0; }
+      }
+
+      .card-row tbody tr.original td { background: #fff; color: var(--text); }
+      .card-row tbody tr.aug td      { background: var(--aug-bg); color: var(--aug-text); }
+
+      .card-row tbody tr.aug {
+        opacity: 0;
+        animation: rowGrow 5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+      }
+      .card-row tbody tr.aug td {
+        padding-top: 0;
+        padding-bottom: 0;
+        line-height: 0;
+        overflow: hidden;
+        animation: cellExpand 5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+      }
+
+      @keyframes cellExpand {
+        0%, 30%  { padding-top: 0;   padding-bottom: 0;   line-height: 0;   }
+        38%      { padding-top: 3px; padding-bottom: 3px; line-height: 1.3; }
+        88%      { padding-top: 3px; padding-bottom: 3px; line-height: 1.3; }
+        96%      { padding-top: 0;   padding-bottom: 0;   line-height: 0;   }
+        100%     { padding-top: 0;   padding-bottom: 0;   line-height: 0;   }
+      }
+      @keyframes rowGrow {
+        0%, 30%  { opacity: 0; }
+        38%      { opacity: 1; }
+        88%      { opacity: 1; }
+        96%      { opacity: 0; }
+        100%     { opacity: 0; }
+      }
+
+      .card-row tr.aug:nth-of-type(4),
+      .card-row tr.aug:nth-of-type(4) td { animation-delay: 0s; }
+      .card-row tr.aug:nth-of-type(5),
+      .card-row tr.aug:nth-of-type(5) td { animation-delay: 0.07s; }
+      .card-row tr.aug:nth-of-type(6),
+      .card-row tr.aug:nth-of-type(6) td { animation-delay: 0.14s; }
+      .card-row tr.aug:nth-of-type(7),
+      .card-row tr.aug:nth-of-type(7) td { animation-delay: 0.21s; }
+      .card-row tr.aug:nth-of-type(8),
+      .card-row tr.aug:nth-of-type(8) td { animation-delay: 0.28s; }
+      .card-row tr.aug:nth-of-type(9),
+      .card-row tr.aug:nth-of-type(9) td { animation-delay: 0.35s; }
+      .card-row tr.aug:nth-of-type(10),
+      .card-row tr.aug:nth-of-type(10) td { animation-delay: 0.42s; }
+      .card-row tr.aug:nth-of-type(11),
+      .card-row tr.aug:nth-of-type(11) td { animation-delay: 0.49s; }
+      .card-row tr.aug:nth-of-type(12),
+      .card-row tr.aug:nth-of-type(12) td { animation-delay: 0.56s; }
+      .card-row tr.aug:nth-of-type(13),
+      .card-row tr.aug:nth-of-type(13) td { animation-delay: 0.63s; }
+      .card-row tr.aug:nth-of-type(14),
+      .card-row tr.aug:nth-of-type(14) td { animation-delay: 0.70s; }
+      .card-row tr.aug:nth-of-type(15),
+      .card-row tr.aug:nth-of-type(15) td { animation-delay: 0.77s; }
+      .card-row tr.aug:nth-of-type(16),
+      .card-row tr.aug:nth-of-type(16) td { animation-delay: 0.84s; }
+      .card-row tr.aug:nth-of-type(17),
+      .card-row tr.aug:nth-of-type(17) td { animation-delay: 0.91s; }
+      .card-row tr.aug:nth-of-type(18),
+      .card-row tr.aug:nth-of-type(18) td { animation-delay: 0.98s; }
+      .card-row tr.aug:nth-of-type(19),
+      .card-row tr.aug:nth-of-type(19) td { animation-delay: 1.05s; }
+      .card-row tr.aug:nth-of-type(20),
+      .card-row tr.aug:nth-of-type(20) td { animation-delay: 1.12s; }
+      .card-row tr.aug:nth-of-type(21),
+      .card-row tr.aug:nth-of-type(21) td { animation-delay: 1.19s; }
+      .card-row tr.aug:nth-of-type(22),
+      .card-row tr.aug:nth-of-type(22) td { animation-delay: 1.26s; }
+
+      /* ====================================================================
+         CARD 3 — 가명화 (Masking)
+         원본 노출 → 클릭 후 마스킹 라벨로 교체
+         ==================================================================== */
+      .card-mask table { font-size: 10.5px; }
+      .card-mask thead th { padding: 4px 7px; font-size: 8.5px; }
+      .card-mask tbody td {
+        padding: 7px 7px;
+        line-height: 1.3;
+        position: relative;
+        font-variant-numeric: tabular-nums;
+      }
+      .card-mask tbody td .orig {
+        display: inline-block;
+        animation: fadeOrig 5s ease-in-out infinite;
+      }
+      .card-mask tbody td .mask {
+        position: absolute;
+        inset: 0;
+        background: var(--aug-bg);
+        color: var(--aug-text);
+        font-weight: 600;
+        border-radius: 0;
+        display: flex;
+        align-items: center;
+        padding: 0 7px;
+        opacity: 0;
+        white-space: nowrap;
+        animation: fadeMask 5s ease-in-out infinite;
+      }
+      @keyframes fadeOrig {
+        0%, 30%  { opacity: 1; }
+        34%      { opacity: 0; }
+        88%      { opacity: 0; }
+        96%      { opacity: 0; }
+        100%     { opacity: 1; }
+      }
+      @keyframes fadeMask {
+        0%, 30%  { opacity: 0; }
+        34%      { opacity: 1; }
+        88%      { opacity: 1; }
+        96%      { opacity: 0; }
+        100%     { opacity: 0; }
+      }
+      .card-mask tbody tr:nth-child(2) td .orig,
+      .card-mask tbody tr:nth-child(2) td .mask { animation-delay: 0.05s; }
+      .card-mask tbody tr:nth-child(3) td .orig,
+      .card-mask tbody tr:nth-child(3) td .mask { animation-delay: 0.10s; }
+      .card-mask tbody tr:nth-child(4) td .orig,
+      .card-mask tbody tr:nth-child(4) td .mask { animation-delay: 0.15s; }
+
+      /* ====================================================================
+         CARD 4 — Low-Signal Column Removal
+         낮은 importance 컬럼이 strikethrough + 페이드아웃
+         ==================================================================== */
+      .card-signal table { font-size: 10.5px; }
+      .card-signal thead th { padding: 4px 7px; font-size: 8.5px; vertical-align: top; }
+      .card-signal th .score {
+        display: block;
+        margin-top: 2px;
+        font-size: 8px;
+        font-weight: 500;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+        text-transform: none;
+        letter-spacing: 0;
+      }
+      .card-signal th.low-sig { color: #9CA3AF; background: #F4F5F7; }
+      .card-signal th.low-sig .score { color: #DC2626; }
+      .card-signal td.low-sig {
+        color: #9CA3AF;
+        animation: signalRemove 5s ease-in-out infinite;
+      }
+      @keyframes signalRemove {
+        0%       { opacity: 0; color: #9CA3AF; text-decoration: none; }
+        8%       { opacity: 1; color: #9CA3AF; text-decoration: none; }
+        28%      { opacity: 1; color: #9CA3AF; text-decoration: none; }
+        38%      { opacity: 1; color: #B91C1C; text-decoration: line-through; text-decoration-color: #B91C1C; }
+        72%      { opacity: 1; color: #B91C1C; text-decoration: line-through; }
+        86%      { opacity: 0; color: #B91C1C; text-decoration: line-through; }
+        100%     { opacity: 0; color: #9CA3AF; text-decoration: none; }
+      }
+
+      /* ====================================================================
+         CARD 5 — Outlier · Distribution · Category Refinement
+         이상치 빨간 표시 → 정상값으로 교체, 희소 카테고리 → "Others"
+         ==================================================================== */
+      .card-outlier table { font-size: 10.5px; }
+      .card-outlier thead th { padding: 4px 7px; font-size: 8.5px; }
+      .card-outlier tbody td { padding: 7px 7px; line-height: 1.3; position: relative; }
+      /* 셀 배경은 흰색 유지, 이상치는 .raw 뱃지로만 표현 */
+      .card-outlier .out .raw {
+        display: inline-block;
+        color: #991B1B;
+        background: #FEE2E2;
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-weight: 600;
+        animation: outRaw 5s ease-in-out infinite;
+      }
+      .card-outlier .out .raw::before {
+        content: "⚠";
+        display: inline-block;
+        margin-right: 4px;
+        color: #DC2626;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .card-outlier .out .fixed {
+        position: absolute;
+        inset: 0;
+        background: var(--aug-bg);
+        color: var(--aug-text);
+        font-weight: 600;
+        border-radius: 0;
+        padding: 0 7px;
+        display: flex;
+        align-items: center;
+        opacity: 0;
+        white-space: nowrap;
+        animation: outFixed 5s ease-in-out infinite;
+      }
+      @keyframes outRaw {
+        0%, 50%  { opacity: 1; }
+        58%      { opacity: 0; }
+        88%      { opacity: 0; }
+        96%      { opacity: 0; }
+        100%     { opacity: 1; }
+      }
+      @keyframes outFixed {
+        0%, 52%  { opacity: 0; }
+        60%      { opacity: 1; }
+        88%      { opacity: 1; }
+        96%      { opacity: 0; }
+        100%     { opacity: 0; }
+      }
+      .card-outlier tbody tr:nth-child(2) .out .raw,
+      .card-outlier tbody tr:nth-child(2) .out .fixed { animation-delay: 0.05s; }
+      .card-outlier tbody tr:nth-child(3) .out .raw,
+      .card-outlier tbody tr:nth-child(3) .out .fixed { animation-delay: 0.10s; }
+      .card-outlier tbody tr:nth-child(4) .out .raw,
+      .card-outlier tbody tr:nth-child(4) .out .fixed { animation-delay: 0.15s; }
+
+      /* ====================================================================
+         CARD 6 — Missing Value Treatment
+         빈 셀(점선) → 통계값(블루) 또는 (missing) 유지(회색, 의미있는 결측)
+         ==================================================================== */
+      .card-impute table { font-size: 10.5px; }
+      .card-impute thead th { padding: 4px 7px; font-size: 8.5px; }
+      .card-impute tbody td { padding: 7px 7px; line-height: 1.3; position: relative; }
+      /* 셀 배경은 흰색 그대로, 빈 영역은 점선+사선 뱃지로만 표현 */
+      .card-impute .gap .empty {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: repeating-linear-gradient(
+          -45deg,
+          transparent 0,
+          transparent 3px,
+          rgba(0,0,0,0.07) 3px,
+          rgba(0,0,0,0.07) 6px
+        );
+        color: #9CA3AF;
+        font-size: 10px;
+        font-style: italic;
+        font-weight: 500;
+        animation: emptyFade 5s ease-in-out infinite;
+      }
+      /* signal 셀(의미있는 결측): 영구히 점선 박스 유지, 채워지지 않음 */
+      .card-impute .gap.signal .empty {
+        animation: none;
+        opacity: 1;
+      }
+      .card-impute .gap.signal .imputed { display: none; }
+      .card-impute .gap.signal { animation: none; }
+      .card-impute .gap .imputed {
+        position: absolute;
+        inset: 0;
+        background: var(--aug-bg);
+        color: var(--aug-text);
+        font-weight: 600;
+        padding: 0 7px;
+        display: flex;
+        align-items: center;
+        opacity: 0;
+        white-space: nowrap;
+        animation: imputedFade 5s ease-in-out infinite;
+      }
+      .card-impute .gap.signal .imputed {
+        background: #FEF3C7;
+        color: #92400E;
+        font-weight: 600;
+        font-style: normal;
+        border: 1px dashed #FBBF24;
+      }
+      .card-impute .gap.signal .imputed::before {
+        content: "★";
+        margin-right: 4px;
+        font-size: 9px;
+        color: #F59E0B;
+      }
+      @keyframes emptyFade {
+        0%, 30%  { opacity: 1; }
+        34%      { opacity: 0; }
+        88%      { opacity: 0; }
+        96%      { opacity: 0; }
+        100%     { opacity: 1; }
+      }
+      @keyframes imputedFade {
+        0%, 34%  { opacity: 0; }
+        40%      { opacity: 1; }
+        88%      { opacity: 1; }
+        96%      { opacity: 0; }
+        100%     { opacity: 0; }
+      }
+      .card-impute tbody tr:nth-child(2) .gap .empty,
+      .card-impute tbody tr:nth-child(2) .gap .imputed { animation-delay: 0.05s; }
+      .card-impute tbody tr:nth-child(3) .gap .empty,
+      .card-impute tbody tr:nth-child(3) .gap .imputed { animation-delay: 0.10s; }
+      .card-impute tbody tr:nth-child(4) .gap .empty,
+      .card-impute tbody tr:nth-child(4) .gap .imputed { animation-delay: 0.15s; }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+
+      <!-- ========== CARD 1: 컬럼 증강 ========== -->
+      <div class="card-wrap">
+      <div class="card-title">컬럼 증강 <small>Feature Derivation</small></div>
+      <div class="card card-feature">
+        <button class="icon-btn" type="button" aria-hidden="true" tabindex="-1">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M14.0768 3C14.3175 3.00004 14.5473 3.04642 14.7654 3.13889C14.9836 3.23122 15.174 3.35878 15.336 3.52083L19.4796 7.66435C19.6416 7.82641 19.7692 8.01683 19.8615 8.23495C19.954 8.45312 20.0004 8.68291 20.0004 8.92361V19.9803C20.0003 20.479 19.8274 20.901 19.4819 21.2465C19.1362 21.5922 18.7135 21.765 18.2145 21.765H14.2226C13.8135 21.765 13.4819 21.4334 13.4819 21.0243C13.4819 20.6152 13.8135 20.2836 14.2226 20.2836H18.2145C18.2906 20.2836 18.3608 20.252 18.424 20.1887C18.4872 20.1256 18.5188 20.0562 18.5189 19.9803V8.92593H14.9634C14.7115 8.92593 14.5005 8.84051 14.3303 8.67014C14.1599 8.49977 14.0745 8.28889 14.0745 8.03704V4.48148H6.97143C6.89538 4.48148 6.82515 4.51301 6.76194 4.57639C6.69857 4.6396 6.66703 4.70983 6.66703 4.78588V10.5556C6.66703 10.9647 6.33539 11.2963 5.92629 11.2963C5.51719 11.2963 5.18555 10.9647 5.18555 10.5556V4.78588C5.18555 4.28695 5.35839 3.8642 5.70407 3.51852C6.04975 3.17284 6.4725 3 6.97143 3H14.0768Z" fill="#2B7FFF"/>
+            <path d="M5.50801 12.7017C5.56802 12.408 5.98754 12.408 6.04756 12.7017C6.1801 13.3501 6.68688 13.8569 7.33536 13.9895C7.62897 14.0495 7.62897 14.469 7.33536 14.529C6.68688 14.6615 6.1801 15.1683 6.04756 15.8168C5.98754 16.1104 5.56802 16.1104 5.50801 15.8168C5.37547 15.1683 4.86869 14.6615 4.22021 14.529C3.9266 14.469 3.9266 14.0495 4.22021 13.9895C4.86869 13.8569 5.37547 13.3501 5.50801 12.7017Z" fill="#2B7FFF"/>
+            <path d="M9.38712 14.1074C9.50714 13.5202 10.3462 13.5202 10.4662 14.1074C10.7313 15.4044 11.7449 16.4179 13.0418 16.683C13.629 16.803 13.629 17.6421 13.0418 17.7621C11.7449 18.0272 10.7313 19.0407 10.4662 20.3377C10.3462 20.9249 9.50714 20.9249 9.38712 20.3377C9.12203 19.0407 8.10847 18.0272 6.81152 17.7621C6.22429 17.6421 6.22429 16.803 6.81152 16.683C8.10847 16.4179 9.12203 15.4044 9.38712 14.1074Z" fill="#2B7FFF"/>
+          </svg>
+        </button>
+        <div class="cursor">
+          <svg width="22" height="26" viewBox="0 0 22 26" fill="none" aria-hidden="true">
+            <path d="M1 1 L1 19 L6.5 14.5 L10 22.5 L13 21.3 L9.7 13.6 L17 13.4 Z" fill="#ffffff" stroke="#5b6573" stroke-width="1.2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <colgroup>
+              <col style="width: 12%;" />
+              <col style="width: 11%;" />
+              <col style="width: 18%;" />
+              <col style="width: 15%;" />
+              <col style="width: 14%;" />
+              <col style="width: 15%;" />
+              <col style="width: 15%;" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th class="src-col">Age</th>
+                <th class="src-col">Income</th>
+                <th class="new-col">RpA</th>
+                <th class="new-col">Band</th>
+                <th class="new-col">IncQ</th>
+                <th class="new-col">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>001</td>
+                <td class="src-col">27</td>
+                <td class="src-col">3,200</td>
+                <td class="new-col">118.5</td>
+                <td class="new-col">20s</td>
+                <td class="new-col"><span class="new-val">Q2</span></td>
+                <td class="new-col"><span class="new-val">64</span></td>
+              </tr>
+              <tr>
+                <td>002</td>
+                <td class="src-col">34</td>
+                <td class="src-col">4,800</td>
+                <td class="new-col">141.2</td>
+                <td class="new-col">30s</td>
+                <td class="new-col"><span class="new-val">Q3</span></td>
+                <td class="new-col"><span class="new-val">72</span></td>
+              </tr>
+              <tr>
+                <td>003</td>
+                <td class="src-col">41</td>
+                <td class="src-col">6,100</td>
+                <td class="new-col">148.8</td>
+                <td class="new-col">40s</td>
+                <td class="new-col"><span class="new-val">Q4</span></td>
+                <td class="new-col"><span class="new-val">81</span></td>
+              </tr>
+              <tr>
+                <td>004</td>
+                <td class="src-col">29</td>
+                <td class="src-col">3,600</td>
+                <td class="new-col">124.1</td>
+                <td class="new-col">20s</td>
+                <td class="new-col"><span class="new-val">Q2</span></td>
+                <td class="new-col"><span class="new-val">67</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      </div>
+
+      <!-- ========== CARD 2: 행 증강 ========== -->
+      <div class="card-wrap last">
+      <div class="card-title">행 증강 <small>Row Augmentation</small></div>
+      <div class="card card-row">
+        <button class="icon-btn" type="button" aria-hidden="true" tabindex="-1">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M14.0768 3C14.3175 3.00004 14.5473 3.04642 14.7654 3.13889C14.9836 3.23122 15.174 3.35878 15.336 3.52083L19.4796 7.66435C19.6416 7.82641 19.7692 8.01683 19.8615 8.23495C19.954 8.45312 20.0004 8.68291 20.0004 8.92361V19.9803C20.0003 20.479 19.8274 20.901 19.4819 21.2465C19.1362 21.5922 18.7135 21.765 18.2145 21.765H14.2226C13.8135 21.765 13.4819 21.4334 13.4819 21.0243C13.4819 20.6152 13.8135 20.2836 14.2226 20.2836H18.2145C18.2906 20.2836 18.3608 20.252 18.424 20.1887C18.4872 20.1256 18.5188 20.0562 18.5189 19.9803V8.92593H14.9634C14.7115 8.92593 14.5005 8.84051 14.3303 8.67014C14.1599 8.49977 14.0745 8.28889 14.0745 8.03704V4.48148H6.97143C6.89538 4.48148 6.82515 4.51301 6.76194 4.57639C6.69857 4.6396 6.66703 4.70983 6.66703 4.78588V10.5556C6.66703 10.9647 6.33539 11.2963 5.92629 11.2963C5.51719 11.2963 5.18555 10.9647 5.18555 10.5556V4.78588C5.18555 4.28695 5.35839 3.8642 5.70407 3.51852C6.04975 3.17284 6.4725 3 6.97143 3H14.0768Z" fill="#2B7FFF"/>
+            <path d="M5.50801 12.7017C5.56802 12.408 5.98754 12.408 6.04756 12.7017C6.1801 13.3501 6.68688 13.8569 7.33536 13.9895C7.62897 14.0495 7.62897 14.469 7.33536 14.529C6.68688 14.6615 6.1801 15.1683 6.04756 15.8168C5.98754 16.1104 5.56802 16.1104 5.50801 15.8168C5.37547 15.1683 4.86869 14.6615 4.22021 14.529C3.9266 14.469 3.9266 14.0495 4.22021 13.9895C4.86869 13.8569 5.37547 13.3501 5.50801 12.7017Z" fill="#2B7FFF"/>
+            <path d="M9.38712 14.1074C9.50714 13.5202 10.3462 13.5202 10.4662 14.1074C10.7313 15.4044 11.7449 16.4179 13.0418 16.683C13.629 16.803 13.629 17.6421 13.0418 17.7621C11.7449 18.0272 10.7313 19.0407 10.4662 20.3377C10.3462 20.9249 9.50714 20.9249 9.38712 20.3377C9.12203 19.0407 8.10847 18.0272 6.81152 17.7621C6.22429 17.6421 6.22429 16.803 6.81152 16.683C8.10847 16.4179 9.12203 15.4044 9.38712 14.1074Z" fill="#2B7FFF"/>
+          </svg>
+        </button>
+        <div class="cursor">
+          <svg width="22" height="26" viewBox="0 0 22 26" fill="none" aria-hidden="true">
+            <path d="M1 1 L1 19 L6.5 14.5 L10 22.5 L13 21.3 L9.7 13.6 L17 13.4 Z" fill="#ffffff" stroke="#5b6573" stroke-width="1.2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Age</th><th>Class</th></tr>
+            </thead>
+            <tbody>
+              <tr class="original"><td>001</td><td>27</td><td>A</td></tr>
+              <tr class="original"><td>002</td><td>34</td><td>B</td></tr>
+              <tr class="original"><td>003</td><td>41</td><td>A</td></tr>
+
+              <tr class="aug"><td>004</td><td>29</td><td>C</td></tr>
+              <tr class="aug"><td>005</td><td>31</td><td>B</td></tr>
+              <tr class="aug"><td>006</td><td>26</td><td>B</td></tr>
+              <tr class="aug"><td>007</td><td>38</td><td>C</td></tr>
+              <tr class="aug"><td>008</td><td>33</td><td>A</td></tr>
+              <tr class="aug"><td>009</td><td>27</td><td>B</td></tr>
+              <tr class="aug"><td>010</td><td>44</td><td>C</td></tr>
+              <tr class="aug"><td>011</td><td>35</td><td>B</td></tr>
+              <tr class="aug"><td>012</td><td>28</td><td>A</td></tr>
+              <tr class="aug"><td>013</td><td>40</td><td>C</td></tr>
+              <tr class="aug"><td>014</td><td>32</td><td>B</td></tr>
+              <tr class="aug"><td>015</td><td>26</td><td>A</td></tr>
+              <tr class="aug"><td>016</td><td>37</td><td>C</td></tr>
+              <tr class="aug"><td>017</td><td>30</td><td>B</td></tr>
+              <tr class="aug"><td>018</td><td>43</td><td>A</td></tr>
+              <tr class="aug"><td>019</td><td>25</td><td>C</td></tr>
+              <tr class="aug"><td>020</td><td>39</td><td>B</td></tr>
+              <tr class="aug"><td>021</td><td>34</td><td>A</td></tr>
+              <tr class="aug"><td>022</td><td>29</td><td>C</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      </div>
+
+      <!-- ========== CARD 3: 가명화 (Masking) ========== -->
+      <div class="card-wrap">
+      <div class="card-title">가명화 <small>Masking</small></div>
+      <div class="card card-mask">
+        <button class="icon-btn" type="button" aria-hidden="true" tabindex="-1">
+          <svg width="22" height="22" viewBox="0 -960 960 960" fill="#2B7FFF" aria-hidden="true">
+            <path d="M501.38-304q8.62-8.62 8.62-21.39v-173.07q0-12.77-8.62-21.39-8.61-8.61-21.38-8.61t-21.38 8.61q-8.62 8.62-8.62 21.39v173.07q0 12.77 8.62 21.39 8.61 8.61 21.38 8.61t21.38-8.61Zm1.54-305.38q9.39-9.39 9.39-22.93t-9.39-22.92q-9.38-9.38-22.92-9.38-13.54 0-22.92 9.38-9.39 9.38-9.39 22.92 0 13.54 9.39 22.93Q466.46-600 480-600q13.54 0 22.92-9.38Zm-35.15 503.22q-6-1-11.62-3-126.53-45-201.34-159.57Q180-383.31 180-516v-180.15q0-22.7 13.16-40.96 13.15-18.27 33.84-26.5l227.69-85q12.85-4.62 25.31-4.62 12.46 0 25.31 4.62l227.69 85q20.69 8.23 33.84 26.5Q780-718.85 780-696.15V-516q0 132.69-74.81 247.27-74.81 114.57-201.34 159.57-5.62 2-11.62 3-6 1-12.23 1t-12.23-1ZM480-164q104-33 172-132t68-220v-180.54q0-3.84-2.12-6.92-2.11-3.08-5.96-4.62l-227.69-85q-1.92-.77-4.23-.77-2.31 0-4.23.77l-227.69 85q-3.85 1.54-5.96 4.62-2.12 3.08-2.12 6.92V-516q0 121 68 220t172 132Zm0-315.23Z"/>
+          </svg>
+        </button>
+        <div class="cursor">
+          <svg width="22" height="26" viewBox="0 0 22 26" fill="none" aria-hidden="true">
+            <path d="M1 1 L1 19 L6.5 14.5 L10 22.5 L13 21.3 L9.7 13.6 L17 13.4 Z" fill="#ffffff" stroke="#5b6573" stroke-width="1.2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <colgroup>
+              <col style="width: 26%;" />
+              <col style="width: 38%;" />
+              <col style="width: 36%;" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>주민번호</th>
+                <th>직업</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="orig">정민경</span><span class="mask">[이름 A]</span></td>
+                <td><span class="orig">900501-1234567</span><span class="mask">[주민번호 A]</span></td>
+                <td>디자이너</td>
+              </tr>
+              <tr>
+                <td><span class="orig">박지훈</span><span class="mask">[이름 B]</span></td>
+                <td><span class="orig">850712-1098765</span><span class="mask">[주민번호 B]</span></td>
+                <td>개발자</td>
+              </tr>
+              <tr>
+                <td><span class="orig">김수아</span><span class="mask">[이름 C]</span></td>
+                <td><span class="orig">921003-2345678</span><span class="mask">[주민번호 C]</span></td>
+                <td>마케터</td>
+              </tr>
+              <tr>
+                <td><span class="orig">이도현</span><span class="mask">[이름 D]</span></td>
+                <td><span class="orig">880415-1567890</span><span class="mask">[주민번호 D]</span></td>
+                <td>PM</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      </div>
+
+      <!-- ========== CARD 4: Low-Signal Column Removal ========== -->
+      <div class="card-wrap">
+      <div class="card-title">저신호 컬럼 제거 <small>Low-Signal Column Removal</small></div>
+      <div class="card card-signal">
+        <button class="icon-btn" type="button" aria-hidden="true" tabindex="-1">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 5 H20 L14 12.2 V19 L10 20.5 V12.2 Z"
+                  stroke="#2B7FFF" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+          </svg>
+        </button>
+        <div class="cursor">
+          <svg width="22" height="26" viewBox="0 0 22 26" fill="none" aria-hidden="true">
+            <path d="M1 1 L1 19 L6.5 14.5 L10 22.5 L13 21.3 L9.7 13.6 L17 13.4 Z" fill="#ffffff" stroke="#5b6573" stroke-width="1.2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <colgroup>
+              <col style="width: 16%;" />
+              <col style="width: 22%;" />
+              <col style="width: 31%;" />
+              <col style="width: 31%;" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Age <span class="score">0.95</span></th>
+                <th>Income <span class="score">0.88</span></th>
+                <th class="low-sig">Noise A <span class="score">0.12</span></th>
+                <th class="low-sig">Noise B <span class="score">0.06</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>27</td><td>3,200</td><td class="low-sig">qa#13</td><td class="low-sig">0.142</td></tr>
+              <tr><td>34</td><td>4,800</td><td class="low-sig">xy#82</td><td class="low-sig">0.087</td></tr>
+              <tr><td>41</td><td>6,100</td><td class="low-sig">zk#27</td><td class="low-sig">0.231</td></tr>
+              <tr><td>29</td><td>3,600</td><td class="low-sig">qx#54</td><td class="low-sig">0.064</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      </div>
+
+      <!-- ========== CARD 5: Outlier · Distribution · Category Refinement ========== -->
+      <div class="card-wrap">
+      <div class="card-title">이상치·분포·카테고리 정제 <small>Outlier · Distribution · Category</small></div>
+      <div class="card card-outlier">
+        <button class="icon-btn" type="button" aria-hidden="true" tabindex="-1">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 18 L8 10 L12 14 L16 6 L20 12"
+                  stroke="#2B7FFF" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+            <circle cx="16" cy="6" r="1.8" fill="#2B7FFF"/>
+          </svg>
+        </button>
+        <div class="cursor">
+          <svg width="22" height="26" viewBox="0 0 22 26" fill="none" aria-hidden="true">
+            <path d="M1 1 L1 19 L6.5 14.5 L10 22.5 L13 21.3 L9.7 13.6 L17 13.4 Z" fill="#ffffff" stroke="#5b6573" stroke-width="1.2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <colgroup>
+              <col style="width: 13%;" />
+              <col style="width: 21%;" />
+              <col style="width: 30%;" />
+              <col style="width: 36%;" />
+            </colgroup>
+            <thead>
+              <tr><th>ID</th><th>Age</th><th>Income</th><th>Category</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>001</td>
+                <td>27</td>
+                <td>3,200</td>
+                <td>Tier 1</td>
+              </tr>
+              <tr>
+                <td>002</td>
+                <td class="out"><span class="raw">999</span><span class="fixed">32</span></td>
+                <td>4,800</td>
+                <td>Tier 2</td>
+              </tr>
+              <tr>
+                <td>003</td>
+                <td>41</td>
+                <td class="out"><span class="raw">-500</span><span class="fixed">6,100</span></td>
+                <td class="out"><span class="raw">??</span><span class="fixed">Others</span></td>
+              </tr>
+              <tr>
+                <td>004</td>
+                <td>29</td>
+                <td>3,600</td>
+                <td class="out"><span class="raw">test1</span><span class="fixed">Others</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      </div>
+
+      <!-- ========== CARD 6: Missing Value Treatment ========== -->
+      <div class="card-wrap">
+      <div class="card-title">결측치 처리 <small>Missing Value Treatment</small></div>
+      <div class="card card-impute">
+        <button class="icon-btn" type="button" aria-hidden="true" tabindex="-1">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="4" y="5" width="16" height="14" rx="1.6" stroke="#2B7FFF" stroke-width="2.1" fill="none"/>
+            <path d="M9 12 H15" stroke="#2B7FFF" stroke-width="2.1" stroke-linecap="round" stroke-dasharray="1.6 2.2"/>
+          </svg>
+        </button>
+        <div class="cursor">
+          <svg width="22" height="26" viewBox="0 0 22 26" fill="none" aria-hidden="true">
+            <path d="M1 1 L1 19 L6.5 14.5 L10 22.5 L13 21.3 L9.7 13.6 L17 13.4 Z" fill="#ffffff" stroke="#5b6573" stroke-width="1.2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <colgroup>
+              <col style="width: 14%;" />
+              <col style="width: 22%;" />
+              <col style="width: 32%;" />
+              <col style="width: 32%;" />
+            </colgroup>
+            <thead>
+              <tr><th>ID</th><th>Age</th><th>Income</th><th>Score</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>001</td>
+                <td>27</td>
+                <td>3,200</td>
+                <td>64</td>
+              </tr>
+              <tr>
+                <td>002</td>
+                <td class="gap"><span class="empty">missing</span><span class="imputed">31</span></td>
+                <td>4,800</td>
+                <td>72</td>
+              </tr>
+              <tr>
+                <td>003</td>
+                <td>41</td>
+                <td class="gap"><span class="empty">missing</span><span class="imputed">5,200</span></td>
+                <td class="gap"><span class="empty">missing</span><span class="imputed">74</span></td>
+              </tr>
+              <tr>
+                <td>004</td>
+                <td>29</td>
+                <td>3,600</td>
+                <td class="gap"><span class="empty">missing</span><span class="imputed">68</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      </div>
+
+    </div>
+  </body>
+</html>

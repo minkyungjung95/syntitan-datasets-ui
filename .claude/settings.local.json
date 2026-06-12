@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(kill 53789)",
+      "mcp__07af9192-93ab-44b8-b1e7-843af2397eac__get_design_context",
+      "mcp__07af9192-93ab-44b8-b1e7-843af2397eac__get_screenshot",
+      "Bash(awk 'NR>=333 && NR<=546' \"/Users/minkyungjung/Downloads/syntitan-report-agent/cubig-ds/src/syntitan-UI/audit-log.jsx\")",
+      "mcp__07af9192-93ab-44b8-b1e7-843af2397eac__get_metadata",
+      "Bash(node -e ' *)",
+      "Bash(npx vite *)",
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(npx --yes esbuild --loader=jsx --bundle=false src/App.jsx)",
+      "Bash(npx --yes esbuild --loader:.jsx=jsx --bundle=false src/App.jsx)",
+      "Bash(curl -sL \"https://www.figma.com/api/mcp/asset/bb36655a-588a-4873-a749-2cdaf5a262bc\" -o /tmp/audience-icon.svg)",
+      "Read(//tmp/**)",
+      "Bash(curl -sL \"https://www.figma.com/api/mcp/asset/b751893e-c7db-4757-b4f0-e020fb7ce71a\" -o /tmp/audience-icon2.svg)",
+      "Bash(open \"/Users/minkyungjung/Downloads/신타이탄 프로덕트 UI/dist/design-system.html\")",
+      "Bash(grep -rln \"10만명 합성 페르소나\\\\|페르소나 설문\\\\|미리 잡는 이탈 신호\" /Users/minkyungjung/Downloads/ --include=\"*.html\" --include=\"*.jsx\" --include=\"*.tsx\" --include=\"*.js\" 2>/dev/null | grep -v node_modules | head)",
+      "Bash(grep -rln \"10만명 합성 페르소나\\\\|미리 잡는 이탈 신호\" /Users/minkyungjung 2>/dev/null | grep -v node_modules | head)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s http://localhost:58824/)",
+      "Bash(grep -n \"export default function DatasetsApp\\\\|<main\\\\|width: 1600\\\\|showUpload\\\\|function DatasetsPage\\\\|function AgentAnalysisPage\\\\|function MergePage\\\\|function ResultPage\\\\|function MergingPage\\\\|return \\(\\\\s*$\" src/datasets-app.jsx)",
+      "Bash(gh auth *)",
+      "Bash(git config *)",
+      "Bash(git --version)",
+      "Bash(timeout 10 ssh -T git@github.com)",
+      "Bash(ssh -o ConnectTimeout=8 -o BatchMode=yes -T git@github.com)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git -c user.name=mkchung -c user.email=mkchung0508@gmail.com commit -q -m 'Syntitan 데이터셋 병합\\(Union/Join\\) UI · AI Readiness 흐름 *)"
+    ]
+  }
+}
