@@ -41,8 +41,8 @@ const DATASETS = [
   { id: 3, name: "CUBIG Data", pct: 50, version: "v2", created: "Mar 24", updated: "Mar 25", ts: 25 },
   { id: 4, name: "CUBIG Data", pct: 50, version: "v2", created: "Mar 24", updated: "Mar 25", ts: 25 },
   { id: 5, name: "CUBIG Data", pct: 50, version: "v2", created: "Mar 24", updated: "Mar 25", ts: 25 },
-  { id: 6, name: "CUBIG Data", pct: 50, version: "v2", created: "Mar 24", updated: "Mar 25", ts: 25 },
-  { id: 7, name: "CUBIG Data", pct: 50, version: "v2", created: "Mar 24", updated: "Mar 25", ts: 25 },
+  { id: 6, name: "CUBIG Data", pct: 50, version: "v2", created: "Mar 24", updated: "Mar 25", ts: 25, locked: true },
+  { id: 7, name: "CUBIG Data", pct: 50, version: "v2", created: "Mar 24", updated: "Mar 25", ts: 25, locked: true },
   { id: 8, name: "CUBIG Data", pct: 50, version: "v2", created: "Mar 24", updated: "Mar 25", ts: 25 },
   { id: 9, name: "CUBIG Data", pct: 50, version: "v2", created: "Mar 24", updated: "Mar 25", ts: 25 },
   { id: 10, name: "CUBIG Data", pct: 99, version: "v3", created: "Mar 24", updated: "Mar 25", ts: 25 },
@@ -92,6 +92,8 @@ const Icon = {
   sheet: (p) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" {...p}><rect x="4" y="3" width="16" height="18" rx="2" fill="#1E9E5A" /><path d="M8 8h8M8 12h8M8 16h8M12 8v8" stroke="#fff" strokeWidth="1.4" /></svg>),
   edit: (p) => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" {...p}><path d="M14 5l5 5M4 20l1-4L16 5l3 3L8 19l-4 1Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>),
   swap: (p) => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" {...p}><path d="M7 4 3 8l4 4M3 8h13M17 20l4-4-4-4M21 16H8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>),
+  lock: (p) => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" {...p}><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.7" /><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="1.7" /></svg>),
+  folder: (p) => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" {...p}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /></svg>),
 };
 
 /* ---------------- atoms ---------------- */
@@ -184,35 +186,159 @@ function SummaryCard({ dot, label, range, value }) {
   );
 }
 
-function DatasetsPage({ datasets, onOpen, selected, setSelected, onMerge, onMergeDirect }) {
+function SummaryStat({ dot, label, value }) {
+  return (
+    <span style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 14px" }}>
+      <span style={{ width: 8, height: 8, borderRadius: "50%", background: dot, flexShrink: 0 }} />
+      <span style={{ fontSize: 13, color: C.sub, fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{value}</span>
+    </span>
+  );
+}
+
+function FolderTree({ folders, setFolders, activeFolder, setActiveFolder, datasets, setDatasets, onHide }) {
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+  const [open, setOpen] = useState(true);        // 폴더 하위 펼침
+  const [hoverId, setHoverId] = useState(null);
+  const [menuFor, setMenuFor] = useState(null);  // … 메뉴 열린 폴더 id
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const countOf = (fid) => datasets.filter((d) => (fid === null ? true : d.folderId === fid)).length;
+  const add = () => {
+    const n = name.trim();
+    if (!n) { setCreating(false); return; }
+    setFolders((f) => [...f, { id: "f" + (f.length + 1) + "_" + n.length, name: n }]);
+    setName(""); setCreating(false);
+  };
+  const rename = (id) => {
+    const n = editName.trim();
+    if (n) setFolders((f) => f.map((x) => (x.id === id ? { ...x, name: n } : x)));
+    setEditingId(null);
+  };
+  const del = (id) => {
+    setFolders((f) => f.filter((x) => x.id !== id));
+    setDatasets((ds) => ds.map((d) => (d.folderId === id ? { ...d, folderId: null } : d)));
+    if (activeFolder === id) setActiveFolder(null);
+    setMenuFor(null);
+  };
+  return (
+    <aside style={{ width: 240, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#FCFCFD", display: "flex", flexDirection: "column", overflowY: "auto" }}>
+      {/* 패널 헤더 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 12px 10px" }}>
+        <span style={{ fontSize: 14, fontWeight: 700 }}>데이터셋</span>
+        <span onClick={onHide} title="패널 접기" style={{ color: C.faint, cursor: "pointer", display: "flex", padding: 2 }}><Icon.panel width={16} height={16} /></span>
+      </div>
+
+      <div style={{ padding: "0 8px" }}>
+        {/* 전체 데이터셋 = 부모 행 (+ 새 폴더 / 펼치기) */}
+        {(() => {
+          const active = activeFolder === null;
+          return (
+            <div onMouseEnter={() => setHoverId("all")} onMouseLeave={() => setHoverId(null)} onClick={() => setActiveFolder(null)}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 8px", borderRadius: 8, cursor: "pointer", background: active ? "#EEF2FF" : "transparent", color: active ? C.purple : C.text, fontWeight: active ? 700 : 600, fontSize: 13.5 }}>
+              <span style={{ display: "flex", color: active ? C.purple : C.sub }}><Icon.db width={17} height={17} /></span>
+              <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>전체 데이터셋</span>
+              {(hoverId === "all") ? (
+                <span style={{ display: "flex", gap: 2 }}>
+                  <span onClick={(e) => { e.stopPropagation(); setOpen(true); setCreating(true); }} title="새 폴더" style={{ color: C.sub, cursor: "pointer", display: "flex", padding: 2, borderRadius: 5 }}><Icon.plus width={15} height={15} /></span>
+                  <span onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }} title={open ? "접기" : "펼치기"} style={{ color: C.sub, cursor: "pointer", display: "flex", padding: 2, borderRadius: 5, transform: open ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD width={14} height={14} /></span>
+                </span>
+              ) : (
+                <span style={{ fontSize: 12, color: C.faint }}>{countOf(null)}</span>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* 폴더 (하위, 들여쓰기) */}
+        {open && folders.map((f) => {
+          const active = activeFolder === f.id;
+          const hovered = hoverId === f.id;
+          if (editingId === f.id) {
+            return (
+              <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px 6px 26px" }}>
+                <span style={{ color: C.sub, display: "flex" }}><Icon.folder width={16} height={16} /></span>
+                <input autoFocus value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") rename(f.id); if (e.key === "Escape") setEditingId(null); }} onBlur={() => rename(f.id)} style={{ flex: 1, minWidth: 0, border: `1px solid ${C.blue}`, borderRadius: 7, padding: "5px 8px", fontSize: 13, fontFamily: FONT, outline: "none" }} />
+              </div>
+            );
+          }
+          return (
+            <div key={f.id} onMouseEnter={() => setHoverId(f.id)} onMouseLeave={() => setHoverId(null)} onClick={() => setActiveFolder(f.id)}
+              style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, padding: "9px 8px 9px 26px", borderRadius: 8, cursor: "pointer", background: active ? "#EEF2FF" : hovered ? "#F2F3F5" : "transparent", color: active ? C.purple : C.text, fontWeight: active ? 600 : 500, fontSize: 13.5 }}>
+              <span style={{ display: "flex", color: active ? C.purple : C.sub }}><Icon.folder width={16} height={16} /></span>
+              <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</span>
+              {(hovered || menuFor === f.id) ? (
+                <span onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === f.id ? null : f.id); }} title="더보기" style={{ color: C.sub, cursor: "pointer", display: "flex", padding: 2, borderRadius: 5 }}><Icon.kebab width={15} height={15} /></span>
+              ) : (
+                <span style={{ fontSize: 12, color: C.faint }}>{countOf(f.id)}</span>
+              )}
+              {menuFor === f.id && (
+                <>
+                  <div onClick={(e) => { e.stopPropagation(); setMenuFor(null); }} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
+                  <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: "calc(100% - 2px)", right: 6, width: 150, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 31, padding: 4 }}>
+                    <div onClick={() => { setEditingId(f.id); setEditName(f.name); setMenuFor(null); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", fontSize: 13, borderRadius: 7, cursor: "pointer", color: C.text }}><Icon.edit width={14} height={14} /> 이름 변경</div>
+                    <div onClick={() => del(f.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", fontSize: 13, borderRadius: 7, cursor: "pointer", color: "#DC2626" }}><Icon.trash width={14} height={14} /> 삭제</div>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+        {open && creating && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px 6px 26px" }}>
+            <span style={{ color: C.sub, display: "flex" }}><Icon.folder width={16} height={16} /></span>
+            <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add(); if (e.key === "Escape") { setCreating(false); setName(""); } }} onBlur={add} placeholder="새 폴더" style={{ flex: 1, minWidth: 0, border: `1px solid ${C.blue}`, borderRadius: 7, padding: "5px 8px", fontSize: 13, fontFamily: FONT, outline: "none" }} />
+          </div>
+        )}
+        {open && folders.length === 0 && !creating && <div style={{ padding: "6px 8px 6px 26px", fontSize: 12, color: C.faint }}>＋로 폴더를 추가하세요</div>}
+      </div>
+    </aside>
+  );
+}
+
+function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder, setActiveFolder, onOpen, selected, setSelected, onMerge, onMergeDirect }) {
   const [q, setQ] = useState("");
   const [hover, setHover] = useState(null);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveTarget, setMoveTarget] = useState(null);
+  const [panelOpen, setPanelOpen] = useState(true);
   const rows = useMemo(() => {
-    const sorted = [...datasets].sort((a, b) => b.ts - a.ts); // 업데이트 최신순
-    if (!q.trim()) return sorted;
-    return sorted.filter((d) => (d.name || "CUBIG Data").toLowerCase().includes(q.trim().toLowerCase()));
-  }, [datasets, q]);
+    let list = [...datasets].sort((a, b) => b.ts - a.ts); // 업데이트 최신순
+    if (activeFolder !== null) list = list.filter((d) => d.folderId === activeFolder);
+    if (q.trim()) list = list.filter((d) => (d.name || "CUBIG Data").toLowerCase().includes(q.trim().toLowerCase()));
+    return list;
+  }, [datasets, q, activeFolder]);
+  const moveToFolder = (fid) => { setDatasets((ds) => ds.map((d) => (selected.includes(d.id) ? { ...d, folderId: fid } : d))); setSelected([]); };
   const selecting = selected.length > 0;
   const overLimit = selected.length > MAX_MERGE;
   const canMerge = selected.length >= 2 && selected.length <= MAX_MERGE;
-  const allChecked = rows.length > 0 && rows.every((r) => selected.includes(r.id));
+  const selectable = rows.filter((r) => !r.locked);
+  const allChecked = selectable.length > 0 && selectable.every((r) => selected.includes(r.id));
   const toggle = (id, v) => setSelected((s) => (v ? [...s, id] : s.filter((x) => x !== id)));
-  const toggleAll = (v) => setSelected(v ? rows.map((r) => r.id) : []);
+  const toggleAll = (v) => setSelected(v ? selectable.map((r) => r.id) : []);
 
-  const grid = "44px 1.6fr 1.1fr 1fr 1fr 0.8fr 0.8fr 40px";
+  const grid = "30px 1.6fr 1.1fr 1fr 1fr 0.8fr 0.8fr 40px";
 
   return (
-    <div style={{ padding: "34px 40px 60px" }}>
+    <div style={{ display: "flex", flex: 1, minHeight: 0, height: "100%" }}>
+      {panelOpen && <FolderTree folders={folders} setFolders={setFolders} activeFolder={activeFolder} setActiveFolder={setActiveFolder} datasets={datasets} setDatasets={setDatasets} onHide={() => setPanelOpen(false)} />}
+      <div style={{ flex: 1, minWidth: 0, overflowY: "auto", padding: "34px 40px 60px", display: "flex", flexDirection: "column" }}>
       {/* title + summary cards */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Datasets</h1>
-          <p style={{ color: C.sub, fontSize: 14, margin: "8px 0 0" }}>Upload your dataset to diagnose AI Readiness and optimize data gaps.</p>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          {!panelOpen && <button onClick={() => setPanelOpen(true)} title="폴더 패널 펼치기" style={{ marginTop: 2, width: 34, height: 34, borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}><Icon.panel /></button>}
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Datasets</h1>
+            <p style={{ color: C.sub, fontSize: 14, margin: "8px 0 0" }}>Upload your dataset to diagnose AI Readiness and optimize data gaps.</p>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 12 }}>
-          <SummaryCard dot={C.green} label="AI Ready" range="≥90%" value="2" />
-          <SummaryCard dot={C.yellow} label="Caution" range="40–89%" value="2" />
-          <SummaryCard dot={C.red} label="Critical" range="0–39%" value="1" />
+        <div style={{ display: "flex", alignItems: "center", gap: 0, border: `1px solid ${C.border}`, borderRadius: 10, background: C.panel, padding: "8px 4px", marginTop: 4 }}>
+          <SummaryStat dot={C.green} label="AI Ready" value="2" />
+          <span style={{ width: 1, height: 22, background: C.borderSoft }} />
+          <SummaryStat dot={C.yellow} label="Caution" value="2" />
+          <span style={{ width: 1, height: 22, background: C.borderSoft }} />
+          <SummaryStat dot={C.red} label="Critical" value="1" />
         </div>
       </div>
 
@@ -226,7 +352,7 @@ function DatasetsPage({ datasets, onOpen, selected, setSelected, onMerge, onMerg
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={onMergeDirect} style={{ display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px", background: C.panel, color: C.text, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
-              <Icon.link /> 데이터 합치기
+              <Icon.union width={17} height={17} /> 데이터 합치기
             </button>
             <button style={{ display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px", background: C.dark, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
               <Icon.plus /> Upload Data
@@ -246,6 +372,7 @@ function DatasetsPage({ datasets, onOpen, selected, setSelected, onMerge, onMerg
           >
             <Icon.spark /> 데이터 합치기 ({selected.length}/{MAX_MERGE})
           </button>
+          <button onClick={() => { setMoveTarget(undefined); setMoveOpen(true); }} style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", color: C.text, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.folder width={15} height={15} /> 폴더로 이동</button>
           <button title="다운로드" style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", color: C.text, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.download /> 다운로드</button>
           <button title="삭제" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", color: C.sub, cursor: "pointer", fontFamily: FONT }}><Icon.trash /></button>
         </div>
@@ -260,11 +387,11 @@ function DatasetsPage({ datasets, onOpen, selected, setSelected, onMerge, onMerg
         </div>
         {rows.map((d, i) => {
           const checked = selected.includes(d.id);
-          const showCb = selecting || hover === d.id || checked;
+          const showCb = !d.locked && (selecting || hover === d.id || checked);
           return (
             <div key={d.id} onClick={() => onOpen(d.id)} onMouseEnter={() => setHover(d.id)} onMouseLeave={() => setHover(null)}
               style={{ display: "grid", gridTemplateColumns: grid, alignItems: "center", padding: "13px 20px", fontSize: 14, borderBottom: i === rows.length - 1 ? "none" : `1px solid ${C.borderSoft}`, cursor: "pointer", background: checked ? C.blueSoft : hover === d.id ? "#FAFAFB" : "transparent" }}>
-              <span onClick={(e) => e.stopPropagation()} style={{ display: "flex", height: "100%", alignItems: "center" }}>{showCb && <Checkbox checked={checked} onChange={(v) => toggle(d.id, v)} />}</span>
+              <span onClick={(e) => e.stopPropagation()} title={d.locked ? "편집 권한이 없어 합치기에 선택할 수 없어요" : undefined} style={{ display: "flex", height: "100%", alignItems: "center" }}>{d.locked ? ((selecting || hover === d.id) && <span style={{ color: C.faint, display: "flex" }}><Icon.lock /></span>) : (showCb && <Checkbox checked={checked} onChange={(v) => toggle(d.id, v)} />)}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                 <div style={{ width: 34, height: 34, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub, flexShrink: 0 }}><Icon.db /></div>
                 <div style={{ minWidth: 0 }}>
@@ -284,7 +411,42 @@ function DatasetsPage({ datasets, onOpen, selected, setSelected, onMerge, onMerg
             </div>
           );
         })}
+        {rows.length === 0 && (
+          <div style={{ padding: "56px 0", textAlign: "center", color: C.faint, fontSize: 14 }}>
+            이 폴더에 데이터셋이 없어요. 데이터를 선택해 <b>폴더로 이동</b>해 보세요.
+          </div>
+        )}
       </div>
+      </div>
+
+      {/* 폴더로 이동 모달 (ClovaNote 스타일) */}
+      {moveOpen && (
+        <div onClick={() => setMoveOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 360, background: "#fff", borderRadius: 16, boxShadow: "0 20px 50px rgba(0,0,0,0.2)", padding: "22px 22px 18px", fontFamily: FONT }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 700 }}>폴더로 이동</div>
+                <div style={{ fontSize: 12.5, color: C.sub, marginTop: 4 }}>선택한 {selected.length}개를 다른 폴더로 옮길 수 있어요.</div>
+              </div>
+              <span onClick={() => setMoveOpen(false)} style={{ color: C.faint, cursor: "pointer", display: "flex", padding: 2 }}><Icon.x /></span>
+            </div>
+            <div style={{ margin: "18px 0 4px", maxHeight: 240, overflowY: "auto" }}>
+              {[{ id: null, name: "전체 데이터셋 (폴더에서 빼기)" }, ...folders].map((f) => {
+                const sel = moveTarget === f.id;
+                return (
+                  <div key={f.id ?? "all"} onClick={() => setMoveTarget(f.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 8px", borderRadius: 8, cursor: "pointer", background: sel ? "#EEF2FF" : "transparent" }}>
+                    <span style={{ width: 17, height: 17, borderRadius: "50%", border: `2px solid ${sel ? C.purple : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{sel && <span style={{ width: 8, height: 8, borderRadius: "50%", background: C.purple }} />}</span>
+                    <span style={{ display: "flex", color: f.id === null ? C.sub : sel ? C.purple : C.sub }}>{f.id === null ? <Icon.db width={16} height={16} /> : <Icon.folder width={16} height={16} />}</span>
+                    <span style={{ fontSize: 13.5, fontWeight: sel ? 600 : 500, color: sel ? C.purple : C.text }}>{f.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <button onClick={() => { if (moveTarget !== undefined) { moveToFolder(moveTarget); setMoveOpen(false); } }} disabled={moveTarget === undefined}
+              style={{ width: "100%", marginTop: 14, padding: "12px 0", borderRadius: 10, border: "none", background: moveTarget !== undefined ? C.dark : "#E5E7EB", color: moveTarget !== undefined ? "#fff" : C.faint, fontSize: 14, fontWeight: 600, cursor: moveTarget !== undefined ? "pointer" : "default", fontFamily: FONT }}>이동</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -293,7 +455,7 @@ function DatasetsPage({ datasets, onOpen, selected, setSelected, onMerge, onMerg
  *  Merge page
  * ========================================================= */
 const MERGED_NAMES = (ids) => ids.map((_, i) => `CUBIG Data_${2024 + i}`);
-const MAX_MERGE = 3; // 한 번에 합칠 수 있는 데이터셋 최대 개수
+const MAX_MERGE = 2; // 한 번에 합칠 수 있는 데이터셋 최대 개수
 const poolLabel = (i) => (i === 0 ? "CUBIG Data_2024" : "CUBIG Data_2025");
 const DEFAULT_NAMES = ["CUBIG Data_2024", "CUBIG Data_2025"];
 
@@ -446,12 +608,11 @@ function LeftPanel({ picked, setPicked, picking, setPicking, onDone, onCancel, c
 
   return (
     <div style={panel.left}>
-      <div style={{ padding: "16px 16px 10px", fontSize: 13, color: C.sub, fontWeight: 600 }}>데이터셋 ({picked.length}개)</div>
-      <div style={{ padding: "0 12px 12px" }}>
+      <div style={{ padding: "16px 12px 8px" }}>
         <button onClick={() => setPicking(true)} style={{ width: "100%", padding: "11px 0", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon.swap width={14} height={14} /> 데이터 재선택</button>
       </div>
-      {/* 기준 데이터셋 (첫 번째) */}
-      <div style={{ padding: "8px 18px 6px", fontSize: 12, fontWeight: 700, color: C.sub, display: "flex", alignItems: "center", gap: 5 }}>기준 데이터셋</div>
+      <div style={{ padding: "4px 18px 8px", fontSize: 12, color: C.faint, fontWeight: 600 }}>데이터셋 {picked.length}개</div>
+      {/* 기준 데이터셋 (첫 번째, 기준 배지로 구분) */}
       {picked.slice(0, 1).map((idx) => (
         <div key={idx} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", margin: "0 8px 6px", borderRadius: 10 }}>
           <span style={{ width: 30, height: 30, borderRadius: 7, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db /></span>
@@ -465,8 +626,6 @@ function LeftPanel({ picked, setPicked, picking, setPicking, onDone, onCancel, c
         </div>
       ))}
 
-      {/* 추가될 데이터 */}
-      {picked.length > 1 && <div style={{ padding: "10px 18px 6px", fontSize: 12, fontWeight: 700, color: C.sub }}>합칠 데이터 ({picked.length - 1})</div>}
       {picked.slice(1).map((idx) => (
         <div key={idx} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", margin: "0 8px 6px", borderRadius: 10 }}>
           <span style={{ width: 30, height: 30, borderRadius: 7, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db /></span>
@@ -504,8 +663,9 @@ function MergePage({ selected, onBack, onRun }) {
   const [picking, setPicking] = useState(!cameWithSelection);
   const [method, setMethod] = useState("union"); // union | join
   const [joinKey, setJoinKey] = useState("customer_id");
-  const [autoOpen, setAutoOpen] = useState(true);
-  const [editing, setEditing] = useState(false);
+  const [autoOpen, setAutoOpen] = useState(false);
+  const [autoEditing, setAutoEditing] = useState(false);
+  const [reviewEditing, setReviewEditing] = useState(false);
   const [autoSel, setAutoSel] = useState(AUTO_ROWS.map((r) => r[0]));
   const [reviewOpen, setReviewOpen] = useState(true);
   const [reviewSel, setReviewSel] = useState(REVIEW_ROWS.map((r) => r.right));
@@ -534,7 +694,7 @@ function MergePage({ selected, onBack, onRun }) {
   const autoAllNone = autoSel.every((v) => v === NO_MATCH);
   const matchError = autoDupes.size > 0 || autoAllNone;
   const [toast, setToast] = useState("");
-  useEffect(() => { if (editing && autoAllNone) setToast("칼럼을 1개 이상 매칭해야 합니다."); }, [editing, autoAllNone]);
+  useEffect(() => { if (autoEditing && autoAllNone) setToast("칼럼을 1개 이상 매칭해야 합니다."); }, [autoEditing, autoAllNone]);
 
   const ready = hasContent && !loading && !picking; // 우측 본문/수치 노출 조건
   const names = hasContent ? committed.map(poolLabel) : DEFAULT_NAMES;
@@ -607,29 +767,28 @@ function MergePage({ selected, onBack, onRun }) {
           {/* AI auto */}
           <div style={{ marginBottom: 18 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 8 }}>
-              <span onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-                <span style={{ transform: autoOpen ? "none" : "rotate(-90deg)", display: "flex", transition: "transform .15s", color: C.purple }}><Icon.chevD /></span>
-                <Icon.spark style={{ color: "#7C3AED" }} />
-                <span style={{ background: "linear-gradient(90deg, #7C3AED, #3B82F6)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>AI 자동 매칭 (120건)</span>
+              <span onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, color: C.purple, cursor: "pointer" }}>
+                <span style={{ transform: autoOpen ? "none" : "rotate(-90deg)", display: "flex", transition: "transform .15s" }}><Icon.chevD /></span>
+                <Icon.spark /> AI 자동 매칭 (120건)
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.greenText }}><Icon.checkCircle /> 이름 일치 · 타입 일치</span>
-                <EditToggle editing={editing} onClick={() => { if (!editing) { setAutoOpen(true); setReviewOpen(true); } setEditing((v) => !v); }} />
+                <EditToggle editing={autoEditing} onClick={() => { setAutoOpen(true); setAutoEditing((v) => !v); }} />
               </span>
             </div>
             {autoOpen && (
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-                {editing && <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, padding: "12px 16px", background: "#F5F3FF", borderBottom: `1px solid ${C.borderSoft}` }}><Icon.infoCircle width={13} height={13} /> AI가 매칭한 결과가 틀렸다면 오른쪽에서 직접 바꿀 수 있어요.</div>}
+                {autoEditing && <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, padding: "12px 16px", background: "#F5F3FF", borderBottom: `1px solid ${C.borderSoft}` }}><Icon.infoCircle width={13} height={13} /> AI가 매칭한 결과가 틀렸다면 오른쪽에서 직접 바꿀 수 있어요.</div>}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 30px 1fr", padding: "12px 16px", fontSize: 13, color: C.sub, background: "#fff", borderBottom: `1px solid ${C.borderSoft}` }}>
                   <span>{names[0]} <span style={{ color: C.faint, fontWeight: 600 }}>(기준)</span></span><span /><span>{names[1]}</span>
                 </div>
                 {AUTO_ROWS.map((r, i) => {
-                  const dup = editing && autoDupes.has(autoSel[i]);
+                  const dup = autoEditing && autoDupes.has(autoSel[i]);
                   return (
                   <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 30px 1fr", alignItems: "start", padding: "11px 16px", borderBottom: i === AUTO_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, paddingTop: editing ? 9 : 0 }}>{r[0]} <TypeTag kind={r[1]} /></span>
-                    <span style={{ color: C.faint, display: "flex", justifyContent: "center", paddingTop: editing ? 11 : 0 }}><Icon.link /></span>
-                    {editing ? (
+                    <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, paddingTop: autoEditing ? 9 : 0 }}>{r[0]} <TypeTag kind={r[1]} /></span>
+                    <span style={{ color: C.faint, display: "flex", justifyContent: "center", paddingTop: autoEditing ? 11 : 0 }}><Icon.link /></span>
+                    {autoEditing ? (
                       <div>
                         <MatchDropdown value={autoSel[i]} error={dup} onChange={(v) => setAutoSel((s) => s.map((x, idx) => (idx === i ? v : x)))} />
                         {dup && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#DC2626", marginTop: 6 }}><Icon.infoCircle width={12} height={12} /> 중복된 칼럼이 있어요. 다시 선택해 주세요.</div>}
@@ -653,7 +812,7 @@ function MergePage({ selected, onBack, onRun }) {
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.faint }}><Icon.infoCircle width={15} height={15} /> 이름 불일치 · 타입 불일치</span>
-                <EditToggle editing={editing} onClick={() => { if (!editing) { setAutoOpen(true); setReviewOpen(true); } setEditing((v) => !v); }} />
+                <EditToggle editing={reviewEditing} onClick={() => { setReviewOpen(true); setReviewEditing((v) => !v); }} />
               </span>
             </div>
             {reviewOpen && (
@@ -666,7 +825,7 @@ function MergePage({ selected, onBack, onRun }) {
                     <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, paddingTop: 9 }}>{r.left} <TypeTag kind={r.lt} /></span>
                     <span style={{ color: C.faint, display: "flex", justifyContent: "center", paddingTop: 11 }}><Icon.link /></span>
                     <div>
-                      {editing ? (
+                      {reviewEditing ? (
                         <MatchDropdown value={reviewSel[i]} onChange={(v) => setReviewSel((s) => s.map((x, idx) => (idx === i ? v : x)))} />
                       ) : (
                         <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: reviewSel[i] === NO_MATCH ? C.faint : C.text, paddingTop: 9 }}>{reviewSel[i]} {colType(reviewSel[i]) && <TypeTag kind={colType(reviewSel[i])} />}</span>
@@ -713,7 +872,7 @@ function MergePage({ selected, onBack, onRun }) {
             <span style={{ width: 14, height: 14, borderRadius: "50%", background: C.red, color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>!</span> 행 수 한도 초과 · {afterRows.toLocaleString()} / 10,000행
           </span>
         ) : (
-          <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.greenText, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, padding: "5px 10px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.greenText, background: "#fff", border: "1px solid #BBF7D0", borderRadius: 8, padding: "5px 10px" }}>
             <Icon.checkCircle width={13} height={13} /> 한도 내 · 0.1MB / 100MB
           </span>
         ))}
@@ -759,37 +918,49 @@ function BeforeAfter({ label, before, after, delta, show, danger }) {
  *  Merging (loading)
  * ========================================================= */
 function MergingPage({ names, onLeave }) {
+  const [cnt, setCnt] = useState(8432);
+  useEffect(() => {
+    const id = setInterval(() => setCnt((c) => (c < 16864 ? Math.min(16864, c + 412) : 8432)), 110);
+    return () => clearInterval(id);
+  }, []);
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, alignSelf: "stretch", minHeight: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 28px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
         <span onClick={onLeave} style={{ cursor: "pointer", display: "flex", color: C.sub }}><Icon.back /></span>
         <span style={{ fontSize: 15, fontWeight: 600 }}>{names.join(", ")}</span>
         <span style={{ display: "flex", alignItems: "center", gap: 5, background: "#EFF4FF", color: C.blue, fontSize: 12.5, fontWeight: 600, borderRadius: 7, padding: "4px 9px" }}><Icon.union width={14} height={14} /> Union</span>
-        <div style={{ flex: 1 }} />
-        <button onClick={onLeave} style={{ display: "flex", alignItems: "center", gap: 6, border: `1px solid ${C.border}`, background: "#fff", borderRadius: 9, padding: "8px 14px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>백그라운드로 두고 나가기</button>
       </div>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
         <div style={{ fontSize: 22, fontWeight: 700 }}>Union 중....</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.faint, fontSize: 14, marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.faint, fontSize: 14 }}>
           <span style={{ width: 16, height: 16, border: `2px solid ${C.border}`, borderTopColor: C.sub, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} />
-          두 데이터의 행을 이어붙이고 있어요...
+          두 데이터의 행을 이어붙이고 있어요 · <span style={{ fontVariantNumeric: "tabular-nums", color: C.greenText, fontWeight: 600 }}>{cnt.toLocaleString()}행</span>
+        </div>
+        {/* indeterminate progress */}
+        <div style={{ width: 720, height: 4, borderRadius: 999, background: "#EEEFF1", overflow: "hidden", marginBottom: 8 }}>
+          <div style={{ width: "40%", height: "100%", borderRadius: 999, background: "linear-gradient(90deg, #86EFAC, #22C55E)", animation: "indet 1.3s ease-in-out infinite" }} />
         </div>
         <div style={{ width: 720, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", background: "#fff" }}>
-          {Array.from({ length: 7 }).map((_, i) => {
-            const added = i >= 3; // 앞 3행 = 기준, 뒤 = 합쳐져 쌓이는 행
-            return (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, padding: "15px 28px", borderBottom: i === 6 ? "none" : `1px solid ${C.borderSoft}`, borderLeft: added ? `2px solid #BBF7D0` : "2px solid transparent", animation: added ? `rowIn 2.6s ease-in-out ${(i - 3) * 0.22}s infinite` : "none" }}>
-                <div style={{ height: 11, borderRadius: 6, background: added ? "#DCFCE7" : "#EEEFF1", width: `${50 + (i * 7) % 38}%` }} />
-                <div style={{ height: 11, borderRadius: 6, background: added ? "#DCFCE7" : "#EEEFF1", width: `${45 + (i * 11) % 42}%` }} />
-              </div>
-            );
-          })}
+          <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", fontSize: 12, fontWeight: 600, color: C.sub, background: "#FBFBFC", borderBottom: `1px solid ${C.borderSoft}` }}><Icon.db width={13} height={13} /> 기준 데이터</div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, padding: "15px 28px", borderBottom: `1px solid ${C.borderSoft}` }}>
+              <div style={{ height: 11, borderRadius: 6, background: "#EEEFF1", width: `${50 + (i * 7) % 38}%` }} />
+              <div style={{ height: 11, borderRadius: 6, background: "#EEEFF1", width: `${45 + (i * 11) % 42}%` }} />
+            </div>
+          ))}
+          <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", fontSize: 12, fontWeight: 600, color: C.greenText, background: C.greenBg, borderTop: `1px solid #DCFCE7`, borderBottom: `1px solid #DCFCE7` }}><Icon.plus width={13} height={13} /> 행 이어붙이는 중…</div>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, padding: "15px 28px", borderBottom: i === 3 ? "none" : `1px solid ${C.borderSoft}`, borderLeft: `2px solid #BBF7D0`, animation: `rowIn 2.6s ease-in-out ${i * 0.22}s infinite` }}>
+              <div style={{ height: 11, borderRadius: 6, background: "#DCFCE7", width: `${50 + (i * 9) % 38}%` }} />
+              <div style={{ height: 11, borderRadius: 6, background: "#DCFCE7", width: `${45 + (i * 13) % 42}%` }} />
+            </div>
+          ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: C.sub, background: "#F4F4F5", borderRadius: 9, padding: "10px 16px", marginTop: 10 }}>
           <Icon.infoCircle width={14} height={14} /> 이 화면을 나가도 병합은 백그라운드에서 계속 진행돼요. 완료되면 목록에서 알려드릴게요.
         </div>
       </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}@keyframes rowIn{0%{opacity:0;transform:translateY(10px)}18%{opacity:1;transform:none}82%{opacity:1;transform:none}100%{opacity:0;transform:translateY(10px)}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}@keyframes rowIn{0%{opacity:0;transform:translateY(10px)}18%{opacity:1;transform:none}82%{opacity:1;transform:none}100%{opacity:0;transform:translateY(10px)}}@keyframes indet{0%{transform:translateX(-110%)}100%{transform:translateX(310%)}}`}</style>
     </div>
   );
 }
@@ -1188,13 +1359,13 @@ const D_SIZES = ["500-1000", "1000-2000", "1000-2000", "1000-2000", "5000-10000"
 const D_SESS = ["2.5", "2.5", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6"];
 function DetailTab() {
   const cols = [
-    { icon: <Icon.key />, name: "customer_name", special: "unique" },
-    { icon: <Icon.hash />, name: "time_zone", hist: H1, axis: ["UTC+01:00", "UTC+23:59"] },
-    { icon: <Icon.hash />, name: "company size", hist: H2, axis: ["0", "10,000"] },
-    { icon: <Icon.hash />, name: "Devices", dist: true },
-    { icon: <Icon.clock />, name: "signup_date", hist: H3, axis: ["0", "10,000"] },
-    { icon: <Icon.typeA />, name: "avg_session_minutes", hist: H4, axis: ["0", "1000"] },
-    { icon: <Icon.typeA />, name: "avg_session_minutes", hist: H1, axis: ["1.1", "10"] },
+    { icon: <Icon.key />, name: "customer_id", special: "unique" },
+    { icon: <Icon.clock />, name: "time_zone", hist: H1, axis: ["UTC+01:00", "UTC+23:59"] },
+    { icon: <Icon.hash />, name: "company_size", hist: H2, axis: ["0", "10,000"] },
+    { icon: <Icon.typeA />, name: "device_os", dist: true },
+    { icon: <Icon.cal2 />, name: "signup_date", hist: H3, axis: ["2024", "2026"] },
+    { icon: <Icon.hash />, name: "avg_session_min", hist: H4, axis: ["0", "1000"] },
+    { icon: <Icon.hash />, name: "purchase_count", hist: H1, axis: ["1", "10"] },
   ];
   const cellD = (error, first, last) => ({ padding: "11px 14px", borderRight: last ? "none" : `1px solid ${C.borderSoft}`, background: error ? "#FEE2E2" : "transparent", color: error ? "#B91C1C" : first ? C.sub : C.text });
   return (
@@ -1446,6 +1617,8 @@ export default function DatasetsApp() {
   const [selected, setSelected] = useState([]);
   const [mergeJob, setMergeJob] = useState(null); // { names, done } – 백그라운드에서도 유지
   const [datasets, setDatasets] = useState(DATASETS);
+  const [folders, setFolders] = useState([{ id: "f1", name: "마케팅 분석" }, { id: "f2", name: "영업 리드" }]);
+  const [activeFolder, setActiveFolder] = useState(null); // null = 전체
 
   // 병합 완료까지 카운트 (화면을 나가도 계속 진행)
   useEffect(() => {
@@ -1490,8 +1663,8 @@ export default function DatasetsApp() {
       <main style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
         {screen === "agent" && <div style={scrollArea}><AgentAnalysisPage /></div>}
         {screen === "list" && (
-          <div style={{ ...scrollArea, background: "#fff" }}>
-            <DatasetsPage datasets={datasets} selected={selected} setSelected={setSelected} onOpen={() => { setScreen("detail"); setTab("AI Readiness"); }} onMerge={() => setScreen("merge")} onMergeDirect={() => { setSelected([]); setScreen("merge"); }} />
+          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", background: "#fff" }}>
+            <DatasetsPage datasets={datasets} setDatasets={setDatasets} folders={folders} setFolders={setFolders} activeFolder={activeFolder} setActiveFolder={setActiveFolder} selected={selected} setSelected={setSelected} onOpen={() => { setScreen("detail"); setTab("AI Readiness"); }} onMerge={() => setScreen("merge")} onMergeDirect={() => { setSelected([]); setScreen("merge"); }} />
           </div>
         )}
         {screen === "detail" && (
