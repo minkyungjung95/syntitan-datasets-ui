@@ -127,19 +127,37 @@ function TypeTag({ kind = "String" }) {
 /* =========================================================
  *  Sidebar
  * ========================================================= */
-function NavItem({ icon, label, active, muted, onClick }) {
+function NavItem({ icon, label, active, muted, onClick, collapsed }) {
   return (
-    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 8, cursor: "pointer", background: active ? "#F3F4F6" : "transparent", color: muted ? C.faint : C.text, fontWeight: active ? 600 : 500, fontSize: 14 }}>
-      <span style={{ color: muted ? C.faint : "#3F3F46", display: "flex" }}>{icon}</span>{label}
+    <div onClick={onClick} title={collapsed ? label : undefined} style={{ display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start", gap: 10, padding: collapsed ? "9px 0" : "9px 10px", borderRadius: 8, cursor: "pointer", background: active ? "#F3F4F6" : "transparent", color: muted ? C.faint : C.text, fontWeight: active ? 600 : 500, fontSize: 14 }}>
+      <span style={{ color: muted ? C.faint : "#3F3F46", display: "flex" }}>{icon}</span>{!collapsed && label}
     </div>
   );
 }
 function Sidebar({ active = "Home", onNav = () => {} }) {
+  const [collapsed, setCollapsed] = useState(false);
+  if (collapsed) {
+    return (
+      <aside style={{ width: 64, flexShrink: 0, alignSelf: "stretch", background: C.panel, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", alignItems: "center", padding: "18px 10px" }}>
+        <span onClick={() => setCollapsed(false)} title="사이드바 펼치기" style={{ color: C.sub, cursor: "pointer", display: "flex", padding: 6, borderRadius: 8, marginBottom: 14 }}><Icon.panel /></span>
+        <NavItem icon={<Icon.home />} label="Home" active={active === "Home"} onClick={() => onNav("Home")} collapsed />
+        <div style={{ height: 14 }} />
+        <NavItem icon={<Icon.db />} label="Edit Dataset" active={active === "Edit Dataset"} onClick={() => onNav("Edit Dataset")} collapsed />
+        <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} collapsed />
+        <NavItem icon={<Icon.users />} label="Discussion Room" onClick={() => onNav("Discussion Room")} collapsed />
+        <div style={{ height: 14 }} />
+        <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} collapsed />
+        <div style={{ flex: 1 }} />
+        <div title="Basic plan" style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#5B9BFF 0%,#7FB6FF 100%)", color: "#fff", fontWeight: 700, fontSize: 12, fontStyle: "italic", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>Basic</div>
+        <Avatar size={30} />
+      </aside>
+    );
+  }
   return (
     <aside style={{ width: 258, flexShrink: 0, alignSelf: "stretch", background: C.panel, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", padding: "18px 14px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 6px 16px" }}>
         <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.3 }}>Syntitan</span>
-        <span style={{ color: C.faint, cursor: "pointer", display: "flex" }}><Icon.panel /></span>
+        <span onClick={() => setCollapsed(true)} title="사이드바 접기" style={{ color: C.faint, cursor: "pointer", display: "flex", padding: 2 }}><Icon.panel /></span>
       </div>
       <NavItem icon={<Icon.home />} label="Home" active={active === "Home"} onClick={() => onNav("Home")} />
       <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Workspace</div>
@@ -204,6 +222,7 @@ function FolderTree({ folders, setFolders, activeFolder, setActiveFolder, datase
   const [menuFor, setMenuFor] = useState(null);  // … 메뉴 열린 폴더 id
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
+  const [tipPlus, setTipPlus] = useState(false);
   const countOf = (fid) => datasets.filter((d) => (fid === null ? true : d.folderId === fid)).length;
   const add = () => {
     const n = name.trim();
@@ -241,7 +260,10 @@ function FolderTree({ folders, setFolders, activeFolder, setActiveFolder, datase
               <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>전체 데이터셋</span>
               {(hoverId === "all") ? (
                 <span style={{ display: "flex", gap: 2 }}>
-                  <span onClick={(e) => { e.stopPropagation(); setOpen(true); setCreating(true); }} title="새 폴더" style={{ color: C.sub, cursor: "pointer", display: "flex", padding: 2, borderRadius: 5 }}><Icon.plus width={15} height={15} /></span>
+                  <span onClick={(e) => { e.stopPropagation(); setOpen(true); setCreating(true); setTipPlus(false); }} onMouseEnter={() => setTipPlus(true)} onMouseLeave={() => setTipPlus(false)} style={{ position: "relative", color: C.sub, cursor: "pointer", display: "flex", padding: 2, borderRadius: 5 }}>
+                    <Icon.plus width={15} height={15} />
+                    {tipPlus && <span style={{ position: "absolute", top: "calc(100% + 7px)", left: "50%", transform: "translateX(-50%)", background: "#18181B", color: "#fff", fontSize: 11.5, fontWeight: 500, padding: "5px 9px", borderRadius: 6, whiteSpace: "nowrap", zIndex: 40, boxShadow: "0 4px 12px rgba(0,0,0,0.18)" }}>Add folder<span style={{ position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)", borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderBottom: "4px solid #18181B" }} /></span>}
+                  </span>
                   <span onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }} title={open ? "접기" : "펼치기"} style={{ color: C.sub, cursor: "pointer", display: "flex", padding: 2, borderRadius: 5, transform: open ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD width={14} height={14} /></span>
                 </span>
               ) : (
@@ -303,6 +325,7 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveTarget, setMoveTarget] = useState(null);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
   const rows = useMemo(() => {
     let list = [...datasets].sort((a, b) => b.ts - a.ts); // 업데이트 최신순
     if (activeFolder !== null) list = list.filter((d) => d.folderId === activeFolder);
@@ -350,13 +373,21 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
             <span style={{ color: C.faint, display: "flex" }}><Icon.search /></span>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" style={{ border: "none", outline: "none", flex: 1, fontSize: 14, fontFamily: FONT, background: "transparent" }} />
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={onMergeDirect} style={{ display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px", background: C.panel, color: C.text, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
-              <Icon.union width={17} height={17} /> 데이터 합치기
+          <div style={{ position: "relative" }}>
+            <button onClick={() => setCreateOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px", background: C.dark, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
+              <Icon.plus /> Create <Icon.chevD width={15} height={15} />
             </button>
-            <button style={{ display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px", background: C.dark, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
-              <Icon.plus /> Upload Data
-            </button>
+            {createOpen && (
+              <>
+                <div onClick={() => setCreateOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
+                <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 244, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: "0 12px 32px rgba(0,0,0,0.14)", zIndex: 31, padding: 6 }}>
+                  <div onClick={() => setCreateOpen(false)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", fontSize: 13.5, borderRadius: 8, cursor: "pointer", color: C.text }}><span style={{ color: C.blue, display: "flex" }}><Icon.download width={17} height={17} /></span> 데이터 업로드</div>
+                  <div onClick={() => { setCreateOpen(false); onMergeDirect(); }} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", fontSize: 13.5, borderRadius: 8, cursor: "pointer", color: C.text }}><span style={{ color: C.purple, display: "flex" }}><Icon.union width={17} height={17} /></span> 데이터 합치기</div>
+                  <div style={{ height: 1, background: C.borderSoft, margin: "5px 8px" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", fontSize: 13.5, borderRadius: 8, color: C.faint, cursor: "default" }}><span style={{ display: "flex" }}><Icon.link width={17} height={17} /></span> 소스 연동 <span style={{ marginLeft: "auto", fontSize: 11, color: C.faint, border: `1px solid ${C.border}`, borderRadius: 5, padding: "1px 6px" }}>예정</span></div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : (
