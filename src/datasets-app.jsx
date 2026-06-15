@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  *  Syntitan · Datasets → 멀티선택 → 데이터 합치기(Union) 플로우
  *  화면: list → merge → merging(loading) → result
  *  + (기존) detail: AI Readiness / Detail
- *  가로 1600 기준
+ *  가로 유동: 1280(min)~1920(max), 1440·1920 대응
  * ========================================================= */
 
 const FONT =
@@ -753,6 +753,7 @@ function MergePage({ selected, onBack, onRun }) {
           <MergeSkeleton />
         ) : (
         <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px 120px", position: "relative", background: "#FBFBFB" }}>
+          <div style={{ maxWidth: 1040, margin: "0 auto" }}>
           {over && (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: "#FEF2F2", border: `1px solid #FCA5A5`, borderRadius: 12, padding: "14px 16px", marginBottom: 24 }}>
               <span style={{ width: 18, height: 18, borderRadius: "50%", background: C.red, color: "#fff", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>!</span>
@@ -889,6 +890,7 @@ function MergePage({ selected, onBack, onRun }) {
             </div>
           </div>
           <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>새 파일이 아니라 <b>{names[0]}</b>에 <b>새 스냅샷</b>으로 저장됩니다.</div>
+          </div>
         </div>
         )}
       </div>
@@ -1689,7 +1691,7 @@ export default function DatasetsApp() {
   const scrollArea = { flex: 1, minWidth: 0, minHeight: 0, overflowY: "auto" };
 
   return (
-    <div style={{ width: 1600, margin: "0 auto", display: "flex", height: "100vh", overflow: "hidden", background: C.bg, fontFamily: FONT, color: C.text }}>
+    <div style={{ width: "100%", minWidth: 1280, maxWidth: 1920, margin: "0 auto", display: "flex", height: "100vh", overflow: "hidden", background: C.bg, fontFamily: FONT, color: C.text }}>
       <Sidebar active={sidebarActive} onNav={handleNav} />
       <main style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
         {screen === "agent" && <div style={scrollArea}><AgentAnalysisPage /></div>}
