@@ -715,22 +715,6 @@ function WorkflowCanvas({ names, isJoin, afterRows, onClose }) {
         <button onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 14px", border: "none", borderRadius: 9, background: C.dark, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>닫기</button>
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        {/* Operators 사이드바 */}
-        <div style={{ width: 248, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#FCFCFD", overflowY: "auto", padding: "14px 12px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, padding: "0 4px" }}>Operators</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 10px", marginBottom: 14, color: C.faint }}><Icon.search width={14} height={14} /><span style={{ fontSize: 12.5 }}>operator 검색…</span></div>
-          {WF_OPS.map((g) => (
-            <div key={g.group} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: C.faint, fontWeight: 600, padding: "0 4px 6px" }}>{g.group}</div>
-              {g.items.map(([nm, desc, ic]) => (
-                <div key={nm} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 8px", borderRadius: 8, cursor: "pointer", color: C.text }}>
-                  <span style={{ color: C.sub, display: "flex" }}><WfIcon k={ic} /></span>
-                  <div><div style={{ fontSize: 13, fontWeight: 500 }}>{nm}</div><div style={{ fontSize: 11, color: C.faint }}>{desc}</div></div>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
         <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} />
       </div>
       {/* 범례 + 프롬프트 */}
