@@ -852,6 +852,21 @@ function MethodCard({ active, disabled, icon, title, desc, badge, onClick }) {
   );
 }
 
+function VennIcon({ type, active }) {
+  const f = active ? "#85B7EB" : "#E4E4E7";
+  const s = active ? "#185FA5" : "#B4B2A9";
+  return (
+    <svg width="36" height="22" viewBox="0 0 36 22">
+      <defs><clipPath id={`vc-${type}`}><circle cx="22" cy="11" r="9" /></clipPath></defs>
+      {(type === "left" || type === "full") && <circle cx="14" cy="11" r="9" fill={f} />}
+      {type === "inner" && <circle cx="14" cy="11" r="9" fill={f} clipPath={`url(#vc-${type})`} />}
+      {(type === "right" || type === "full") && <circle cx="22" cy="11" r="9" fill={f} />}
+      <circle cx="14" cy="11" r="9" fill="none" stroke={s} strokeWidth="1.3" />
+      <circle cx="22" cy="11" r="9" fill="none" stroke={s} strokeWidth="1.3" />
+    </svg>
+  );
+}
+
 function MergePage({ selected, onBack, onRun }) {
   // 멀티선택으로 진입(2개 이상) → 요약부터 / 헤더 버튼으로 직접 진입(0개) → 데이터 선택부터
   const cameWithSelection = selected.length >= 2;
@@ -860,6 +875,7 @@ function MergePage({ selected, onBack, onRun }) {
   const [picking, setPicking] = useState(!cameWithSelection);
   const [method, setMethod] = useState("union"); // union | join
   const [joinKey, setJoinKey] = useState("customer_id");
+  const [joinType, setJoinType] = useState("left"); // 1차: left만 지원
   const [autoOpen, setAutoOpen] = useState(true);
   const [autoEditing, setAutoEditing] = useState(false);
   const [reviewEditing, setReviewEditing] = useState(false);
@@ -966,6 +982,24 @@ function MergePage({ selected, onBack, onRun }) {
           {/* 02 */}
           {method === "join" ? (
             <>
+              {/* 조인 방식 (1차: Left만 지원) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>조인 방식</span></div>
+              <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>기준 데이터를 모두 유지하고, 키가 맞는 추가 데이터를 옆에 붙여요. <b>현재 Left Join만 지원해요.</b></div>
+              <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+                {[["left", "Left Join", "기준 전부 유지", false], ["inner", "Inner", "양쪽 매칭만", true], ["right", "Right", "추가 전부 유지", true], ["full", "Full Outer", "양쪽 전부", true]].map(([t, label, desc, soon]) => {
+                  const active = joinType === t;
+                  return (
+                    <div key={t} onClick={() => !soon && setJoinType(t)} style={{ flex: 1, border: `1.5px solid ${active ? C.blue : C.border}`, borderRadius: 12, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: soon ? "default" : "pointer", opacity: soon ? 0.5 : 1, background: active ? "#F5F9FF" : "#fff", position: "relative" }}>
+                      <VennIcon type={t} active={active} />
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: active ? "#185FA5" : C.text }}>{label}</div>
+                        <div style={{ fontSize: 11, color: C.faint, marginTop: 1 }}>{desc}</div>
+                      </div>
+                      {soon && <span style={{ position: "absolute", top: 8, right: 8, fontSize: 9.5, fontWeight: 700, color: C.faint, background: "#F3F4F6", borderRadius: 4, padding: "1px 5px" }}>예정</span>}
+                    </div>
+                  );
+                })}
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>조인 키 매칭</span></div>
               <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>두 데이터를 연결할 기준 컬럼(조인 키)을 선택하세요. AI가 매칭률이 높은 키를 추천해요.</div>
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 12 }}>
@@ -983,7 +1017,26 @@ function MergePage({ selected, onBack, onRun }) {
                   );
                 })}
               </div>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.faint, marginBottom: 30, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>매칭률</b> = 두 데이터셋에서 조인 키 값이 양쪽에 모두 존재해 연결되는 행의 비율. 낮을수록 매칭 안 되는 행(빈 값)이 많아져요.</span></div>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.faint, marginBottom: 24, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>매칭률</b> = 두 데이터셋에서 조인 키 값이 양쪽에 모두 존재해 연결되는 행의 비율. 낮을수록 매칭 안 되는 행(빈 값)이 많아져요.</span></div>
+              {/* Left Join 결과 예시 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><StepNum n="03" /><span style={{ fontSize: 15, fontWeight: 700 }}>결과 예시</span><span style={{ fontSize: 12.5, color: C.faint }}>기준({names[0]})은 모두 유지 · 키({joinKey})로 추가 컬럼 연결 · 매칭 안 되면 Null</span></div>
+              <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 30, fontSize: 13 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr 1fr", background: "#FCFCFD", borderBottom: `1px solid ${C.border}`, fontSize: 12, color: C.sub, fontWeight: 600 }}>
+                  <span style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 5 }}>{joinKey} <span style={{ fontSize: 10, color: C.blue, background: C.blueSoft, borderRadius: 4, padding: "1px 5px" }}>키</span></span>
+                  <span style={{ padding: "10px 14px" }}>name <span style={{ color: C.faint }}>(기준)</span></span>
+                  <span style={{ padding: "10px 14px", background: "#F7FBF4" }}>region <span style={{ color: C.greenText }}>(+추가)</span></span>
+                  <span style={{ padding: "10px 14px", background: "#F7FBF4" }}>age <span style={{ color: C.greenText }}>(+추가)</span></span>
+                </div>
+                {[["C-1001", "김민준", "서울", "32"], ["C-1002", "이서연", "부산", "27"], ["C-1003", "박도윤", null, null]].map((r, i) => (
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr 1fr", borderBottom: i === 2 ? "none" : `1px solid ${C.borderSoft}` }}>
+                    <span style={{ padding: "10px 14px", fontWeight: 600 }}>{r[0]}</span>
+                    <span style={{ padding: "10px 14px" }}>{r[1]}</span>
+                    <span style={{ padding: "10px 14px", background: "#FCFEFB", color: r[2] === null ? C.faint : C.text, fontStyle: r[2] === null ? "italic" : "normal" }}>{r[2] === null ? "Null" : r[2]}</span>
+                    <span style={{ padding: "10px 14px", background: "#FCFEFB", color: r[3] === null ? C.faint : C.text, fontStyle: r[3] === null ? "italic" : "normal" }}>{r[3] === null ? "Null" : r[3]}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.sub, marginBottom: 30, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>박도윤</b>처럼 추가 데이터에 키({joinKey})가 없는 기준 행은 그대로 남고, 붙는 컬럼(region·age)만 <b>Null</b>로 채워져요. (Left Join)</span></div>
             </>
           ) : (
           <>
