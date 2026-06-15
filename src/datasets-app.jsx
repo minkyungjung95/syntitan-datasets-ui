@@ -504,24 +504,20 @@ const poolLabel = (i) => `CUBIG Data_${2024 + i}`;
 const DEFAULT_NAMES = ["CUBIG Data_2024", "CUBIG Data_2025"];
 
 const NO_MATCH = "매칭 칼럼 없음";
-// 칼럼 풀 — 자동 100 + 검토 20 = 전체 120 (모두 고유 이름)
-const BASE_NAMES = ["customer_id", "name", "email", "signup_date", "region", "age", "gender", "phone", "city", "order_count", "last_login", "plan", "ltv", "channel", "device", "country", "zipcode", "birth_year", "segment", "is_active"];
-const uniqName = (i) => (i < BASE_NAMES.length ? BASE_NAMES[i] : `${BASE_NAMES[i % BASE_NAMES.length]}_${Math.floor(i / BASE_NAMES.length) + 1}`);
-const typeOf = (i) => (i % 3 === 0 ? "Integer" : "String");
-// 자동 매칭 100건 (이름·타입 일치)
-const AUTO_ROWS = Array.from({ length: 100 }, (_, i) => [uniqName(i), typeOf(i)]);
-// 검토 필요 20건 (매칭 없음 / 타입 불일치 순환)
-const REVIEW_DEFS = [
-  { kind: "none", note: "매칭 칼럼이 없어 Secondary 데이터행은 Null로 채워져요." },
-  { kind: "type", note: "타입이 달라요. (e.g. String ↔ Integer) 합치면 일부 값이 깨질 수 있어요." },
-  { kind: "none", note: "합치려는 칼럼이 기준에 없어 Null로 채워져요." },
+// 기준 4컬럼 + 추가 4컬럼 → 합치면 6 distinct: 결합 2 · 유지 2 · 제외 2
+const AUTO_ROWS = [["customer_id", "Integer"], ["name", "String"]]; // 자동(양쪽 이름·타입 일치) = 결합 2
+const REVIEW_ROWS = [
+  { left: "email", lt: "String", right: NO_MATCH, note: "기준에만 있는 칼럼이에요. 추가 데이터 행은 Null로 채워져요." },
+  { left: "signup_date", lt: "Integer", right: NO_MATCH, note: "기준에만 있는 칼럼이에요. 추가 데이터 행은 Null로 채워져요." },
+  { left: "region", lt: "String", right: NO_MATCH, note: "추가에만 있는 칼럼이에요. 기준 데이터 행은 Null로 채워져요." },
+  { left: "age", lt: "Integer", right: NO_MATCH, note: "추가에만 있는 칼럼이에요. 기준 데이터 행은 Null로 채워져요." },
 ];
-const REVIEW_ROWS = Array.from({ length: 20 }, (_, i) => {
-  const name = uniqName(100 + i);
-  const d = REVIEW_DEFS[i % REVIEW_DEFS.length];
-  return { left: name, lt: i % 2 ? "String" : "Integer", right: d.kind === "type" ? name : NO_MATCH, note: d.note };
-});
-const COL_OPTIONS = [{ name: NO_MATCH }, ...Array.from({ length: 120 }, (_, i) => ({ name: uniqName(i), type: typeOf(i) }))];
+const COL_OPTIONS = [
+  { name: NO_MATCH },
+  { name: "customer_id", type: "Integer" }, { name: "name", type: "String" },
+  { name: "email", type: "String" }, { name: "signup_date", type: "Integer" },
+  { name: "region", type: "String" }, { name: "age", type: "Integer" },
+];
 const colType = (name) => COL_OPTIONS.find((o) => o.name === name)?.type;
 const JOIN_KEYS = [
   { name: "customer_id", type: "Integer", rate: 92, recommended: true },
@@ -929,7 +925,7 @@ function MergePage({ selected, onBack, onRun }) {
   const isJoin = method === "join";
   // Union=행 추가(많아지면 행 한도 초과), Join=열 추가(행은 기준 기준 유지)
   const over = hasContent && committed.length > MAX_MERGE; // 3개 이상 = 용량 초과
-  const afterCols = isJoin ? 100 : 120; // 기준 칼럼 기준
+  const afterCols = 6; // 합치면 생기는 distinct 칼럼 (결합2 + 유지2 + 제외2)
   const afterRows = isJoin ? 40 : committed.length > MAX_MERGE ? 25296 : 16864;
   // 매칭 검증: 같은 컬럼 중복 선택 / 전부 매칭 없음
   const autoDupes = useMemo(() => {
@@ -950,17 +946,12 @@ function MergePage({ selected, onBack, onRun }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 28px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
         <span onClick={onBack} style={{ cursor: "pointer", display: "flex", color: C.sub }}><Icon.back /></span>
         <span style={{ fontSize: 16, fontWeight: 700 }}>데이터 합치기</span>
-        {hasContent && !picking && (
-          <button onClick={() => setRelOpen(true)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 7, height: 34, padding: "0 13px", border: `1px solid ${C.border}`, borderRadius: 9, background: "#fff", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
-            <Icon.union width={15} height={15} /> 데이터 관계 보기
-          </button>
-        )}
       </div>
 
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        {picking && <LeftPanel picked={picked} setPicked={setPicked} picking={picking} setPicking={setPicking} canCancel={committed.length >= 2}
+        <LeftPanel picked={picked} setPicked={setPicked} picking={picking} setPicking={setPicking} canCancel={committed.length >= 2}
           onDone={() => { setCommitted(picked); setPicking(false); }}
-          onCancel={() => { setPicked(committed); setPicking(false); }} />}
+          onCancel={() => { setPicked(committed); setPicking(false); }} />
 
         {picking ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, textAlign: "center", color: C.faint }}>
@@ -979,21 +970,6 @@ function MergePage({ selected, onBack, onRun }) {
         ) : (
         <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px 120px", position: "relative", background: "#FBFBFB" }}>
           <div style={{ maxWidth: 1040, margin: "0 auto" }}>
-          {/* 선택한 데이터 — 상단 가로 바 (좌측 사이드바 대체) */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22, flexWrap: "wrap" }}>
-            {committed.map((idx, i) => (
-              <React.Fragment key={idx}>
-                {i > 0 && <span style={{ color: C.faint, fontSize: 15, fontWeight: 600 }}>+</span>}
-                <span style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 12px", background: "#fff" }}>
-                  <span style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? "#EEF2FF" : "#F3F4F6", color: i === 0 ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db width={14} height={14} /></span>
-                  <span style={{ fontSize: 13.5, fontWeight: 600 }}>{poolLabel(idx)}</span>
-                  {i === 0 && <span style={{ fontSize: 10.5, fontWeight: 700, color: C.sub, background: C.chipBg, borderRadius: 5, padding: "1px 6px" }}>기준</span>}
-                  <span style={{ fontSize: 11.5, color: C.faint }}>· 8,432행</span>
-                </span>
-              </React.Fragment>
-            ))}
-            <button onClick={() => setPicking(true)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", border: `1px solid ${C.border}`, borderRadius: 9, background: "#fff", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.swap width={14} height={14} /> 데이터 재선택</button>
-          </div>
           {over ? (
             <div style={{ minHeight: 460, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 18 }}>
               <span style={{ width: 64, height: 64, borderRadius: 18, background: "#FEF2F2", border: `1px solid #FCA5A5`, color: C.red, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 800 }}>!</span>
@@ -1053,25 +1029,16 @@ function MergePage({ selected, onBack, onRun }) {
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.faint, marginBottom: 24, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>매칭률</b> = 두 데이터에서 이 키 값이 양쪽에 모두 존재해 연결되는 행의 비율. 낮을수록 매칭 안 되는 기준 행이 많아(추가 컬럼은 Null) 져요.</span></div>
-              {/* Left Join 결과 예시 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><StepNum n="03" /><span style={{ fontSize: 15, fontWeight: 700 }}>결과 예시</span><span style={{ fontSize: 12.5, color: C.faint }}>기준({names[0]})은 모두 유지 · 키({joinLeft}={joinRight})로 추가 컬럼 연결 · 매칭 안 되면 Null</span></div>
-              <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 30, fontSize: 13 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr 1fr", background: "#FCFCFD", borderBottom: `1px solid ${C.border}`, fontSize: 12, color: C.sub, fontWeight: 600 }}>
-                  <span style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 5 }}>{joinLeft} <span style={{ fontSize: 10, color: C.blue, background: C.blueSoft, borderRadius: 4, padding: "1px 5px" }}>키</span></span>
-                  <span style={{ padding: "10px 14px" }}>name <span style={{ color: C.faint }}>(기준)</span></span>
-                  <span style={{ padding: "10px 14px", background: "#F7FBF4" }}>region <span style={{ color: C.greenText }}>(+추가)</span></span>
-                  <span style={{ padding: "10px 14px", background: "#F7FBF4" }}>age <span style={{ color: C.greenText }}>(+추가)</span></span>
+              {/* 데이터 관계 — 결정하면서 보는 라이브 그래프 */}
+              <div style={{ marginBottom: 30 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: C.sub }}>데이터 관계 <span style={{ fontWeight: 500, color: C.faint }}>· 키({joinLeft}={joinRight})로 연결, 매칭 안 되면 Null</span></span>
+                  <span onClick={() => setRelOpen(true)} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: C.purple, fontWeight: 600, cursor: "pointer" }}><Icon.union width={13} height={13} /> 크게 보기</span>
                 </div>
-                {[["C-1001", "김민준", "서울", "32"], ["C-1002", "이서연", "부산", "27"], ["C-1003", "박도윤", null, null]].map((r, i) => (
-                  <div key={i} style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr 1fr", borderBottom: i === 2 ? "none" : `1px solid ${C.borderSoft}` }}>
-                    <span style={{ padding: "10px 14px", fontWeight: 600 }}>{r[0]}</span>
-                    <span style={{ padding: "10px 14px" }}>{r[1]}</span>
-                    <span style={{ padding: "10px 14px", background: "#FCFEFB", color: r[2] === null ? C.faint : C.text, fontStyle: r[2] === null ? "italic" : "normal" }}>{r[2] === null ? "Null" : r[2]}</span>
-                    <span style={{ padding: "10px 14px", background: "#FCFEFB", color: r[3] === null ? C.faint : C.text, fontStyle: r[3] === null ? "italic" : "normal" }}>{r[3] === null ? "Null" : r[3]}</span>
-                  </div>
-                ))}
+                <div style={{ height: 380, display: "flex", border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+                  <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} />
+                </div>
               </div>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.sub, marginBottom: 30, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>박도윤</b>처럼 추가 데이터에 키({joinRight})가 없는 기준 행은 그대로 남고, 붙는 컬럼(region·age)만 <b>Null</b>로 채워져요. (Left Join)</span></div>
             </>
           ) : (
           <>
@@ -1080,15 +1047,26 @@ function MergePage({ selected, onBack, onRun }) {
           {/* 요약 칩 */}
           <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
             {[
-              { sq: "#9CA3AF", label: "전체 칼럼 수", value: 120, color: C.text },
-              { sq: C.text, label: "검토 필요", value: 20, color: C.text },
-              { sq: C.purple, label: "AI 자동 매칭", value: 100, color: C.text },
+              { sq: "#9CA3AF", label: "전체 칼럼 수", value: AUTO_ROWS.length + REVIEW_ROWS.length, color: C.text },
+              { sq: C.text, label: "검토 필요", value: REVIEW_ROWS.length, color: C.text },
+              { sq: C.purple, label: "AI 자동 매칭", value: AUTO_ROWS.length, color: C.text },
             ].map((c) => (
               <div key={c.label} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "15px 16px" }}>
                 <span style={{ fontSize: 13, color: C.sub, display: "flex", alignItems: "center", gap: 8 }}><span style={{ width: 9, height: 9, borderRadius: 3, background: c.sq, display: "inline-block" }} /> {c.label}</span>
                 <span style={{ fontSize: 19, fontWeight: 800, color: c.color }}>{c.value}</span>
               </div>
             ))}
+          </div>
+
+          {/* 데이터 관계 — 결정하면서 보는 라이브 그래프 */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: C.sub }}>데이터 관계 <span style={{ fontWeight: 500, color: C.faint }}>· 무엇이 결합·유지·제외되는지</span></span>
+              <span onClick={() => setRelOpen(true)} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: C.purple, fontWeight: 600, cursor: "pointer" }}><Icon.union width={13} height={13} /> 크게 보기</span>
+            </div>
+            <div style={{ height: 380, display: "flex", border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+              <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} />
+            </div>
           </div>
 
           {/* 검토 필요 (우선 노출) */}
