@@ -490,25 +490,25 @@ const PICK_MAX = 3;  // 선택 자체는 3개까지 허용 — 3개째부터 용
 const poolLabel = (i) => `CUBIG Data_${2024 + i}`;
 const DEFAULT_NAMES = ["CUBIG Data_2024", "CUBIG Data_2025"];
 
-const AUTO_ROWS = [
-  ["customer_id", "Integer"], ["name", "String"], ["email", "String"],
-  ["signup_date", "Integer"], ["region", "Integer"], ["age", "String"],
-];
 const NO_MATCH = "매칭 칼럼 없음";
-const REVIEW_ROWS = [
-  { left: "customer_id", lt: "String", right: NO_MATCH, note: "CUBIG Data_2025에 없는 칼럼이에요. 해당 행은 Null로 채워져요." },
-  { left: "signup_date", lt: "String", right: "signup_date", rt: "Integer", note: "타입이 달라요. (e.g. String ↔ Integer) 합치면 일부 값이 깨질 수 있어요." },
-  { left: "region", lt: "String", right: NO_MATCH, note: "합치려는 컬럼의 타입이 서로 다르면, 데이터 품질이 떨어질 수 있어요." },
+// 칼럼 풀 — 자동 100 + 검토 20 = 전체 120 (모두 고유 이름)
+const BASE_NAMES = ["customer_id", "name", "email", "signup_date", "region", "age", "gender", "phone", "city", "order_count", "last_login", "plan", "ltv", "channel", "device", "country", "zipcode", "birth_year", "segment", "is_active"];
+const uniqName = (i) => (i < BASE_NAMES.length ? BASE_NAMES[i] : `${BASE_NAMES[i % BASE_NAMES.length]}_${Math.floor(i / BASE_NAMES.length) + 1}`);
+const typeOf = (i) => (i % 3 === 0 ? "Integer" : "String");
+// 자동 매칭 100건 (이름·타입 일치)
+const AUTO_ROWS = Array.from({ length: 100 }, (_, i) => [uniqName(i), typeOf(i)]);
+// 검토 필요 20건 (매칭 없음 / 타입 불일치 순환)
+const REVIEW_DEFS = [
+  { kind: "none", note: "매칭 칼럼이 없어 Secondary 데이터행은 Null로 채워져요." },
+  { kind: "type", note: "타입이 달라요. (e.g. String ↔ Integer) 합치면 일부 값이 깨질 수 있어요." },
+  { kind: "none", note: "합치려는 칼럼이 기준에 없어 Null로 채워져요." },
 ];
-const COL_OPTIONS = [
-  { name: NO_MATCH },
-  { name: "customer_id", type: "Integer" },
-  { name: "name", type: "String" },
-  { name: "email", type: "String" },
-  { name: "signup_date", type: "Integer" },
-  { name: "region", type: "String" },
-  { name: "age", type: "Integer" },
-];
+const REVIEW_ROWS = Array.from({ length: 20 }, (_, i) => {
+  const name = uniqName(100 + i);
+  const d = REVIEW_DEFS[i % REVIEW_DEFS.length];
+  return { left: name, lt: i % 2 ? "String" : "Integer", right: d.kind === "type" ? name : NO_MATCH, note: d.note };
+});
+const COL_OPTIONS = [{ name: NO_MATCH }, ...Array.from({ length: 120 }, (_, i) => ({ name: uniqName(i), type: typeOf(i) }))];
 const colType = (name) => COL_OPTIONS.find((o) => o.name === name)?.type;
 const JOIN_KEYS = [
   { name: "customer_id", type: "Integer", rate: 92, recommended: true },
@@ -695,7 +695,7 @@ function MergePage({ selected, onBack, onRun }) {
   const [picking, setPicking] = useState(!cameWithSelection);
   const [method, setMethod] = useState("union"); // union | join
   const [joinKey, setJoinKey] = useState("customer_id");
-  const [autoOpen, setAutoOpen] = useState(false);
+  const [autoOpen, setAutoOpen] = useState(true);
   const [autoEditing, setAutoEditing] = useState(false);
   const [reviewEditing, setReviewEditing] = useState(false);
   const [autoSel, setAutoSel] = useState(AUTO_ROWS.map((r) => r[0]));
@@ -716,7 +716,7 @@ function MergePage({ selected, onBack, onRun }) {
   const isJoin = method === "join";
   // Union=행 추가(많아지면 행 한도 초과), Join=열 추가(행은 기준 기준 유지)
   const over = hasContent && committed.length > MAX_MERGE; // 3개 이상 = 용량 초과
-  const afterCols = isJoin ? 10 : 12; // 기준 칼럼 기준이라 한도(100) 초과 불가
+  const afterCols = isJoin ? 100 : 120; // 기준 칼럼 기준
   const afterRows = isJoin ? 40 : committed.length > MAX_MERGE ? 25296 : 16864;
   // 매칭 검증: 같은 컬럼 중복 선택 / 전부 매칭 없음
   const autoDupes = useMemo(() => {
@@ -798,86 +798,68 @@ function MergePage({ selected, onBack, onRun }) {
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>칼럼 매칭</span></div>
 
           {/* 요약 칩 */}
-          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-            <div style={{ flex: 1, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "11px 14px" }}>
-              <div style={{ fontSize: 12, color: C.sub }}>전체 칼럼</div>
-              <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2 }}>123</div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "14px 16px" }}>
+              <span style={{ fontSize: 13, color: C.sub }}>전체 칼럼 수</span>
+              <span style={{ fontSize: 18, fontWeight: 700 }}>120</span>
             </div>
-            <div style={{ flex: 1, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "11px 14px" }}>
-              <div style={{ fontSize: 12, color: C.greenText, display: "flex", alignItems: "center", gap: 5 }}><Icon.checkCircle width={13} height={13} /> 자동 매칭</div>
-              <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2, color: C.greenText }}>120</div>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "14px 16px" }}>
+              <span style={{ fontSize: 13, color: C.sub, display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.purple, display: "flex" }}><Icon.spark /></span> AI 자동 매칭</span>
+              <span style={{ fontSize: 18, fontWeight: 700 }}>100</span>
             </div>
-            <div style={{ flex: 1, background: "#FFF7ED", border: `1px solid #FED7AA`, borderRadius: 10, padding: "11px 14px" }}>
-              <div style={{ fontSize: 12, color: "#B45309", display: "flex", alignItems: "center", gap: 5 }}><Icon.infoCircle width={13} height={13} /> 검토 필요</div>
-              <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2, color: "#B45309" }}>3</div>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "14px 16px" }}>
+              <span style={{ fontSize: 13, color: C.sub, display: "flex", alignItems: "center", gap: 7 }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: C.text, display: "inline-block" }} /> 검토 필요</span>
+              <span style={{ fontSize: 18, fontWeight: 700 }}>20</span>
             </div>
           </div>
 
           {/* 검토 필요 (우선 노출) */}
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 8 }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 700, color: "#B45309" }}><Icon.infoCircle width={16} height={16} /> 먼저 확인해 주세요 · 3건</span>
-              <span style={{ fontSize: 12.5, color: C.faint }}>이름 불일치 · 타입 불일치</span>
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff", marginBottom: 14 }}>
+            <div onClick={() => setReviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#FAFAFB", borderBottom: reviewOpen ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.text, display: "inline-block" }} />
+                <span style={{ fontWeight: 700 }}>검토 필요</span>
+                <span style={{ color: C.sub, fontWeight: 600 }}>{REVIEW_ROWS.length}건</span>
+              </span>
+              <span style={{ display: "flex", color: C.faint, transform: reviewOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD /></span>
             </div>
-            <div style={{ border: `1px solid #FED7AA`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", padding: "12px 16px", fontSize: 13, color: C.sub, background: "#FFFBF5", borderBottom: `1px solid ${C.borderSoft}` }}>
-                <span>{names[0]} <span style={{ color: C.faint, fontWeight: 600 }}>(기준)</span></span><span /><span>{names[1]}</span>
-              </div>
-              {REVIEW_ROWS.map((r, i) => (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", alignItems: "start", padding: "16px", borderBottom: i === REVIEW_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, paddingTop: 9 }}>{r.left} <TypeTag kind={r.lt} /></span>
-                  <span style={{ color: C.faint, display: "flex", justifyContent: "center", paddingTop: 11 }}><Icon.link /></span>
-                  <div>
-                    <MatchDropdown value={reviewSel[i]} onChange={(v) => setReviewSel((s) => s.map((x, idx) => (idx === i ? v : x)))} />
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: reviewSel[i] === NO_MATCH ? C.yellowText : C.faint, marginTop: 8 }}>
-                      <Icon.infoCircle width={13} height={13} /> {reviewSel[i] === NO_MATCH ? "매칭 칼럼이 없어 신규 데이터 행은 Null로 채워져요." : r.note}
-                    </div>
+            {reviewOpen && REVIEW_ROWS.map((r, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 48px minmax(0,1.25fr)", alignItems: "start", padding: "14px 16px", borderBottom: i === REVIEW_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, paddingTop: 9 }}>{r.left} <TypeTag kind={r.lt} /></span>
+                <span style={{ color: C.faint, display: "flex", justifyContent: "center", paddingTop: 9, fontSize: 16 }}>→</span>
+                <div>
+                  <MatchDropdown value={reviewSel[i]} onChange={(v) => setReviewSel((s) => s.map((x, idx) => (idx === i ? v : x)))} />
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: reviewSel[i] === NO_MATCH ? C.yellowText : C.sub, marginTop: 8, lineHeight: 1.5 }}>
+                    <span style={{ display: "flex", flexShrink: 0, marginTop: 1 }}><Icon.infoCircle width={13} height={13} /></span> {reviewSel[i] === NO_MATCH ? "매칭 칼럼이 없어 Secondary 데이터행은 Null로 채워져요." : r.note}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
 
-          {/* 자동 매칭 (접힘 — 노이즈 최소화) */}
-          <div style={{ marginBottom: 30 }}>
-            <div onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: `1px solid ${C.border}`, borderRadius: autoOpen ? "12px 12px 0 0" : 12, background: "#fff", padding: "13px 16px", cursor: "pointer" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
-                <span style={{ transform: autoOpen ? "rotate(90deg)" : "none", display: "flex", transition: "transform .15s", color: C.faint }}><Icon.chevR /></span>
-                <span style={{ color: C.greenText, display: "flex" }}><Icon.checkCircle width={16} height={16} /></span>
-                <span style={{ fontWeight: 600 }}>자동 매칭된 칼럼 120개</span>
-                <span style={{ fontSize: 12.5, color: C.sub }}>이름·타입이 같아 자동으로 연결됐어요</span>
+          {/* AI 자동 매칭 */}
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff", marginBottom: 30 }}>
+            <div onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#F5F3FF", borderBottom: autoOpen ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                <span style={{ color: C.purple, display: "flex" }}><Icon.spark /></span>
+                <span style={{ fontWeight: 700, color: C.purple }}>AI 자동 매칭</span>
+                <span style={{ color: C.purple, fontWeight: 600, opacity: 0.8 }}>{AUTO_ROWS.length}건</span>
               </span>
-              <span style={{ fontSize: 12.5, color: C.purple, fontWeight: 600 }}>{autoOpen ? "접기" : "펼쳐서 보기"}</span>
+              <span style={{ display: "flex", color: C.purple, transform: autoOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD /></span>
             </div>
-            {autoOpen && (
-              <div style={{ border: `1px solid ${C.border}`, borderTop: "none", borderRadius: "0 0 12px 12px", overflow: "hidden", background: "#fff" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", background: "#FAFAFB", borderBottom: `1px solid ${C.borderSoft}` }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.purple, fontWeight: 600 }}><Icon.spark /> AI 자동 매칭</span>
-                  <EditToggle editing={autoEditing} onClick={() => setAutoEditing((v) => !v)} />
+            {autoOpen && AUTO_ROWS.map((r, i) => {
+              const dup = autoDupes.has(autoSel[i]);
+              return (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 48px minmax(0,1.25fr)", alignItems: "center", padding: "11px 16px", borderBottom: i === AUTO_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>{r[0]} <TypeTag kind={r[1]} /></span>
+                <span style={{ color: C.faint, display: "flex", justifyContent: "center", fontSize: 16 }}>→</span>
+                <div>
+                  <MatchDropdown value={autoSel[i]} error={dup} onChange={(v) => setAutoSel((s) => s.map((x, idx) => (idx === i ? v : x)))} />
+                  {dup && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#DC2626", marginTop: 6 }}><Icon.infoCircle width={12} height={12} /> 중복된 칼럼이 있어요. 다시 선택해 주세요.</div>}
                 </div>
-                {autoEditing && <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, padding: "10px 16px", background: "#F5F3FF", borderBottom: `1px solid ${C.borderSoft}` }}><Icon.infoCircle width={13} height={13} /> AI가 매칭한 결과가 틀렸다면 오른쪽에서 직접 바꿀 수 있어요.</div>}
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", padding: "12px 16px", fontSize: 13, color: C.sub, borderBottom: `1px solid ${C.borderSoft}` }}>
-                  <span>{names[0]} <span style={{ color: C.faint, fontWeight: 600 }}>(기준)</span></span><span /><span>{names[1]}</span>
-                </div>
-                {AUTO_ROWS.map((r, i) => {
-                  const dup = autoEditing && autoDupes.has(autoSel[i]);
-                  return (
-                  <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", alignItems: "start", padding: "11px 16px", borderBottom: i === AUTO_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, paddingTop: autoEditing ? 9 : 0 }}>{r[0]} <TypeTag kind={r[1]} /></span>
-                    <span style={{ color: C.faint, display: "flex", justifyContent: "center", paddingTop: autoEditing ? 11 : 0 }}><Icon.link /></span>
-                    {autoEditing ? (
-                      <div>
-                        <MatchDropdown value={autoSel[i]} error={dup} onChange={(v) => setAutoSel((s) => s.map((x, idx) => (idx === i ? v : x)))} />
-                        {dup && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#DC2626", marginTop: 6 }}><Icon.infoCircle width={12} height={12} /> 중복된 칼럼이 있어요. 다시 선택해 주세요.</div>}
-                      </div>
-                    ) : (
-                      <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: autoSel[i] === NO_MATCH ? C.faint : C.text }}>{autoSel[i]} {colType(autoSel[i]) && <TypeTag kind={colType(autoSel[i])} />}</span>
-                    )}
-                  </div>
-                  );
-                })}
               </div>
-            )}
+              );
+            })}
           </div>
           </>
           )}
