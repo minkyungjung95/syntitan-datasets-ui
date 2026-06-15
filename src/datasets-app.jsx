@@ -574,8 +574,10 @@ function MergeSkeleton() {
   const sk = (w, h = 13) => ({ height: h, width: w, borderRadius: 7, background: "#EEEFF1", animation: "pulse 1.2s ease-in-out infinite" });
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px" }}>
+      <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+      {/* 01 병합 방식 */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}><StepNum n="01" /><span style={{ fontSize: 15, fontWeight: 700 }}>병합 방식</span></div>
-      <div style={{ display: "flex", gap: 16, marginBottom: 32 }}>
+      <div style={{ display: "flex", gap: 16, marginBottom: 30 }}>
         {[0, 1].map((i) => (
           <div key={i} style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 20px", display: "flex", gap: 14, alignItems: "center" }}>
             <div style={{ width: 38, height: 38, borderRadius: 9, background: "#EEEFF1", animation: "pulse 1.2s ease-in-out infinite", flexShrink: 0 }} />
@@ -583,13 +585,29 @@ function MergeSkeleton() {
           </div>
         ))}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>칼럼 매칭</span><span style={{ marginLeft: 8, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.faint }}><span style={{ width: 14, height: 14, border: `2px solid ${C.border}`, borderTopColor: C.sub, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> 칼럼을 매칭하고 있어요...</span></div>
-      <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: i === 4 ? "none" : `1px solid ${C.borderSoft}` }}>
-            <div style={sk("120px")} /><div style={sk("30px", 12)} /><div style={sk("40%")} />
+      {/* 02 칼럼 매칭 (AI 계산 중) */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>칼럼 매칭</span><span style={{ marginLeft: 6, display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: C.purple, fontWeight: 600 }}><span style={{ width: 14, height: 14, border: `2px solid #DDD6FE`, borderTopColor: C.purple, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} /> AI가 칼럼을 매칭하고 있어요…</span></div>
+      {/* 요약 칩 skeleton */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+        {[0, 1, 2].map((i) => (
+          <div key={i} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", border: `1px solid ${C.border}`, borderRadius: 10, padding: "15px 16px" }}>
+            <div style={sk("60px", 12)} /><div style={sk("34px", 16)} />
           </div>
         ))}
+      </div>
+      {/* 매칭 섹션 skeleton */}
+      <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#FAFAFB", borderBottom: `1px solid ${C.borderSoft}` }}>
+          <div style={sk("90px", 13)} /><div style={sk("40px", 12)} />
+        </div>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 48px minmax(0,1.25fr)", alignItems: "center", padding: "13px 16px", borderBottom: i === 5 ? "none" : `1px solid ${C.borderSoft}` }}>
+            <div style={sk("55%")} />
+            <div style={{ display: "flex", justifyContent: "center", color: "#E0E1E4" }}>→</div>
+            <div style={{ ...sk("100%"), height: 38, borderRadius: 9 }} />
+          </div>
+        ))}
+      </div>
       </div>
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
