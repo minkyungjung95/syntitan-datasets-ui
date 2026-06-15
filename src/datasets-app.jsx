@@ -659,10 +659,10 @@ function WfColRow({ name, type, status, last }) {
     </div>
   );
 }
-function WfNode({ x, y, w, accent, icon, name, sub, children }) {
+function WfNode({ x, y, w, accent, icon, name, sub, children, onDragStart, dragging }) {
   return (
-    <div style={{ position: "absolute", left: x, top: y, width: w, background: "#fff", border: `1px solid ${accent ? "#C9C2F2" : C.border}`, borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 12px", borderBottom: children ? `1px solid ${C.borderSoft}` : "none" }}>
+    <div style={{ position: "absolute", left: x, top: y, width: w, background: "#fff", border: `1px solid ${accent ? "#C9C2F2" : C.border}`, borderRadius: 12, overflow: "hidden", boxShadow: dragging ? "0 8px 24px rgba(0,0,0,0.15)" : "0 1px 3px rgba(0,0,0,0.05)", zIndex: dragging ? 5 : 1 }}>
+      <div onMouseDown={onDragStart} style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 12px", borderBottom: children ? `1px solid ${C.borderSoft}` : "none", cursor: dragging ? "grabbing" : "grab", userSelect: "none" }}>
         <span style={{ width: 26, height: 26, borderRadius: 6, background: accent ? "#EEEDFE" : "#F3F4F6", color: accent ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><WfIcon k={icon} /></span>
         <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div><div style={{ fontSize: 11, color: C.faint }}>{sub}</div></div>
       </div>
@@ -671,6 +671,20 @@ function WfNode({ x, y, w, accent, icon, name, sub, children }) {
   );
 }
 function WorkflowCanvas({ names, isJoin, afterRows, onClose }) {
+  const [pos, setPos] = useState({ base: { x: 20, y: 60 }, add: { x: 20, y: 300 }, merge: { x: 420, y: 150 } });
+  const [dragId, setDragId] = useState(null);
+  const drag = useRef(null);
+  useEffect(() => {
+    const mv = (e) => { const d = drag.current; if (!d) return; setPos((p) => ({ ...p, [d.id]: { x: d.ox + (e.clientX - d.sx), y: d.oy + (e.clientY - d.sy) } })); };
+    const up = () => { drag.current = null; setDragId(null); };
+    window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+    return () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
+  }, []);
+  const startDrag = (id) => (e) => { drag.current = { id, sx: e.clientX, sy: e.clientY, ox: pos[id].x, oy: pos[id].y }; setDragId(id); e.preventDefault(); };
+  const W = { base: 230, add: 230, merge: 320 };
+  const rPort = (id) => ({ x: pos[id].x + W[id], y: pos[id].y + 28 });
+  const lPort = (id) => ({ x: pos[id].x, y: pos[id].y + 28 });
+  const path = (a, b) => `M ${a.x} ${a.y} C ${a.x + 60} ${a.y} ${b.x - 60} ${b.y} ${b.x} ${b.y}`;
   return (
     <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 70, display: "flex", flexDirection: "column", fontFamily: FONT }}>
       {/* 상단 바 */}
@@ -699,21 +713,21 @@ function WorkflowCanvas({ names, isJoin, afterRows, onClose }) {
             </div>
           ))}
         </div>
-        {/* 캔버스 */}
+        {/* 캔버스 (노드 드래그 가능) */}
         <div style={{ flex: 1, position: "relative", overflow: "auto", backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.09) 1px, transparent 1px)", backgroundSize: "18px 18px" }}>
-          <div style={{ position: "relative", width: 800, height: 560, margin: "20px" }}>
-            <svg width="800" height="560" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-              <path d="M250 96 C320 96 320 186 400 186" fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
-              <path d="M250 336 C320 336 320 210 400 210" fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
-              {[[250, 96], [250, 336], [400, 198]].map(([cx, cy], i) => <circle key={i} cx={cx} cy={cy} r="3.5" fill="#fff" stroke="#9CA3AF" strokeWidth="1.5" />)}
+          <div style={{ position: "relative", width: 1200, height: 760 }}>
+            <svg width="1200" height="760" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+              <path d={path(rPort("base"), lPort("merge"))} fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
+              <path d={path(rPort("add"), lPort("merge"))} fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
+              {[rPort("base"), rPort("add"), lPort("merge")].map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#fff" stroke="#9CA3AF" strokeWidth="1.5" />)}
             </svg>
-            <WfNode x={20} y={68} w={230} icon="db" name={names[0]} sub="Source · 기준 · 4 columns">
+            <WfNode x={pos.base.x} y={pos.base.y} w={230} icon="db" name={names[0]} sub="Source · 기준 · 4 columns" onDragStart={startDrag("base")} dragging={dragId === "base"}>
               {WF_BASE.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} last={i === WF_BASE.length - 1} />)}
             </WfNode>
-            <WfNode x={20} y={308} w={230} icon="db" name={names[1]} sub="Source · 추가 · 4 columns">
+            <WfNode x={pos.add.x} y={pos.add.y} w={230} icon="db" name={names[1]} sub="Source · 추가 · 4 columns" onDragStart={startDrag("add")} dragging={dragId === "add"}>
               {WF_ADD.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} last={i === WF_ADD.length - 1} />)}
             </WfNode>
-            <WfNode x={400} y={150} w={320} accent icon={isJoin ? "join" : "union"} name={isJoin ? "병합 · Join" : "병합 · Union"} sub={`${afterRows.toLocaleString()}행 · 결합 2 · 유지 2 · 제외 2`}>
+            <WfNode x={pos.merge.x} y={pos.merge.y} w={320} accent icon={isJoin ? "join" : "union"} name={isJoin ? "병합 · Join" : "병합 · Union"} sub={`${afterRows.toLocaleString()}행 · 결합 2 · 유지 2 · 제외 2`} onDragStart={startDrag("merge")} dragging={dragId === "merge"}>
               {WF_RESULT.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} status={c[2]} last={i === WF_RESULT.length - 1} />)}
             </WfNode>
           </div>
