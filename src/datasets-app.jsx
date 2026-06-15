@@ -795,24 +795,68 @@ function MergePage({ selected, onBack, onRun }) {
             </>
           ) : (
           <>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>칼럼 매칭</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>칼럼 매칭</span></div>
 
-          {/* AI auto */}
-          <div style={{ marginBottom: 18 }}>
+          {/* 요약 칩 */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+            <div style={{ flex: 1, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "11px 14px" }}>
+              <div style={{ fontSize: 12, color: C.sub }}>전체 칼럼</div>
+              <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2 }}>123</div>
+            </div>
+            <div style={{ flex: 1, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "11px 14px" }}>
+              <div style={{ fontSize: 12, color: C.greenText, display: "flex", alignItems: "center", gap: 5 }}><Icon.checkCircle width={13} height={13} /> 자동 매칭</div>
+              <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2, color: C.greenText }}>120</div>
+            </div>
+            <div style={{ flex: 1, background: "#FFF7ED", border: `1px solid #FED7AA`, borderRadius: 10, padding: "11px 14px" }}>
+              <div style={{ fontSize: 12, color: "#B45309", display: "flex", alignItems: "center", gap: 5 }}><Icon.infoCircle width={13} height={13} /> 검토 필요</div>
+              <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2, color: "#B45309" }}>3</div>
+            </div>
+          </div>
+
+          {/* 검토 필요 (우선 노출) */}
+          <div style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 8 }}>
-              <span onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, color: C.purple, cursor: "pointer" }}>
-                <span style={{ transform: autoOpen ? "none" : "rotate(-90deg)", display: "flex", transition: "transform .15s" }}><Icon.chevD /></span>
-                <Icon.spark /> AI 자동 매칭 (120건)
+              <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 700, color: "#B45309" }}><Icon.infoCircle width={16} height={16} /> 먼저 확인해 주세요 · 3건</span>
+              <span style={{ fontSize: 12.5, color: C.faint }}>이름 불일치 · 타입 불일치</span>
+            </div>
+            <div style={{ border: `1px solid #FED7AA`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", padding: "12px 16px", fontSize: 13, color: C.sub, background: "#FFFBF5", borderBottom: `1px solid ${C.borderSoft}` }}>
+                <span>{names[0]} <span style={{ color: C.faint, fontWeight: 600 }}>(기준)</span></span><span /><span>{names[1]}</span>
+              </div>
+              {REVIEW_ROWS.map((r, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", alignItems: "start", padding: "16px", borderBottom: i === REVIEW_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, paddingTop: 9 }}>{r.left} <TypeTag kind={r.lt} /></span>
+                  <span style={{ color: C.faint, display: "flex", justifyContent: "center", paddingTop: 11 }}><Icon.link /></span>
+                  <div>
+                    <MatchDropdown value={reviewSel[i]} onChange={(v) => setReviewSel((s) => s.map((x, idx) => (idx === i ? v : x)))} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: reviewSel[i] === NO_MATCH ? C.yellowText : C.faint, marginTop: 8 }}>
+                      <Icon.infoCircle width={13} height={13} /> {reviewSel[i] === NO_MATCH ? "매칭 칼럼이 없어 신규 데이터 행은 Null로 채워져요." : r.note}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 자동 매칭 (접힘 — 노이즈 최소화) */}
+          <div style={{ marginBottom: 30 }}>
+            <div onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: `1px solid ${C.border}`, borderRadius: autoOpen ? "12px 12px 0 0" : 12, background: "#fff", padding: "13px 16px", cursor: "pointer" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
+                <span style={{ transform: autoOpen ? "rotate(90deg)" : "none", display: "flex", transition: "transform .15s", color: C.faint }}><Icon.chevR /></span>
+                <span style={{ color: C.greenText, display: "flex" }}><Icon.checkCircle width={16} height={16} /></span>
+                <span style={{ fontWeight: 600 }}>자동 매칭된 칼럼 120개</span>
+                <span style={{ fontSize: 12.5, color: C.sub }}>이름·타입이 같아 자동으로 연결됐어요</span>
               </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.greenText }}><Icon.checkCircle /> 이름 일치 · 타입 일치</span>
-                <EditToggle editing={autoEditing} onClick={() => { setAutoOpen(true); setAutoEditing((v) => !v); }} />
-              </span>
+              <span style={{ fontSize: 12.5, color: C.purple, fontWeight: 600 }}>{autoOpen ? "접기" : "펼쳐서 보기"}</span>
             </div>
             {autoOpen && (
-              <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-                {autoEditing && <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, padding: "12px 16px", background: "#F5F3FF", borderBottom: `1px solid ${C.borderSoft}` }}><Icon.infoCircle width={13} height={13} /> AI가 매칭한 결과가 틀렸다면 오른쪽에서 직접 바꿀 수 있어요.</div>}
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", padding: "12px 16px", fontSize: 13, color: C.sub, background: "#fff", borderBottom: `1px solid ${C.borderSoft}` }}>
+              <div style={{ border: `1px solid ${C.border}`, borderTop: "none", borderRadius: "0 0 12px 12px", overflow: "hidden", background: "#fff" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", background: "#FAFAFB", borderBottom: `1px solid ${C.borderSoft}` }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.purple, fontWeight: 600 }}><Icon.spark /> AI 자동 매칭</span>
+                  <EditToggle editing={autoEditing} onClick={() => setAutoEditing((v) => !v)} />
+                </div>
+                {autoEditing && <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, padding: "10px 16px", background: "#F5F3FF", borderBottom: `1px solid ${C.borderSoft}` }}><Icon.infoCircle width={13} height={13} /> AI가 매칭한 결과가 틀렸다면 오른쪽에서 직접 바꿀 수 있어요.</div>}
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", padding: "12px 16px", fontSize: 13, color: C.sub, borderBottom: `1px solid ${C.borderSoft}` }}>
                   <span>{names[0]} <span style={{ color: C.faint, fontWeight: 600 }}>(기준)</span></span><span /><span>{names[1]}</span>
                 </div>
                 {AUTO_ROWS.map((r, i) => {
@@ -832,43 +876,6 @@ function MergePage({ selected, onBack, onRun }) {
                   </div>
                   );
                 })}
-              </div>
-            )}
-          </div>
-
-          {/* review */}
-          <div style={{ marginBottom: 30 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 8 }}>
-              <span onClick={() => setReviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-                <span style={{ transform: reviewOpen ? "none" : "rotate(-90deg)", display: "flex", transition: "transform .15s" }}><Icon.chevD /></span>
-                검토 필요 (3건)
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.faint }}><Icon.infoCircle width={15} height={15} /> 이름 불일치 · 타입 불일치</span>
-                <EditToggle editing={reviewEditing} onClick={() => { setReviewOpen(true); setReviewEditing((v) => !v); }} />
-              </span>
-            </div>
-            {reviewOpen && (
-              <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", padding: "12px 16px", fontSize: 13, color: C.sub, background: "#fff", borderBottom: `1px solid ${C.borderSoft}` }}>
-                  <span>{names[0]} <span style={{ color: C.faint, fontWeight: 600 }}>(기준)</span></span><span /><span>{names[1]}</span>
-                </div>
-                {REVIEW_ROWS.map((r, i) => (
-                  <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", alignItems: "start", padding: "16px", borderBottom: i === REVIEW_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, paddingTop: 9 }}>{r.left} <TypeTag kind={r.lt} /></span>
-                    <span style={{ color: C.faint, display: "flex", justifyContent: "center", paddingTop: 11 }}><Icon.link /></span>
-                    <div>
-                      {reviewEditing ? (
-                        <MatchDropdown value={reviewSel[i]} onChange={(v) => setReviewSel((s) => s.map((x, idx) => (idx === i ? v : x)))} />
-                      ) : (
-                        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: reviewSel[i] === NO_MATCH ? C.faint : C.text, paddingTop: 9 }}>{reviewSel[i]} {colType(reviewSel[i]) && <TypeTag kind={colType(reviewSel[i])} />}</span>
-                      )}
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: reviewSel[i] === NO_MATCH ? C.yellowText : C.faint, marginTop: 8 }}>
-                        <Icon.infoCircle width={13} height={13} /> {reviewSel[i] === NO_MATCH ? "매칭 칼럼이 없어 신규 데이터 행은 Null로 채워져요." : r.note}
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
           </div>
