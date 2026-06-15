@@ -244,9 +244,8 @@ function FolderTree({ folders, setFolders, activeFolder, setActiveFolder, datase
   return (
     <aside style={{ width: 240, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#FCFCFD", display: "flex", flexDirection: "column", overflowY: "auto" }}>
       {/* 패널 헤더 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 12px 10px" }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "16px 12px 10px" }}>
         <span style={{ fontSize: 14, fontWeight: 700 }}>데이터셋</span>
-        <span onClick={onHide} title="패널 접기" style={{ color: C.faint, cursor: "pointer", display: "flex", padding: 2 }}><Icon.panel width={16} height={16} /></span>
       </div>
 
       <div style={{ padding: "0 8px" }}>
