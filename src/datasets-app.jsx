@@ -747,6 +747,7 @@ function MergePage({ selected, onBack, onRun }) {
   const [autoSel, setAutoSel] = useState(AUTO_ROWS.map((r) => r[0]));
   const [reviewOpen, setReviewOpen] = useState(true);
   const [reviewSel, setReviewSel] = useState(REVIEW_ROWS.map((r) => r.right));
+  const [relOpen, setRelOpen] = useState(false); // 데이터 관계 모달
 
   // 완료(committed 변경) 시에만 매칭 재계산 스켈레톤
   const committedKey = committed.join(",");
@@ -783,6 +784,11 @@ function MergePage({ selected, onBack, onRun }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 28px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
         <span onClick={onBack} style={{ cursor: "pointer", display: "flex", color: C.sub }}><Icon.back /></span>
         <span style={{ fontSize: 16, fontWeight: 700 }}>데이터 합치기</span>
+        {hasContent && !picking && (
+          <button onClick={() => setRelOpen(true)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 7, height: 34, padding: "0 13px", border: `1px solid ${C.border}`, borderRadius: 9, background: "#fff", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
+            <Icon.union width={15} height={15} /> 데이터 관계 보기
+          </button>
+        )}
       </div>
 
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
@@ -958,6 +964,47 @@ function MergePage({ selected, onBack, onRun }) {
         <span style={{ fontSize: 13, color: over ? "#DC2626" : C.faint }}>{!hasContent ? "합칠 데이터를 2개 이상 선택해 주세요." : picking ? "데이터 선택을 먼저 완료해 주세요." : loading ? "칼럼을 매칭하고 있어요..." : over ? "한도를 초과해 병합할 수 없어요." : ""}</span>
         <button onClick={() => canRun && onRun(names)} disabled={!canRun} style={{ background: canRun ? C.dark : "#E5E7EB", color: canRun ? "#fff" : C.faint, border: "none", borderRadius: 10, padding: "13px 22px", fontSize: 14, fontWeight: 600, cursor: canRun ? "pointer" : "default", fontFamily: FONT }}>데이터 병합 실행하기</button>
       </div>
+
+      {/* 데이터 관계 모달 (#1 노드 스타일) */}
+      {relOpen && (
+        <div onClick={() => setRelOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,0.42)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60, fontFamily: FONT }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 760, background: "#fff", borderRadius: 16, boxShadow: "0 20px 50px rgba(0,0,0,0.22)", overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: `1px solid ${C.border}` }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700 }}><Icon.union width={17} height={17} /> 데이터 관계</span>
+              <span onClick={() => setRelOpen(false)} style={{ cursor: "pointer", color: C.faint, display: "flex" }}><Icon.x /></span>
+            </div>
+            <div style={{ position: "relative", height: 340, backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.10) 1px, transparent 1px)", backgroundSize: "16px 16px" }}>
+              <svg width="760" height="340" viewBox="0 0 760 340" style={{ position: "absolute", inset: 0 }}>
+                <path d="M210 94 C252 94 248 168 290 168" fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
+                <path d="M210 242 C252 242 248 168 290 168" fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
+                <path d="M470 168 L524 168" fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
+                {[[210, 94], [210, 242], [290, 168], [470, 168], [524, 168]].map(([cx, cy], i) => (
+                  <circle key={i} cx={cx} cy={cy} r="3.5" fill="#fff" stroke="#9CA3AF" strokeWidth="1.5" />
+                ))}
+              </svg>
+              {[
+                { left: 20, top: 64, name: names[0], sub: "기준 · 8,432행", bg: "#E6F1FB", fg: "#185FA5", icon: <Icon.db /> },
+                { left: 20, top: 212, name: names[1], sub: "추가 · 8,432행", bg: "#F3F4F6", fg: C.sub, icon: <Icon.db /> },
+              ].map((n) => (
+                <div key={n.name} style={{ position: "absolute", left: n.left, top: n.top, width: 190, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "11px 13px", display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ width: 28, height: 28, borderRadius: 7, background: n.bg, color: n.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{n.icon}</span>
+                  <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.name}</div><div style={{ fontSize: 11, color: C.faint }}>{n.sub}</div></div>
+                </div>
+              ))}
+              <div style={{ position: "absolute", left: 290, top: 138, width: 180, background: "#fff", border: `1px solid #C9C2F2`, borderRadius: 10, padding: "11px 13px", display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ width: 28, height: 28, borderRadius: 7, background: "#EEEDFE", color: C.purple, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{isJoin ? <Icon.join /> : <Icon.union />}</span>
+                <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600 }}>병합 · {isJoin ? "Join" : "Union"}</div><div style={{ fontSize: 11, color: C.faint }}>{isJoin ? "키로 연결 (열 추가)" : "행 이어붙이기"}</div></div>
+              </div>
+              <div style={{ position: "absolute", left: 524, top: 138, width: 200, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "11px 13px", display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ width: 28, height: 28, borderRadius: 7, background: "#EAF3DE", color: C.greenText, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.clock /></span>
+                <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600 }}>새 스냅샷</div><div style={{ fontSize: 11, color: C.faint }}>{afterRows.toLocaleString()}행 · 결과</div></div>
+              </div>
+              <div style={{ position: "absolute", left: 20, top: 16, fontSize: 12, color: C.sub, fontWeight: 600 }}>{names[0]}에 합쳐져 새 스냅샷이 돼요</div>
+            </div>
+            <div style={{ padding: "13px 20px", borderTop: `1px solid ${C.border}`, fontSize: 12.5, color: C.sub, display: "flex", alignItems: "center", gap: 6 }}><Icon.infoCircle width={13} height={13} /> {isJoin ? "Join · 두 데이터를 키로 연결해 기준 옆에 열을 추가해요." : "Union · 두 데이터를 위아래로 이어붙여 행을 늘려요."}</div>
+          </div>
+        </div>
+      )}
 
       {/* 오류 토스트 */}
       {toast && (
