@@ -866,20 +866,24 @@ function MergePage({ selected, onBack, onRun }) {
 
           {/* 03 */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}><StepNum n="03" /><span style={{ fontSize: 15, fontWeight: 700 }}>저장 위치</span></div>
-          <div style={{ maxWidth: 560, marginBottom: 8, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 18px", background: "#fff" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ width: 34, height: 34, borderRadius: 8, background: "#fff", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.blue }}><Icon.db /></span>
-              <div style={{ flex: 1 }}>
+          <div style={{ maxWidth: 560, marginBottom: 8, border: `1px solid ${C.border}`, borderRadius: 12, background: "#fff", overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "16px 18px" }}>
+              <span style={{ width: 36, height: 36, borderRadius: 9, background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center", color: C.purple }}><Icon.db /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                   <span style={{ fontSize: 14, fontWeight: 700 }}>{names[0]}</span>
                   <span style={{ fontSize: 10.5, fontWeight: 700, color: C.sub, background: C.chipBg, borderRadius: 5, padding: "1px 6px" }}>기준</span>
                 </div>
-                <div style={{ fontSize: 12.5, color: C.sub, marginTop: 2 }}>기준 데이터셋에 병합돼요.</div>
+                <div style={{ fontSize: 12.5, color: C.sub, marginTop: 2 }}>병합 결과는 새 파일이 아니라 이 데이터셋의 새 버전이 돼요.</div>
               </div>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: C.greenText, background: "#DCFCE7", borderRadius: 7, padding: "5px 10px" }}><Icon.clock width={13} height={13} /> 새 스냅샷</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 18px", borderTop: `1px solid ${C.borderSoft}`, background: "#FBFBFC" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 7, padding: "5px 11px" }}><Icon.clock width={13} height={13} /> 현재 버전</span>
+              <span style={{ color: C.faint, fontSize: 16 }}>→</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: C.purple, background: "#EEF2FF", borderRadius: 7, padding: "5px 11px" }}><Icon.spark /> 새 스냅샷 추가</span>
+              <span style={{ marginLeft: "auto", fontSize: 12, color: C.faint }}>버전 기록에 쌓여요</span>
             </div>
           </div>
-          <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>새 파일이 아니라 <b>{names[0]}</b>에 <b>새 스냅샷</b>으로 저장됩니다.</div>
           </>
           )}
           </div>
