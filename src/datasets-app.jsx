@@ -625,6 +625,111 @@ function EditToggle({ editing, onClick }) {
   );
 }
 
+/* 데이터 워크플로우 캔버스 (#1 노드형 파이프라인 · 칼럼 단위 결합/유지/제외 노출) */
+const WF_OPS = [
+  { group: "소스 · 출력", items: [["Source", "데이터 가져오기", "db"], ["Output", "데이터 내보내기", "download"]] },
+  { group: "AI 변환", items: [["AI Function", "AI로 분석", "spark"]] },
+  { group: "변환", items: [["Aggregate", "행 요약", "union"], ["Combine", "두 테이블 병합", "join"], ["Filter", "행 필터", "search"], ["Join", "키로 연결", "join"], ["Sort", "정렬", "swap"]] },
+];
+const WF_BASE = [["customer_id", "Integer"], ["name", "String"], ["email", "String"], ["signup_date", "Integer"]];
+const WF_ADD = [["customer_id", "Integer"], ["name", "String"], ["region", "String"], ["age", "Integer"]];
+// 결합 결과 칼럼: 결합(양쪽) / 유지(기준만) / 제외(추가만, 기준에 없음)
+const WF_RESULT = [
+  ["customer_id", "Integer", "결합"], ["name", "String", "결합"],
+  ["email", "String", "유지"], ["signup_date", "Integer", "유지"],
+  ["region", "String", "제외"], ["age", "Integer", "제외"],
+];
+const WF_STATUS = {
+  결합: { bg: "#EEEDFE", fg: "#534AB7" },
+  유지: { bg: "#E6F1FB", fg: "#185FA5" },
+  제외: { bg: "#F4F4F5", fg: "#9CA3AF" },
+  Null: { bg: "#FEF6E7", fg: "#B45309" },
+};
+function WfIcon({ k }) {
+  const m = { db: <Icon.db />, download: <Icon.download />, spark: <Icon.spark />, union: <Icon.union />, join: <Icon.join />, search: <Icon.search />, swap: <Icon.swap /> };
+  return m[k] || <Icon.sheet />;
+}
+function WfColRow({ name, type, status, last }) {
+  const st = status && WF_STATUS[status];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: last ? "none" : `1px solid ${C.borderSoft}`, fontSize: 12.5 }}>
+      <TypeIcon kind={type} />
+      <span style={{ flex: 1, color: status === "제외" ? C.faint : C.text, textDecoration: status === "제외" ? "line-through" : "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
+      {status ? <span style={{ fontSize: 10.5, fontWeight: 700, color: st.fg, background: st.bg, borderRadius: 5, padding: "1px 6px" }}>{status}</span> : <span style={{ fontSize: 11, color: C.faint }}>{type === "Integer" ? "int" : "string"}</span>}
+    </div>
+  );
+}
+function WfNode({ x, y, w, accent, icon, name, sub, children }) {
+  return (
+    <div style={{ position: "absolute", left: x, top: y, width: w, background: "#fff", border: `1px solid ${accent ? "#C9C2F2" : C.border}`, borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 12px", borderBottom: children ? `1px solid ${C.borderSoft}` : "none" }}>
+        <span style={{ width: 26, height: 26, borderRadius: 6, background: accent ? "#EEEDFE" : "#F3F4F6", color: accent ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><WfIcon k={icon} /></span>
+        <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div><div style={{ fontSize: 11, color: C.faint }}>{sub}</div></div>
+      </div>
+      {children}
+    </div>
+  );
+}
+function WorkflowCanvas({ names, isJoin, afterRows, onClose }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 70, display: "flex", flexDirection: "column", fontFamily: FONT }}>
+      {/* 상단 바 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 18px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700 }}><span style={{ width: 26, height: 26, borderRadius: 7, background: "#EEEDFE", color: C.purple, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.union width={15} height={15} /></span> 데이터 워크플로우</span>
+        <span style={{ fontSize: 12.5, color: C.faint }}>칼럼이 어떻게 결합·유지·제외되는지 보여줘요</span>
+        <span style={{ marginLeft: "auto", display: "flex", gap: 6, color: C.faint }}>
+          <span style={{ display: "flex", padding: 6, border: `1px solid ${C.border}`, borderRadius: 8 }}><Icon.search width={15} height={15} /></span>
+        </span>
+        <button onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 14px", border: "none", borderRadius: 9, background: C.dark, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>닫기</button>
+      </div>
+      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+        {/* Operators 사이드바 */}
+        <div style={{ width: 248, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#FCFCFD", overflowY: "auto", padding: "14px 12px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, padding: "0 4px" }}>Operators</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 10px", marginBottom: 14, color: C.faint }}><Icon.search width={14} height={14} /><span style={{ fontSize: 12.5 }}>operator 검색…</span></div>
+          {WF_OPS.map((g) => (
+            <div key={g.group} style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: C.faint, fontWeight: 600, padding: "0 4px 6px" }}>{g.group}</div>
+              {g.items.map(([nm, desc, ic]) => (
+                <div key={nm} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 8px", borderRadius: 8, cursor: "pointer", color: C.text }}>
+                  <span style={{ color: C.sub, display: "flex" }}><WfIcon k={ic} /></span>
+                  <div><div style={{ fontSize: 13, fontWeight: 500 }}>{nm}</div><div style={{ fontSize: 11, color: C.faint }}>{desc}</div></div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        {/* 캔버스 */}
+        <div style={{ flex: 1, position: "relative", overflow: "auto", backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.09) 1px, transparent 1px)", backgroundSize: "18px 18px" }}>
+          <div style={{ position: "relative", width: 800, height: 560, margin: "20px" }}>
+            <svg width="800" height="560" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+              <path d="M250 96 C320 96 320 186 400 186" fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
+              <path d="M250 336 C320 336 320 210 400 210" fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
+              {[[250, 96], [250, 336], [400, 198]].map(([cx, cy], i) => <circle key={i} cx={cx} cy={cy} r="3.5" fill="#fff" stroke="#9CA3AF" strokeWidth="1.5" />)}
+            </svg>
+            <WfNode x={20} y={68} w={230} icon="db" name={names[0]} sub="Source · 기준 · 4 columns">
+              {WF_BASE.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} last={i === WF_BASE.length - 1} />)}
+            </WfNode>
+            <WfNode x={20} y={308} w={230} icon="db" name={names[1]} sub="Source · 추가 · 4 columns">
+              {WF_ADD.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} last={i === WF_ADD.length - 1} />)}
+            </WfNode>
+            <WfNode x={400} y={150} w={320} accent icon={isJoin ? "join" : "union"} name={isJoin ? "병합 · Join" : "병합 · Union"} sub={`${afterRows.toLocaleString()}행 · 결합 2 · 유지 2 · 제외 2`}>
+              {WF_RESULT.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} status={c[2]} last={i === WF_RESULT.length - 1} />)}
+            </WfNode>
+          </div>
+        </div>
+      </div>
+      {/* 범례 + 프롬프트 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 18px", borderTop: `1px solid ${C.border}`, background: "#FCFCFD" }}>
+        <span style={{ fontSize: 12, color: C.sub }}>칼럼 상태</span>
+        {[["결합", "양쪽 데이터에 있어 합쳐짐"], ["유지", "기준에만 있어 그대로(추가는 Null)"], ["제외", "기준에 없어 빠짐"]].map(([s, d]) => (
+          <span key={s} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.sub }}><span style={{ fontSize: 10.5, fontWeight: 700, color: WF_STATUS[s].fg, background: WF_STATUS[s].bg, borderRadius: 5, padding: "1px 6px" }}>{s}</span> {d}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function LeftPanel({ picked, setPicked, picking, setPicking, onDone, onCancel, canCancel }) {
   const pool = useMemo(() => Array.from({ length: 18 }, (_, i) => poolLabel(i)), []);
   const atMax = picked.length >= PICK_MAX;
@@ -965,46 +1070,8 @@ function MergePage({ selected, onBack, onRun }) {
         <button onClick={() => canRun && onRun(names)} disabled={!canRun} style={{ background: canRun ? C.dark : "#E5E7EB", color: canRun ? "#fff" : C.faint, border: "none", borderRadius: 10, padding: "13px 22px", fontSize: 14, fontWeight: 600, cursor: canRun ? "pointer" : "default", fontFamily: FONT }}>데이터 병합 실행하기</button>
       </div>
 
-      {/* 데이터 관계 모달 (#1 노드 스타일) */}
-      {relOpen && (
-        <div onClick={() => setRelOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,0.42)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60, fontFamily: FONT }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: 760, background: "#fff", borderRadius: 16, boxShadow: "0 20px 50px rgba(0,0,0,0.22)", overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: `1px solid ${C.border}` }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700 }}><Icon.union width={17} height={17} /> 데이터 관계</span>
-              <span onClick={() => setRelOpen(false)} style={{ cursor: "pointer", color: C.faint, display: "flex" }}><Icon.x /></span>
-            </div>
-            <div style={{ position: "relative", height: 340, backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.10) 1px, transparent 1px)", backgroundSize: "16px 16px" }}>
-              <svg width="760" height="340" viewBox="0 0 760 340" style={{ position: "absolute", inset: 0 }}>
-                <path d="M210 94 C252 94 248 168 290 168" fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
-                <path d="M210 242 C252 242 248 168 290 168" fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
-                <path d="M470 168 L524 168" fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
-                {[[210, 94], [210, 242], [290, 168], [470, 168], [524, 168]].map(([cx, cy], i) => (
-                  <circle key={i} cx={cx} cy={cy} r="3.5" fill="#fff" stroke="#9CA3AF" strokeWidth="1.5" />
-                ))}
-              </svg>
-              {[
-                { left: 20, top: 64, name: names[0], sub: "기준 · 8,432행", bg: "#E6F1FB", fg: "#185FA5", icon: <Icon.db /> },
-                { left: 20, top: 212, name: names[1], sub: "추가 · 8,432행", bg: "#F3F4F6", fg: C.sub, icon: <Icon.db /> },
-              ].map((n) => (
-                <div key={n.name} style={{ position: "absolute", left: n.left, top: n.top, width: 190, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "11px 13px", display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ width: 28, height: 28, borderRadius: 7, background: n.bg, color: n.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{n.icon}</span>
-                  <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.name}</div><div style={{ fontSize: 11, color: C.faint }}>{n.sub}</div></div>
-                </div>
-              ))}
-              <div style={{ position: "absolute", left: 290, top: 138, width: 180, background: "#fff", border: `1px solid #C9C2F2`, borderRadius: 10, padding: "11px 13px", display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ width: 28, height: 28, borderRadius: 7, background: "#EEEDFE", color: C.purple, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{isJoin ? <Icon.join /> : <Icon.union />}</span>
-                <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600 }}>병합 · {isJoin ? "Join" : "Union"}</div><div style={{ fontSize: 11, color: C.faint }}>{isJoin ? "키로 연결 (열 추가)" : "행 이어붙이기"}</div></div>
-              </div>
-              <div style={{ position: "absolute", left: 524, top: 138, width: 200, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "11px 13px", display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ width: 28, height: 28, borderRadius: 7, background: "#EAF3DE", color: C.greenText, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.clock /></span>
-                <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600 }}>새 스냅샷</div><div style={{ fontSize: 11, color: C.faint }}>{afterRows.toLocaleString()}행 · 결과</div></div>
-              </div>
-              <div style={{ position: "absolute", left: 20, top: 16, fontSize: 12, color: C.sub, fontWeight: 600 }}>{names[0]}에 합쳐져 새 스냅샷이 돼요</div>
-            </div>
-            <div style={{ padding: "13px 20px", borderTop: `1px solid ${C.border}`, fontSize: 12.5, color: C.sub, display: "flex", alignItems: "center", gap: 6 }}><Icon.infoCircle width={13} height={13} /> {isJoin ? "Join · 두 데이터를 키로 연결해 기준 옆에 열을 추가해요." : "Union · 두 데이터를 위아래로 이어붙여 행을 늘려요."}</div>
-          </div>
-        </div>
-      )}
+      {/* 데이터 워크플로우 캔버스 (#1 노드형 파이프라인) */}
+      {relOpen && <WorkflowCanvas names={names} isJoin={isJoin} afterRows={afterRows} onClose={() => setRelOpen(false)} />}
 
       {/* 오류 토스트 */}
       {toast && (
