@@ -670,7 +670,7 @@ function WfNode({ x, y, w, accent, icon, name, sub, children, onDragStart, dragg
     </div>
   );
 }
-function WorkflowCanvas({ names, isJoin, afterRows, onClose }) {
+function WorkflowGraph({ names, isJoin, afterRows }) {
   const [pos, setPos] = useState({ base: { x: 20, y: 60 }, add: { x: 20, y: 300 }, merge: { x: 420, y: 150 } });
   const [dragId, setDragId] = useState(null);
   const drag = useRef(null);
@@ -685,6 +685,28 @@ function WorkflowCanvas({ names, isJoin, afterRows, onClose }) {
   const rPort = (id) => ({ x: pos[id].x + W[id], y: pos[id].y + 28 });
   const lPort = (id) => ({ x: pos[id].x, y: pos[id].y + 28 });
   const path = (a, b) => `M ${a.x} ${a.y} C ${a.x + 60} ${a.y} ${b.x - 60} ${b.y} ${b.x} ${b.y}`;
+  return (
+    <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "auto", backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.09) 1px, transparent 1px)", backgroundSize: "18px 18px" }}>
+      <div style={{ position: "relative", width: 1200, height: 760 }}>
+        <svg width="1200" height="760" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+          <path d={path(rPort("base"), lPort("merge"))} fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
+          <path d={path(rPort("add"), lPort("merge"))} fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
+          {[rPort("base"), rPort("add"), lPort("merge")].map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#fff" stroke="#9CA3AF" strokeWidth="1.5" />)}
+        </svg>
+        <WfNode x={pos.base.x} y={pos.base.y} w={230} icon="db" name={names[0]} sub="Source · 기준 · 4 columns" onDragStart={startDrag("base")} dragging={dragId === "base"}>
+          {WF_BASE.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} last={i === WF_BASE.length - 1} />)}
+        </WfNode>
+        <WfNode x={pos.add.x} y={pos.add.y} w={230} icon="db" name={names[1]} sub="Source · 추가 · 4 columns" onDragStart={startDrag("add")} dragging={dragId === "add"}>
+          {WF_ADD.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} last={i === WF_ADD.length - 1} />)}
+        </WfNode>
+        <WfNode x={pos.merge.x} y={pos.merge.y} w={320} accent icon={isJoin ? "join" : "union"} name={isJoin ? "병합 · Join" : "병합 · Union"} sub={`${afterRows.toLocaleString()}행 · 결합 2 · 유지 2 · 제외 2`} onDragStart={startDrag("merge")} dragging={dragId === "merge"}>
+          {WF_RESULT.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} status={c[2]} last={i === WF_RESULT.length - 1} />)}
+        </WfNode>
+      </div>
+    </div>
+  );
+}
+function WorkflowCanvas({ names, isJoin, afterRows, onClose }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 70, display: "flex", flexDirection: "column", fontFamily: FONT }}>
       {/* 상단 바 */}
@@ -713,25 +735,7 @@ function WorkflowCanvas({ names, isJoin, afterRows, onClose }) {
             </div>
           ))}
         </div>
-        {/* 캔버스 (노드 드래그 가능) */}
-        <div style={{ flex: 1, position: "relative", overflow: "auto", backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.09) 1px, transparent 1px)", backgroundSize: "18px 18px" }}>
-          <div style={{ position: "relative", width: 1200, height: 760 }}>
-            <svg width="1200" height="760" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-              <path d={path(rPort("base"), lPort("merge"))} fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
-              <path d={path(rPort("add"), lPort("merge"))} fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
-              {[rPort("base"), rPort("add"), lPort("merge")].map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#fff" stroke="#9CA3AF" strokeWidth="1.5" />)}
-            </svg>
-            <WfNode x={pos.base.x} y={pos.base.y} w={230} icon="db" name={names[0]} sub="Source · 기준 · 4 columns" onDragStart={startDrag("base")} dragging={dragId === "base"}>
-              {WF_BASE.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} last={i === WF_BASE.length - 1} />)}
-            </WfNode>
-            <WfNode x={pos.add.x} y={pos.add.y} w={230} icon="db" name={names[1]} sub="Source · 추가 · 4 columns" onDragStart={startDrag("add")} dragging={dragId === "add"}>
-              {WF_ADD.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} last={i === WF_ADD.length - 1} />)}
-            </WfNode>
-            <WfNode x={pos.merge.x} y={pos.merge.y} w={320} accent icon={isJoin ? "join" : "union"} name={isJoin ? "병합 · Join" : "병합 · Union"} sub={`${afterRows.toLocaleString()}행 · 결합 2 · 유지 2 · 제외 2`} onDragStart={startDrag("merge")} dragging={dragId === "merge"}>
-              {WF_RESULT.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} status={c[2]} last={i === WF_RESULT.length - 1} />)}
-            </WfNode>
-          </div>
-        </div>
+        <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} />
       </div>
       {/* 범례 + 프롬프트 */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 18px", borderTop: `1px solid ${C.border}`, background: "#FCFCFD" }}>
@@ -1499,6 +1503,11 @@ function ResultPage({ names, onClose }) {
 
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         <div style={{ flex: 1, position: "relative", minWidth: 0, background: "#fff" }}>
+          {view === "relation" ? (
+            <div style={{ position: "absolute", inset: 0, display: "flex" }}>
+              <WorkflowGraph names={names} isJoin={false} afterRows={16864} />
+            </div>
+          ) : (
           <div style={{ position: "absolute", inset: 0, overflow: "auto", paddingBottom: 80, background: "#fff" }}>
             {view === "table" ? (
               <div style={{ minWidth: RES_MINW }}>
@@ -1532,12 +1541,14 @@ function ResultPage({ names, onClose }) {
               </div>
             )}
           </div>
+          )}
 
           {/* view toggle – pinned to bottom of content area */}
           <div style={{ position: "absolute", bottom: 20, left: 0, right: 0, display: "flex", justifyContent: "center", pointerEvents: "none" }}>
             <div style={{ display: "flex", gap: 4, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 12, padding: 5, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", pointerEvents: "auto" }}>
-              <button onClick={() => setView("table")} style={tgl(view === "table")}><Icon.viewTable /></button>
-              <button onClick={() => setView("columns")} style={tgl(view === "columns")}><Icon.viewList /></button>
+              <button onClick={() => setView("table")} style={tgl(view === "table")} title="표"><Icon.viewTable /></button>
+              <button onClick={() => setView("columns")} style={tgl(view === "columns")} title="칼럼"><Icon.viewList /></button>
+              <button onClick={() => setView("relation")} style={tgl(view === "relation")} title="관계 보기"><Icon.union width={16} height={16} /></button>
             </div>
           </div>
         </div>
