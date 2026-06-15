@@ -670,21 +670,28 @@ function LeftPanel({ picked, setPicked, picking, setPicking, onDone, onCancel, c
     );
   }
 
+  const edgeHandle = (dir) => (
+    <div onClick={() => setCollapsed(dir === "collapse")} title={dir === "collapse" ? "패널 접기" : "패널 펼치기"}
+      style={{ position: "absolute", right: -11, top: 78, width: 22, height: 46, borderRadius: 7, border: `1px solid ${C.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.sub, zIndex: 8, boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
+      <span style={{ display: "flex", transform: dir === "collapse" ? "rotate(180deg)" : "none" }}><Icon.chevR width={15} height={15} /></span>
+    </div>
+  );
+
   if (collapsed) {
     return (
-      <div style={{ width: 52, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: C.panel, display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 0", gap: 14 }}>
-        <span onClick={() => setCollapsed(false)} title="패널 펼치기" style={{ cursor: "pointer", color: C.sub, display: "flex", padding: 6, borderRadius: 8 }}><Icon.panel /></span>
+      <div style={{ width: 52, flexShrink: 0, position: "relative", borderRight: `1px solid ${C.border}`, background: C.panel, display: "flex", flexDirection: "column", alignItems: "center", padding: "18px 0", gap: 14 }}>
         <span title={`데이터 ${picked.length}개`} style={{ width: 30, height: 30, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db /></span>
         <span style={{ fontSize: 13, fontWeight: 700, color: C.sub }}>{picked.length}</span>
+        {edgeHandle("expand")}
       </div>
     );
   }
 
   return (
-    <div style={panel.left}>
-      <div style={{ padding: "16px 12px 8px", display: "flex", alignItems: "center", gap: 8 }}>
-        <button onClick={() => setPicking(true)} style={{ flex: 1, padding: "11px 0", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon.swap width={14} height={14} /> 데이터 재선택</button>
-        <span onClick={() => setCollapsed(true)} title="패널 접기" style={{ width: 38, height: 38, flexShrink: 0, border: `1px solid ${C.border}`, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.sub }}><Icon.panel /></span>
+    <div style={{ ...panel.left, position: "relative" }}>
+      {edgeHandle("collapse")}
+      <div style={{ padding: "16px 12px 8px" }}>
+        <button onClick={() => setPicking(true)} style={{ width: "100%", padding: "11px 0", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon.swap width={14} height={14} /> 데이터 재선택</button>
       </div>
       <div style={{ padding: "4px 18px 8px", fontSize: 12, color: C.faint, fontWeight: 600 }}>데이터셋 {picked.length}개</div>
       {/* 기준 데이터셋 (첫 번째, 기준 배지로 구분) */}
