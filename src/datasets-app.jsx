@@ -487,7 +487,8 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
  * ========================================================= */
 const MERGED_NAMES = (ids) => ids.map((_, i) => `CUBIG Data_${2024 + i}`);
 const MAX_MERGE = 2; // 한 번에 합칠 수 있는 데이터셋 최대 개수
-const poolLabel = (i) => (i === 0 ? "CUBIG Data_2024" : "CUBIG Data_2025");
+const PICK_MAX = 3;  // 선택 자체는 3개까지 허용 — 3개째부터 용량 초과 안내
+const poolLabel = (i) => `CUBIG Data_${2024 + i}`;
 const DEFAULT_NAMES = ["CUBIG Data_2024", "CUBIG Data_2025"];
 
 const AUTO_ROWS = [
@@ -596,19 +597,20 @@ function EditToggle({ editing, onClick }) {
 
 function LeftPanel({ picked, setPicked, picking, setPicking, onDone, onCancel, canCancel }) {
   const pool = useMemo(() => Array.from({ length: 18 }, (_, i) => poolLabel(i)), []);
-  const atMax = picked.length >= MAX_MERGE;
+  const atMax = picked.length >= PICK_MAX;
+  const overPick = picked.length > MAX_MERGE;
   const togglePick = (i) =>
-    setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : p.length >= MAX_MERGE ? p : [...p, i]));
+    setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : p.length >= PICK_MAX ? p : [...p, i]));
 
   if (picking) {
     return (
       <div style={panel.left}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
           <span style={{ fontSize: 14, fontWeight: 600 }}>데이터 선택</span>
-          <span style={{ fontSize: 12.5, color: atMax ? C.purple : C.faint, fontWeight: 600 }}>{picked.length}/{MAX_MERGE}</span>
+          <span style={{ fontSize: 12.5, color: overPick ? "#DC2626" : picked.length === MAX_MERGE ? C.purple : C.faint, fontWeight: 600 }}>{picked.length}/{MAX_MERGE}</span>
         </div>
-        <div style={{ padding: "9px 16px", fontSize: 11.5, color: C.faint, borderBottom: `1px solid ${C.borderSoft}`, display: "flex", alignItems: "center", gap: 5, lineHeight: 1.5 }}>
-          <Icon.infoCircle width={12} height={12} /> 처음 선택한 데이터셋이 기준이 돼요 · 최대 {MAX_MERGE}개
+        <div style={{ padding: "9px 16px", fontSize: 11.5, color: overPick ? "#DC2626" : C.faint, borderBottom: `1px solid ${C.borderSoft}`, display: "flex", alignItems: "center", gap: 5, lineHeight: 1.5 }}>
+          <Icon.infoCircle width={12} height={12} /> {overPick ? `최대 ${MAX_MERGE}개까지 합칠 수 있어요 · 용량을 초과해요` : `처음 선택한 데이터셋이 기준이 돼요 · 최대 ${MAX_MERGE}개`}
         </div>
         <div style={{ flex: 1, overflowY: "auto" }}>
           {pool.map((nm, i) => {
@@ -714,9 +716,9 @@ function MergePage({ selected, onBack, onRun }) {
   const hasContent = committed.length >= 2; // 우측에 보여줄 내용이 있는지 (재선택 중에도 유지)
   const isJoin = method === "join";
   // Union=행 추가(많아지면 행 한도 초과), Join=열 추가(행은 기준 기준 유지)
-  const over = !isJoin && hasContent && committed.length >= 3;
+  const over = hasContent && committed.length > MAX_MERGE; // 3개 이상 = 용량 초과
   const afterCols = isJoin ? 10 : 12; // 기준 칼럼 기준이라 한도(100) 초과 불가
-  const afterRows = isJoin ? 40 : committed.length >= 3 ? 12648 : 120;
+  const afterRows = isJoin ? 40 : committed.length > MAX_MERGE ? 25296 : 16864;
   // 매칭 검증: 같은 컬럼 중복 선택 / 전부 매칭 없음
   const autoDupes = useMemo(() => {
     const c = {}; autoSel.forEach((v) => { if (v !== NO_MATCH) c[v] = (c[v] || 0) + 1; });
@@ -754,15 +756,15 @@ function MergePage({ selected, onBack, onRun }) {
         ) : (
         <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px 120px", position: "relative", background: "#FBFBFB" }}>
           <div style={{ maxWidth: 1040, margin: "0 auto" }}>
-          {over && (
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: "#FEF2F2", border: `1px solid #FCA5A5`, borderRadius: 12, padding: "14px 16px", marginBottom: 24 }}>
-              <span style={{ width: 18, height: 18, borderRadius: "50%", background: C.red, color: "#fff", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>!</span>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#DC2626" }}>합본 한도를 초과했어요</div>
-                <div style={{ fontSize: 13, color: "#7F1D1D", marginTop: 4, lineHeight: 1.5 }}>합치면 <b>{afterRows.toLocaleString()}행</b>으로 한도(10,000행)를 넘어 병합할 수 없어요. 데이터를 2개 이하로 줄이거나 행 수를 줄여주세요.</div>
-              </div>
+          {over ? (
+            <div style={{ minHeight: 460, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 18 }}>
+              <span style={{ width: 64, height: 64, borderRadius: 18, background: "#FEF2F2", border: `1px solid #FCA5A5`, color: C.red, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 800 }}>!</span>
+              <div style={{ fontSize: 19, fontWeight: 700, color: C.text }}>용량 한도를 초과했어요</div>
+              <div style={{ fontSize: 14, color: C.sub, lineHeight: 1.7, maxWidth: 470 }}>한 번에 최대 <b>{MAX_MERGE}개</b>까지만 합칠 수 있어요.<br />지금 <b>{committed.length}개</b>를 합치면 <b>{afterRows.toLocaleString()}행</b>이 되어 한도(<b>10,000행</b> · 100MB)를 넘어요.</div>
+              <button onClick={() => setPicking(true)} style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 7, background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.swap width={15} height={15} /> 데이터 다시 선택</button>
             </div>
-          )}
+          ) : (
+          <>
           {/* 01 */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}><StepNum n="01" /><span style={{ fontSize: 15, fontWeight: 700 }}>병합 방식</span></div>
           <div style={{ display: "flex", gap: 16, marginBottom: 30 }}>
@@ -811,13 +813,13 @@ function MergePage({ selected, onBack, onRun }) {
             {autoOpen && (
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
                 {autoEditing && <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, padding: "12px 16px", background: "#F5F3FF", borderBottom: `1px solid ${C.borderSoft}` }}><Icon.infoCircle width={13} height={13} /> AI가 매칭한 결과가 틀렸다면 오른쪽에서 직접 바꿀 수 있어요.</div>}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 30px 1fr", padding: "12px 16px", fontSize: 13, color: C.sub, background: "#fff", borderBottom: `1px solid ${C.borderSoft}` }}>
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", padding: "12px 16px", fontSize: 13, color: C.sub, background: "#fff", borderBottom: `1px solid ${C.borderSoft}` }}>
                   <span>{names[0]} <span style={{ color: C.faint, fontWeight: 600 }}>(기준)</span></span><span /><span>{names[1]}</span>
                 </div>
                 {AUTO_ROWS.map((r, i) => {
                   const dup = autoEditing && autoDupes.has(autoSel[i]);
                   return (
-                  <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 30px 1fr", alignItems: "start", padding: "11px 16px", borderBottom: i === AUTO_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", alignItems: "start", padding: "11px 16px", borderBottom: i === AUTO_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
                     <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, paddingTop: autoEditing ? 9 : 0 }}>{r[0]} <TypeTag kind={r[1]} /></span>
                     <span style={{ color: C.faint, display: "flex", justifyContent: "center", paddingTop: autoEditing ? 11 : 0 }}><Icon.link /></span>
                     {autoEditing ? (
@@ -849,11 +851,11 @@ function MergePage({ selected, onBack, onRun }) {
             </div>
             {reviewOpen && (
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", padding: "12px 16px", fontSize: 13, color: C.sub, background: "#fff", borderBottom: `1px solid ${C.borderSoft}` }}>
-                  <span>{names[0]} <span style={{ color: C.faint, fontWeight: 600 }}>(기준)</span></span><span>{names[1]}</span>
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", padding: "12px 16px", fontSize: 13, color: C.sub, background: "#fff", borderBottom: `1px solid ${C.borderSoft}` }}>
+                  <span>{names[0]} <span style={{ color: C.faint, fontWeight: 600 }}>(기준)</span></span><span /><span>{names[1]}</span>
                 </div>
                 {REVIEW_ROWS.map((r, i) => (
-                  <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 30px 1fr", alignItems: "start", padding: "16px", borderBottom: i === REVIEW_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,300px) 40px minmax(0,340px)", alignItems: "start", padding: "16px", borderBottom: i === REVIEW_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
                     <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, paddingTop: 9 }}>{r.left} <TypeTag kind={r.lt} /></span>
                     <span style={{ color: C.faint, display: "flex", justifyContent: "center", paddingTop: 11 }}><Icon.link /></span>
                     <div>
@@ -890,6 +892,8 @@ function MergePage({ selected, onBack, onRun }) {
             </div>
           </div>
           <div style={{ fontSize: 12, color: C.faint, marginBottom: 8 }}>새 파일이 아니라 <b>{names[0]}</b>에 <b>새 스냅샷</b>으로 저장됩니다.</div>
+          </>
+          )}
           </div>
         </div>
         )}
