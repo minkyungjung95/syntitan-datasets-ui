@@ -897,21 +897,42 @@ function MergePage({ selected, onBack, onRun }) {
       </div>
 
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <LeftPanel picked={picked} setPicked={setPicked} picking={picking} setPicking={setPicking} canCancel={committed.length >= 2}
+        {picking && <LeftPanel picked={picked} setPicked={setPicked} picking={picking} setPicking={setPicking} canCancel={committed.length >= 2}
           onDone={() => { setCommitted(picked); setPicking(false); }}
-          onCancel={() => { setPicked(committed); setPicking(false); }} />
+          onCancel={() => { setPicked(committed); setPicking(false); }} />}
 
-        {!hasContent ? (
+        {picking ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, textAlign: "center", color: C.faint }}>
             <span style={{ width: 56, height: 56, borderRadius: 14, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.union width={26} height={26} /></span>
-            <div style={{ fontSize: 17, fontWeight: 700, color: C.text }}>{picking ? "데이터 선택을 완료해 주세요" : "합칠 데이터를 선택해 주세요"}</div>
-            <div style={{ fontSize: 14, lineHeight: 1.6 }}>{picking ? <>2~{MAX_MERGE}개 선택 후 <b>완료</b>를 누르면<br />병합 방식과 칼럼 매칭 결과를 확인할 수 있어요.</> : <>왼쪽에서 2~{MAX_MERGE}개의 데이터를 선택하면<br />병합 방식과 칼럼 매칭 결과를 확인할 수 있어요.</>}</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: C.text }}>데이터 선택을 완료해 주세요</div>
+            <div style={{ fontSize: 14, lineHeight: 1.6 }}>2~{MAX_MERGE}개 선택 후 <b>완료</b>를 누르면<br />병합 방식과 칼럼 매칭 결과를 확인할 수 있어요.</div>
           </div>
         ) : loading ? (
           <MergeSkeleton />
+        ) : !hasContent ? (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, textAlign: "center", color: C.faint }}>
+            <span style={{ width: 56, height: 56, borderRadius: 14, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.union width={26} height={26} /></span>
+            <div style={{ fontSize: 17, fontWeight: 700, color: C.text }}>합칠 데이터를 선택해 주세요</div>
+            <button onClick={() => setPicking(true)} style={{ display: "flex", alignItems: "center", gap: 7, background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.plus /> 데이터 선택하기</button>
+          </div>
         ) : (
         <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px 120px", position: "relative", background: "#FBFBFB" }}>
           <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+          {/* 선택한 데이터 — 상단 가로 바 (좌측 사이드바 대체) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22, flexWrap: "wrap" }}>
+            {committed.map((idx, i) => (
+              <React.Fragment key={idx}>
+                {i > 0 && <span style={{ color: C.faint, fontSize: 15, fontWeight: 600 }}>+</span>}
+                <span style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 12px", background: "#fff" }}>
+                  <span style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? "#EEF2FF" : "#F3F4F6", color: i === 0 ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db width={14} height={14} /></span>
+                  <span style={{ fontSize: 13.5, fontWeight: 600 }}>{poolLabel(idx)}</span>
+                  {i === 0 && <span style={{ fontSize: 10.5, fontWeight: 700, color: C.sub, background: C.chipBg, borderRadius: 5, padding: "1px 6px" }}>기준</span>}
+                  <span style={{ fontSize: 11.5, color: C.faint }}>· 8,432행</span>
+                </span>
+              </React.Fragment>
+            ))}
+            <button onClick={() => setPicking(true)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", border: `1px solid ${C.border}`, borderRadius: 9, background: "#fff", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.swap width={14} height={14} /> 데이터 재선택</button>
+          </div>
           {over ? (
             <div style={{ minHeight: 460, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 18 }}>
               <span style={{ width: 64, height: 64, borderRadius: 18, background: "#FEF2F2", border: `1px solid #FCA5A5`, color: C.red, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 800 }}>!</span>
