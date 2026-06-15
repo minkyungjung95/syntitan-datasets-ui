@@ -871,6 +871,29 @@ function VennIcon({ type, active }) {
   );
 }
 
+function KeyPicker({ value, options, onChange }) {
+  const [open, setOpen] = useState(false);
+  const type = (options.find((o) => o[0] === value) || [])[1];
+  return (
+    <div style={{ position: "relative", width: "100%" }}>
+      <div onClick={() => setOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, border: `1px solid ${open ? C.dark : C.border}`, borderRadius: 9, padding: "10px 12px", background: "#fff", cursor: "pointer", fontSize: 14 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 7 }}><TypeIcon kind={type} /> {value}</span>
+        <span style={{ color: C.faint, display: "flex", transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}><Icon.chevD /></span>
+      </div>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.14)", zIndex: 41, padding: 4 }}>
+            {options.map(([nm, t]) => (
+              <div key={nm} onClick={() => { onChange(nm); setOpen(false); }} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 10px", fontSize: 14, borderRadius: 7, cursor: "pointer", background: nm === value ? C.blueSoft : "transparent" }}><TypeIcon kind={t} /> {nm}</div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function MergePage({ selected, onBack, onRun }) {
   // 멀티선택으로 진입(2개 이상) → 요약부터 / 헤더 버튼으로 직접 진입(0개) → 데이터 선택부터
   const cameWithSelection = selected.length >= 2;
@@ -878,8 +901,12 @@ function MergePage({ selected, onBack, onRun }) {
   const [committed, setCommitted] = useState(cameWithSelection ? [0, 1] : []); // 실제 적용(우측 본문 기준)
   const [picking, setPicking] = useState(!cameWithSelection);
   const [method, setMethod] = useState("union"); // union | join
-  const [joinKey, setJoinKey] = useState("customer_id");
   const [joinType, setJoinType] = useState("left"); // 1차: left만 지원
+  const [joinLeft, setJoinLeft] = useState("customer_id");   // 기준 키
+  const [joinRight, setJoinRight] = useState("customer_id"); // 추가 키
+  const KEY_RATE = { customer_id: 92, email: 78, name: 41, signup_date: 55, region: 30, age: 20 };
+  const matchRate = KEY_RATE[joinLeft] ?? 55;
+  const keyRecommended = joinLeft === "customer_id" && joinRight === "customer_id";
   const [autoOpen, setAutoOpen] = useState(true);
   const [autoEditing, setAutoEditing] = useState(false);
   const [reviewEditing, setReviewEditing] = useState(false);
@@ -1004,29 +1031,33 @@ function MergePage({ selected, onBack, onRun }) {
                   );
                 })}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>조인 키 매칭</span></div>
-              <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>두 데이터를 연결할 기준 컬럼(조인 키)을 선택하세요. AI가 매칭률이 높은 키를 추천해요.</div>
-              <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 12 }}>
-                {JOIN_KEYS.map((k, i) => {
-                  const sel = joinKey === k.name;
-                  return (
-                    <div key={k.name} onClick={() => setJoinKey(k.name)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer", borderBottom: i === JOIN_KEYS.length - 1 ? "none" : `1px solid ${C.borderSoft}`, background: sel ? C.blueSoft : "#fff" }}>
-                      <span style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${sel ? C.blue : "#CBD0D6"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{sel && <span style={{ width: 9, height: 9, borderRadius: "50%", background: C.blue }} />}</span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, minWidth: 180 }}>{k.name} <TypeTag kind={k.type} />{k.recommended && <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEF2FF", borderRadius: 5, padding: "1px 6px" }}><Icon.spark /> 추천</span>}</span>
-                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ flex: 1, height: 7, borderRadius: 999, background: C.track, overflow: "hidden", maxWidth: 260 }}><div style={{ width: `${k.rate}%`, height: "100%", background: rateColor(k.rate), borderRadius: 999 }} /></div>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: rateColor(k.rate), minWidth: 38, textAlign: "right" }}>{k.rate}%</span>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>조인 조건</span></div>
+              <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>두 데이터를 어떤 칼럼으로 연결할지 정해요. <b>기준 칼럼 = 추가 칼럼</b> 한 쌍이면 되고, 이름이 달라도 짝지을 수 있어요.</div>
+              <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11.5, color: C.faint, fontWeight: 600, marginBottom: 6 }}>기준 · {names[0]}</div>
+                    <KeyPicker value={joinLeft} options={WF_BASE} onChange={setJoinLeft} />
+                  </div>
+                  <span style={{ fontSize: 18, color: C.sub, fontWeight: 700, paddingBottom: 9 }}>=</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11.5, color: C.faint, fontWeight: 600, marginBottom: 6 }}>추가 · {names[1]}</div>
+                    <KeyPicker value={joinRight} options={WF_ADD} onChange={setJoinRight} />
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.borderSoft}` }}>
+                  <span style={{ fontSize: 12.5, color: C.sub }}>매칭률</span>
+                  <div style={{ flex: 1, height: 7, borderRadius: 999, background: C.track, overflow: "hidden", maxWidth: 320 }}><div style={{ width: `${matchRate}%`, height: "100%", background: rateColor(matchRate), borderRadius: 999 }} /></div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: rateColor(matchRate) }}>{matchRate}%</span>
+                  {keyRecommended && <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEF2FF", borderRadius: 5, padding: "2px 7px" }}><Icon.spark /> AI 추천</span>}
+                </div>
               </div>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.faint, marginBottom: 24, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>매칭률</b> = 두 데이터셋에서 조인 키 값이 양쪽에 모두 존재해 연결되는 행의 비율. 낮을수록 매칭 안 되는 행(빈 값)이 많아져요.</span></div>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.faint, marginBottom: 24, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>매칭률</b> = 두 데이터에서 이 키 값이 양쪽에 모두 존재해 연결되는 행의 비율. 낮을수록 매칭 안 되는 기준 행이 많아(추가 컬럼은 Null) 져요.</span></div>
               {/* Left Join 결과 예시 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><StepNum n="03" /><span style={{ fontSize: 15, fontWeight: 700 }}>결과 예시</span><span style={{ fontSize: 12.5, color: C.faint }}>기준({names[0]})은 모두 유지 · 키({joinKey})로 추가 컬럼 연결 · 매칭 안 되면 Null</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><StepNum n="03" /><span style={{ fontSize: 15, fontWeight: 700 }}>결과 예시</span><span style={{ fontSize: 12.5, color: C.faint }}>기준({names[0]})은 모두 유지 · 키({joinLeft}={joinRight})로 추가 컬럼 연결 · 매칭 안 되면 Null</span></div>
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 30, fontSize: 13 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr 1fr", background: "#FCFCFD", borderBottom: `1px solid ${C.border}`, fontSize: 12, color: C.sub, fontWeight: 600 }}>
-                  <span style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 5 }}>{joinKey} <span style={{ fontSize: 10, color: C.blue, background: C.blueSoft, borderRadius: 4, padding: "1px 5px" }}>키</span></span>
+                  <span style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 5 }}>{joinLeft} <span style={{ fontSize: 10, color: C.blue, background: C.blueSoft, borderRadius: 4, padding: "1px 5px" }}>키</span></span>
                   <span style={{ padding: "10px 14px" }}>name <span style={{ color: C.faint }}>(기준)</span></span>
                   <span style={{ padding: "10px 14px", background: "#F7FBF4" }}>region <span style={{ color: C.greenText }}>(+추가)</span></span>
                   <span style={{ padding: "10px 14px", background: "#F7FBF4" }}>age <span style={{ color: C.greenText }}>(+추가)</span></span>
@@ -1040,7 +1071,7 @@ function MergePage({ selected, onBack, onRun }) {
                   </div>
                 ))}
               </div>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.sub, marginBottom: 30, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>박도윤</b>처럼 추가 데이터에 키({joinKey})가 없는 기준 행은 그대로 남고, 붙는 컬럼(region·age)만 <b>Null</b>로 채워져요. (Left Join)</span></div>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.sub, marginBottom: 30, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>박도윤</b>처럼 추가 데이터에 키({joinRight})가 없는 기준 행은 그대로 남고, 붙는 컬럼(region·age)만 <b>Null</b>로 채워져요. (Left Join)</span></div>
             </>
           ) : (
           <>
