@@ -1028,20 +1028,6 @@ function MergePage({ selected, onBack, onRun }) {
           <>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>칼럼 매칭</span></div>
 
-          {/* 요약 칩 */}
-          <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-            {[
-              { sq: "#9CA3AF", label: "전체 칼럼 수", value: AUTO_ROWS.length + REVIEW_ROWS.length, color: C.text },
-              { sq: C.text, label: "검토 필요", value: REVIEW_ROWS.length, color: C.text },
-              { sq: C.purple, label: "AI 자동 매칭", value: AUTO_ROWS.length, color: C.text },
-            ].map((c) => (
-              <div key={c.label} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "15px 16px" }}>
-                <span style={{ fontSize: 13, color: C.sub, display: "flex", alignItems: "center", gap: 8 }}><span style={{ width: 9, height: 9, borderRadius: 3, background: c.sq, display: "inline-block" }} /> {c.label}</span>
-                <span style={{ fontSize: 19, fontWeight: 800, color: c.color }}>{c.value}</span>
-              </div>
-            ))}
-          </div>
-
           {/* 데이터 관계 — 결정하면서 보는 라이브 그래프 */}
           <div style={{ marginBottom: 18 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
