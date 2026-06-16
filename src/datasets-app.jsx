@@ -1015,25 +1015,27 @@ function MergePage({ selected, onBack, onRun }) {
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.faint, marginBottom: 24, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>매칭률</b> = 두 데이터에서 이 키 값이 양쪽에 모두 존재해 연결되는 행의 비율. 낮을수록 매칭 안 되는 기준 행이 많아(추가 컬럼은 Null) 져요.</span></div>
-              {/* 구성 미리보기 — 버튼으로 열어서 확인 (on-demand) */}
+              {/* 매칭 시각화 미리보기 — on-demand, 리셋 버튼으로 반영 */}
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 30, background: "#fff" }}>
                 <div onClick={() => setPreviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", cursor: "pointer", background: previewOpen ? "#FAFAFB" : "#fff", borderBottom: previewOpen ? `1px solid ${C.borderSoft}` : "none" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
                     <span style={{ display: "flex", color: C.faint, transform: previewOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD /></span>
-                    <span style={{ color: C.purple, display: "flex" }}><Icon.union width={16} height={16} /></span>
-                    <span style={{ fontWeight: 700 }}>구성 미리보기</span>
-                    <span style={{ fontWeight: 500, color: C.faint, fontSize: 12.5 }}>· 키({joinLeft}={joinRight})로 연결, 매칭 안 되면 Null</span>
+                    <span style={{ fontWeight: 700 }}>매칭 시각화 미리보기</span>
                   </span>
-                  <span style={{ fontSize: 12.5, color: C.purple, fontWeight: 600 }}>{previewOpen ? "접기" : "오픈하기"}</span>
+                  <span style={{ fontSize: 11.5, color: C.faint }}>*리셋 버튼을 눌러야 바뀐 값이 반영됩니다</span>
                 </div>
                 {previewOpen && (
-                  <>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, padding: "8px 14px 0", fontSize: 11.5, color: C.faint }}>
-                      <span>현재 설정 기준 미리보기</span>
-                      <span onClick={(e) => { e.stopPropagation(); setPreviewBig((v) => !v); }} style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }}>{previewBig ? "좁게 보기" : "넓게 보기"}</span>
+                  <div style={{ position: "relative" }}>
+                    <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6, zIndex: 3 }}>
+                      <button onClick={(e) => { e.stopPropagation(); setPreviewBig((v) => !v); }} title={previewBig ? "좁게 보기" : "넓게 보기"} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.sub }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); setPreviewBig(false); }} title="리셋 · 현재 설정 반영" style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: C.dark, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                      </button>
                     </div>
-                    <div style={{ height: previewBig ? "72vh" : 360, display: "flex", transition: "height .2s ease" }}><WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} /></div>
-                  </>
+                    <div style={{ height: previewBig ? "72vh" : 380, display: "flex", transition: "height .2s ease" }}><WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} /></div>
+                  </div>
                 )}
               </div>
             </>
@@ -1041,27 +1043,31 @@ function MergePage({ selected, onBack, onRun }) {
           <>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>칼럼 매칭</span></div>
 
-          {/* 구성 미리보기 — 버튼으로 열어서 확인 (드롭다운 실시간 연동 X, 열 때 현재 설정 반영) */}
+          {/* 매칭 시각화 미리보기 — on-demand, 리셋 버튼으로 반영 / 넓게 보기는 인라인 확장 */}
           <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 18, background: "#fff" }}>
             <div onClick={() => setPreviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", cursor: "pointer", background: previewOpen ? "#FAFAFB" : "#fff", borderBottom: previewOpen ? `1px solid ${C.borderSoft}` : "none" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
                 <span style={{ display: "flex", color: C.faint, transform: previewOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD /></span>
-                <span style={{ color: C.purple, display: "flex" }}><Icon.union width={16} height={16} /></span>
-                <span style={{ fontWeight: 700 }}>구성 미리보기</span>
-                <span style={{ fontWeight: 500, color: C.faint, fontSize: 12.5 }}>· 무엇이 결합·유지·제외되는지</span>
+                <span style={{ fontWeight: 700 }}>매칭 시각화 미리보기</span>
               </span>
-              <span style={{ fontSize: 12.5, color: C.purple, fontWeight: 600 }}>{previewOpen ? "접기" : "오픈하기"}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 11.5, color: C.faint }}>*리셋 버튼을 눌러야 바뀐 값이 반영됩니다</span>
+              </span>
             </div>
             {previewOpen && (
-              <>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, padding: "8px 14px 0", fontSize: 11.5, color: C.faint }}>
-                  <span>현재 설정 기준 미리보기</span>
-                  <span onClick={(e) => { e.stopPropagation(); setPreviewBig((v) => !v); }} style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }}>{previewBig ? "좁게 보기" : "넓게 보기"}</span>
+              <div style={{ position: "relative" }}>
+                <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6, zIndex: 3 }}>
+                  <button onClick={(e) => { e.stopPropagation(); setPreviewBig((v) => !v); }} title={previewBig ? "좁게 보기" : "넓게 보기"} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.sub }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); setPreviewBig(false); }} title="리셋 · 현재 설정 반영" style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: C.dark, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </button>
                 </div>
-                <div style={{ height: previewBig ? "72vh" : 360, display: "flex", transition: "height .2s ease" }}>
+                <div style={{ height: previewBig ? "72vh" : 380, display: "flex", transition: "height .2s ease" }}>
                   <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} />
                 </div>
-              </>
+              </div>
             )}
           </div>
 
