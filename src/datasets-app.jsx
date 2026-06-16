@@ -666,7 +666,8 @@ function WfNode({ x, y, w, accent, icon, name, sub, children, onDragStart, dragg
     </div>
   );
 }
-function WorkflowGraph({ names, isJoin, afterRows }) {
+function WorkflowGraph({ names, isJoin, afterRows, big }) {
+  const CW = big ? 1900 : 1200, CH = big ? 1150 : 760;
   const [pos, setPos] = useState({ base: { x: 20, y: 60 }, add: { x: 20, y: 300 }, merge: { x: 420, y: 150 } });
   const [dragId, setDragId] = useState(null);
   const drag = useRef(null);
@@ -683,8 +684,8 @@ function WorkflowGraph({ names, isJoin, afterRows }) {
   const path = (a, b) => `M ${a.x} ${a.y} C ${a.x + 60} ${a.y} ${b.x - 60} ${b.y} ${b.x} ${b.y}`;
   return (
     <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "auto", backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.09) 1px, transparent 1px)", backgroundSize: "18px 18px" }}>
-      <div style={{ position: "relative", width: 1200, height: 760 }}>
-        <svg width="1200" height="760" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+      <div style={{ position: "relative", width: CW, height: CH }}>
+        <svg width={CW} height={CH} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
           <path d={path(rPort("base"), lPort("merge"))} fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
           <path d={path(rPort("add"), lPort("merge"))} fill="none" stroke="#C7CBD1" strokeWidth="1.5" />
           {[rPort("base"), rPort("add"), lPort("merge")].map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#fff" stroke="#9CA3AF" strokeWidth="1.5" />)}
@@ -952,6 +953,17 @@ function MergePage({ selected, onBack, onRun }) {
             <span style={{ width: 56, height: 56, borderRadius: 14, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.union width={26} height={26} /></span>
             <div style={{ fontSize: 17, fontWeight: 700, color: C.text }}>합칠 데이터를 선택해 주세요</div>
             <button onClick={() => setPicking(true)} style={{ display: "flex", alignItems: "center", gap: 7, background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.plus /> 데이터 선택하기</button>
+          </div>
+        ) : previewBig ? (
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "#fff" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", borderBottom: `1px solid ${C.border}` }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700 }}>매칭 시각화 미리보기 <span style={{ fontWeight: 500, color: C.faint, fontSize: 12 }}>· 스크롤해서 전체 보기</span></span>
+              <span style={{ display: "flex", gap: 6 }}>
+                <button onClick={() => setPreviewBig(false)} title="좁게 보기" style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.sub }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 4v5H4M15 20v-5h5M9 9 4 4M15 15l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
+                <button title="리셋" style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: C.dark, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
+              </span>
+            </div>
+            <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} big />
           </div>
         ) : (
         <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px 120px", position: "relative", background: "#FBFBFB" }}>
