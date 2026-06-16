@@ -570,7 +570,7 @@ function MergeSkeleton() {
   const sk = (w, h = 13) => ({ height: h, width: w, borderRadius: 7, background: "#EEEFF1", animation: "pulse 1.2s ease-in-out infinite" });
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px" }}>
-      <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
       {/* 01 병합 방식 */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}><StepNum n="01" /><span style={{ fontSize: 15, fontWeight: 700 }}>병합 방식</span></div>
       <div style={{ display: "flex", gap: 16, marginBottom: 30 }}>
@@ -1017,7 +1017,7 @@ function MergePage({ selected, onBack, onRun }) {
           </div>
         ) : (
         <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px 120px", position: "relative", background: "#FBFBFB" }}>
-          <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto" }}>
           {over ? (
             <div style={{ minHeight: 460, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 18 }}>
               <span style={{ width: 64, height: 64, borderRadius: 18, background: "#FEF2F2", border: `1px solid #FCA5A5`, color: C.red, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 800 }}>!</span>
