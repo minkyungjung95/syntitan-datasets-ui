@@ -522,17 +522,20 @@ const DEFAULT_NAMES = ["CUBIG Data_2024", "CUBIG Data_2025"];
 
 const NO_MATCH = "매칭 칼럼 없음";
 // 기준 4컬럼 + 추가 4컬럼 → 합치면 6 distinct: 결합 2 · 유지 2 · 제외 2
-const AUTO_ROWS = [["customer_id", "Integer"], ["name", "String"]]; // 자동(양쪽 이름·타입 일치) = 결합 2
+const AUTO_ROWS = [["customer_id", "Integer"], ["name", "String"], ["email", "String"], ["signup_date", "Integer"], ["gender", "String"], ["country", "String"]]; // 자동(양쪽 이름·타입 일치)
 const REVIEW_ROWS = [
-  { left: "email", lt: "String", right: NO_MATCH, note: "기준에만 있는 칼럼이에요. 추가 데이터 행은 Null로 채워져요." },
-  { left: "signup_date", lt: "Integer", right: NO_MATCH, note: "기준에만 있는 칼럼이에요. 추가 데이터 행은 Null로 채워져요." },
   { left: "region", lt: "String", right: NO_MATCH, note: "추가에만 있는 칼럼이에요. 기준 데이터 행은 Null로 채워져요." },
   { left: "age", lt: "Integer", right: NO_MATCH, note: "추가에만 있는 칼럼이에요. 기준 데이터 행은 Null로 채워져요." },
+  { left: "phone", lt: "String", right: NO_MATCH, note: "기준에만 있는 칼럼이에요. 추가 데이터 행은 Null로 채워져요." },
+  { left: "address", lt: "String", right: NO_MATCH, note: "기준에만 있는 칼럼이에요. 추가 데이터 행은 Null로 채워져요." },
+  { left: "age_group", lt: "String", right: NO_MATCH, note: "추가에만 있는 칼럼이에요. 기준 데이터 행은 Null로 채워져요." },
+  { left: "zip_code", lt: "String", right: NO_MATCH, note: "기준에만 있는 칼럼이에요. 추가 데이터 행은 Null로 채워져요." },
 ];
 const COL_OPTIONS = [
   { name: NO_MATCH },
   { name: "customer_id", type: "Integer" }, { name: "name", type: "String" },
   { name: "email", type: "String" }, { name: "signup_date", type: "Integer" },
+  { name: "gender", type: "String" }, { name: "country", type: "String" },
   { name: "region", type: "String" }, { name: "age", type: "Integer" },
 ];
 const colType = (name) => COL_OPTIONS.find((o) => o.name === name)?.type;
@@ -1012,13 +1015,11 @@ function MergePage({ selected, onBack, onRun }) {
         <span onClick={onBack} title="Combine으로" style={{ cursor: "pointer", display: "flex", color: C.sub, marginRight: 2 }}><Icon.back /></span>
         {/* 병합 방식 드롭다운 */}
         <div style={{ position: "relative" }}>
-          <button onClick={() => setMethodOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 11, height: 44, padding: "0 14px", borderRadius: 10, border: `1px solid ${methodOpen ? C.dark : C.border}`, background: "#fff", cursor: "pointer", fontFamily: FONT }}>
+          <button onClick={() => setMethodOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 10, height: 44, padding: "0 12px", borderRadius: 10, border: "1px solid transparent", background: methodOpen ? "#F1F2F4" : "transparent", cursor: "pointer", fontFamily: FONT }}>
             <span style={{ width: 30, height: 30, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{isJoin ? <Icon.join width={16} height={16} /> : <Icon.union width={16} height={16} />}</span>
-            <span style={{ textAlign: "left" }}>
-              <span style={{ display: "block", fontSize: 14, fontWeight: 700, lineHeight: 1.25 }}>{isJoin ? "Join" : "Union"}</span>
-              <span style={{ display: "block", fontSize: 11.5, color: C.faint, lineHeight: 1.3 }}>{isJoin ? "기준 데이터 옆에 열을 추가해요." : "컬럼이 같은 두 데이터를 위아래로 쌓아요."}</span>
-            </span>
-            <span style={{ display: "flex", color: C.faint, marginLeft: 4 }}><Icon.chevD width={15} height={15} /></span>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>{isJoin ? "Join" : "Union"}</span>
+            <span style={{ fontSize: 12.5, color: C.faint, whiteSpace: "nowrap" }}>{isJoin ? "기준 데이터 옆에 열을 추가해요." : "컬럼이 같은 두 데이터를 위아래로 쌓아요."}</span>
+            <span style={{ display: "flex", color: C.faint, marginLeft: 2 }}><Icon.chevD width={14} height={14} /></span>
           </button>
           {methodOpen && (
             <>
@@ -1201,7 +1202,7 @@ function MergePage({ selected, onBack, onRun }) {
           <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
             <div onClick={() => setReviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#FAFAFB", borderBottom: reviewOpen ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
-                <span style={{ display: "flex", color: "#B45309" }}><Icon.infoCircle width={16} height={16} /></span>
+                <span style={{ display: "flex", color: "#B45309" }}><Icon.warn width={16} height={16} /></span>
                 <span style={{ fontWeight: 700 }}>검토 필요</span>
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: 8, color: C.sub }}>
@@ -1278,7 +1279,7 @@ function MergePage({ selected, onBack, onRun }) {
       <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 36px", borderTop: `1px solid ${C.border}`, background: "#FCFCFD" }}>
         <span style={{ fontSize: 14, fontWeight: 700 }}>총합</span>
         <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>행 <span style={{ ...pill, ...(over ? { color: "#DC2626", borderColor: "#FCA5A5" } : {}) }}>{ready ? afterRows.toLocaleString() : "—"}</span></span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>열 <span style={pill}>{ready ? afterCols.toLocaleString() : "—"}</span></span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>열 <span style={pill}>{ready ? "300" : "—"}</span></span>
         <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>용량 <span style={pill}>{ready ? "3,000MB" : "—"}</span></span>
         {ready && (over ? (
           <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#DC2626", background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "5px 10px" }}>
