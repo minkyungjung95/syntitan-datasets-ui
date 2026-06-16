@@ -1068,24 +1068,7 @@ function MergePage({ selected, onBack, onRun }) {
           {/* 02 */}
           {method === "join" ? (
             <>
-              {/* 조인 방식 (1차: Left만 지원) */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>조인 방식</span></div>
-              <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>어떤 행을 결과에 남길지 정해요. 키가 맞는 추가 데이터를 기준 데이터 옆에 붙여요.</div>
-              <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-                {[["left", "Left Join", "기준 전부 유지", false], ["inner", "Inner", "양쪽 매칭만", false], ["right", "Right", "추가 전부 유지", false], ["full", "Full Outer", "양쪽 전부", false]].map(([t, label, desc, soon]) => {
-                  const active = joinType === t;
-                  return (
-                    <div key={t} onClick={() => !soon && setJoinType(t)} style={{ flex: 1, border: `1.5px solid ${active ? C.blue : C.border}`, borderRadius: 12, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: soon ? "default" : "pointer", opacity: soon ? 0.5 : 1, background: active ? "#F5F9FF" : "#fff", position: "relative" }}>
-                      <VennIcon type={t} active={active} />
-                      <div style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: active ? "#185FA5" : C.text }}>{label}</div>
-                        <div style={{ fontSize: 11, color: C.faint, marginTop: 1 }}>{desc}</div>
-                      </div>
-                      {soon && <span style={{ position: "absolute", top: 8, right: 8, fontSize: 9.5, fontWeight: 700, color: C.faint, background: "#F3F4F6", borderRadius: 4, padding: "1px 5px" }}>예정</span>}
-                    </div>
-                  );
-                })}
-              </div>
+              {/* 02 조인 조건 (조인키) — 먼저 */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>조인 조건</span></div>
               <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>두 데이터를 어떤 칼럼으로 연결할지 정해요. <b>기준 칼럼 = 추가 칼럼</b> 한 쌍이면 되고, 이름이 달라도 짝지을 수 있어요.</div>
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 12 }}>
@@ -1107,9 +1090,28 @@ function MergePage({ selected, onBack, onRun }) {
                   {keyRecommended && <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEF2FF", borderRadius: 5, padding: "2px 7px" }}><Icon.spark /> AI 추천</span>}
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.faint, marginBottom: 24, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>매칭률</b> = 두 데이터에서 이 키 값이 양쪽에 모두 존재해 연결되는 행의 비율. 낮을수록 매칭 안 되는 기준 행이 많아(추가 컬럼은 Null) 져요.</span></div>
-              {/* 매칭 시각화 미리보기 — on-demand, 리셋 버튼으로 반영 */}
-              <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 30, background: "#fff" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.faint, marginBottom: 28, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>매칭률</b> = 두 데이터에서 이 키 값이 양쪽에 모두 존재해 연결되는 행의 비율. 낮을수록 매칭 안 되는 기준 행이 많아(추가 컬럼은 Null) 져요.</span></div>
+
+              {/* 02 조인 방식 + 시각화 (합침) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>조인 방식</span></div>
+              <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>매칭 안 되는 행을 어떻게 처리할지 정해요. 선택하면 아래 미리보기에 결과 구조가 반영돼요.</div>
+              <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 30, background: "#fff" }}>
+                <div style={{ display: "flex", gap: 10, padding: 16, borderBottom: `1px solid ${C.borderSoft}` }}>
+                {[["left", "Left Join", "기준 전부 유지", false, true], ["inner", "Inner", "양쪽 매칭만", false, false], ["right", "Right", "추가 전부 유지", false, false], ["full", "Full Outer", "양쪽 전부", false, false]].map(([t, label, desc, soon, rec]) => {
+                  const active = joinType === t;
+                  return (
+                    <div key={t} onClick={() => !soon && setJoinType(t)} style={{ flex: 1, border: `1.5px solid ${active ? C.blue : C.border}`, borderRadius: 12, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: soon ? "default" : "pointer", opacity: soon ? 0.5 : 1, background: active ? "#F5F9FF" : "#fff", position: "relative" }}>
+                      <VennIcon type={t} active={active} />
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: active ? "#185FA5" : C.text }}>{label}</div>
+                        <div style={{ fontSize: 11, color: C.faint, marginTop: 1 }}>{desc}</div>
+                      </div>
+                      {soon && <span style={{ position: "absolute", top: 8, right: 8, fontSize: 9.5, fontWeight: 700, color: C.faint, background: "#F3F4F6", borderRadius: 4, padding: "1px 5px" }}>예정</span>}
+                      {rec && <span style={{ position: "absolute", top: 8, right: 8, display: "flex", alignItems: "center", gap: 3, fontSize: 9.5, fontWeight: 700, color: C.purple, background: "#EEF2FF", borderRadius: 4, padding: "2px 6px" }}><Icon.spark /> 추천</span>}
+                    </div>
+                  );
+                })}
+                </div>
                 <div onClick={() => setPreviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", cursor: "pointer", background: previewOpen ? "#FAFAFB" : "#fff", borderBottom: previewOpen ? `1px solid ${C.borderSoft}` : "none" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
                     <span style={{ display: "flex", color: C.faint, transform: previewOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD /></span>
