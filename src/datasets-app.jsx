@@ -875,6 +875,57 @@ function KeyPicker({ value, options, onChange }) {
   );
 }
 
+function ReselectModal({ initial, onApply, onClose }) {
+  const pool = useMemo(() => Array.from({ length: 18 }, (_, i) => poolLabel(i)), []);
+  const [draft, setDraft] = useState(initial);
+  const atMax = draft.length >= PICK_MAX;
+  const overPick = draft.length > MAX_MERGE;
+  const canApply = draft.length >= 2 && draft.length <= MAX_MERGE;
+  const toggle = (i) => setDraft((p) => (p.includes(i) ? p.filter((x) => x !== i) : p.length >= PICK_MAX ? p : [...p, i]));
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,0.45)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: 560, maxHeight: "82vh", background: "#fff", borderRadius: 18, boxShadow: "0 24px 64px rgba(0,0,0,0.28)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "18px 22px 14px", borderBottom: `1px solid ${C.border}` }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>데이터 재선택</div>
+            <div style={{ fontSize: 12.5, color: overPick ? "#DC2626" : C.faint, marginTop: 4, display: "flex", alignItems: "center", gap: 5 }}><Icon.infoCircle width={12} height={12} /> {overPick ? `최대 ${MAX_MERGE}개까지 합칠 수 있어요` : `처음 선택한 데이터셋이 기준이 돼요 · 최대 ${MAX_MERGE}개`}</div>
+          </div>
+          <span onClick={onClose} style={{ cursor: "pointer", color: C.faint, display: "flex", padding: 2 }}><Icon.x /></span>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {pool.map((nm, i) => {
+            const checked = draft.includes(i);
+            const isBase = draft[0] === i;
+            const order = draft.indexOf(i) + 1;
+            const disabled = !checked && atMax;
+            return (
+              <label key={i} onClick={() => !disabled && toggle(i)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 22px", cursor: disabled ? "default" : "pointer", background: isBase ? "#EEF4FF" : checked ? "#F7F8FA" : "transparent", opacity: disabled ? 0.45 : 1 }}>
+                <Checkbox checked={checked} onChange={() => !disabled && toggle(i)} />
+                <span style={{ width: 30, height: 30, borderRadius: 7, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db /></span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 600 }}>{nm}</span>
+                    {isBase && <span style={{ fontSize: 10.5, fontWeight: 700, color: C.sub, background: C.chipBg, borderRadius: 5, padding: "1px 6px" }}>기준</span>}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div>
+                </div>
+                {checked && <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", border: `1px solid ${isBase ? C.blue : C.border}`, background: "#fff", color: isBase ? C.blue : C.sub, fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{order}</span>}
+              </label>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 22px", borderTop: `1px solid ${C.border}` }}>
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: overPick ? "#DC2626" : C.faint }}>{draft.length}/{MAX_MERGE} 선택됨</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={onClose} style={{ padding: "10px 18px", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>취소</button>
+            <button onClick={() => canApply && onApply(draft)} disabled={!canApply} style={{ padding: "10px 20px", borderRadius: 9, border: "none", background: canApply ? C.dark : "#E5E7EB", color: canApply ? "#fff" : C.faint, fontSize: 13.5, fontWeight: 600, cursor: canApply ? "pointer" : "default", fontFamily: FONT }}>적용</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MergePage({ selected, onBack, onRun }) {
   // 멀티선택으로 진입(2개 이상) → 요약부터 / 헤더 버튼으로 직접 진입(0개) → 데이터 선택부터
   const cameWithSelection = selected.length >= 2;
@@ -899,6 +950,7 @@ function MergePage({ selected, onBack, onRun }) {
   const [previewBig, setPreviewBig] = useState(false); // 넓게 보기(인라인 높이 확장)
   const [selOpen, setSelOpen] = useState(false); // 선택 데이터 팝오버(접힘 상태)
   const [sideCollapsed, setSideCollapsed] = useState(false); // 선택 데이터 사이드바 접힘
+  const [reselectOpen, setReselectOpen] = useState(false); // 데이터 재선택 모달
 
   // 완료(committed 변경) 시에만 매칭 재계산 스켈레톤
   const committedKey = committed.join(",");
@@ -955,7 +1007,7 @@ function MergePage({ selected, onBack, onRun }) {
                       </div>
                     </div>
                   ))}
-                  <button onClick={() => { setSelOpen(false); setPicking(true); }} style={{ width: "100%", marginTop: 8, padding: "10px 0", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon.swap width={14} height={14} /> Reselect Data</button>
+                  <button onClick={() => { setSelOpen(false); setReselectOpen(true); }} style={{ width: "100%", marginTop: 8, padding: "10px 0", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon.swap width={14} height={14} /> Reselect Data</button>
                 </div>
               </>
             )}
@@ -975,7 +1027,7 @@ function MergePage({ selected, onBack, onRun }) {
               <span onClick={() => setSideCollapsed(true)} title="접기" style={{ cursor: "pointer", color: C.faint, display: "flex" }}><span style={{ display: "flex", transform: "rotate(180deg)" }}><Icon.chevR /></span></span>
             </div>
             <div style={{ padding: "0 12px 8px" }}>
-              <button onClick={() => setPicking(true)} style={{ width: "100%", padding: "11px 0", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon.swap width={14} height={14} /> 데이터 재선택</button>
+              <button onClick={() => setReselectOpen(true)} style={{ width: "100%", padding: "11px 0", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon.swap width={14} height={14} /> 데이터 재선택</button>
             </div>
             <div style={{ padding: "4px 18px 8px", fontSize: 12, color: C.faint, fontWeight: 600 }}>데이터셋 {committed.length}개</div>
             {committed.map((idx, i) => (
@@ -1245,6 +1297,13 @@ function MergePage({ selected, onBack, onRun }) {
           <span style={{ fontSize: 14, fontWeight: 600 }}>{toast}</span>
           <span onClick={() => setToast("")} style={{ cursor: "pointer", color: "#A1A1AA", display: "flex", marginLeft: 8 }}><Icon.x width={16} height={16} /></span>
         </div>
+      )}
+      {reselectOpen && (
+        <ReselectModal
+          initial={committed.length >= 2 ? committed : picked}
+          onClose={() => setReselectOpen(false)}
+          onApply={(next) => { setPicked(next); setCommitted(next); setReselectOpen(false); }}
+        />
       )}
     </div>
   );
