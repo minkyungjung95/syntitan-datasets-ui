@@ -956,7 +956,7 @@ function MergePage({ selected, onBack, onRun }) {
   const cameWithSelection = selected.length >= 2;
   const [picked, setPicked] = useState(cameWithSelection ? [0, 1] : []); // 좌측 드래프트 선택
   const [committed, setCommitted] = useState(cameWithSelection ? [0, 1] : []); // 실제 적용(우측 본문 기준)
-  const [picking, setPicking] = useState(!cameWithSelection);
+  const [picking, setPicking] = useState(false);
   const [method, setMethod] = useState("union"); // union | join
   const [joinType, setJoinType] = useState("left"); // 1차: left만 지원
   const [joinLeft, setJoinLeft] = useState("customer_id");   // 기준 키
@@ -974,7 +974,7 @@ function MergePage({ selected, onBack, onRun }) {
   const [previewOpen, setPreviewOpen] = useState(false); // 구성 미리보기(on-demand)
   const [previewBig, setPreviewBig] = useState(false); // 넓게 보기(인라인 높이 확장)
   const [peek, setPeek] = useState(false); // ▢ hover 미리보기
-  const [reselectOpen, setReselectOpen] = useState(false); // 데이터 재선택 모달
+  const [reselectOpen, setReselectOpen] = useState(!cameWithSelection); // 데이터 재선택 모달(빈 시작이면 자동 오픈)
   const [methodOpen, setMethodOpen] = useState(false); // 병합 방식 드롭다운
 
   // 완료(committed 변경) 시에만 매칭 재계산 스켈레톤
@@ -1012,6 +1012,13 @@ function MergePage({ selected, onBack, onRun }) {
     <div style={{ display: "flex", flexDirection: "column", alignSelf: "stretch", flex: 1, minHeight: 0 }}>
       {/* 상단 툴바: 병합 방식 + 데이터 선택 */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 24px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
+        {!hasContent ? (
+          <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 30, height: 30, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.union width={16} height={16} /></span>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>Combine</span>
+          </span>
+        ) : (
+        <>
         <span onClick={onBack} title="Combine으로" style={{ cursor: "pointer", display: "flex", color: C.sub, marginRight: 2 }}><Icon.back /></span>
         {/* 병합 방식 드롭다운 */}
         <div style={{ position: "relative" }}>
@@ -1042,6 +1049,8 @@ function MergePage({ selected, onBack, onRun }) {
             </>
           )}
         </div>
+        </>
+        )}
 
         <div style={{ flex: 1 }} />
 
@@ -1076,11 +1085,7 @@ function MergePage({ selected, onBack, onRun }) {
         {loading ? (
           <MergeSkeleton />
         ) : !hasContent ? (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, textAlign: "center", color: C.faint }}>
-            <span style={{ width: 56, height: 56, borderRadius: 14, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.union width={26} height={26} /></span>
-            <div style={{ fontSize: 17, fontWeight: 700, color: C.text }}>합칠 데이터를 선택해 주세요</div>
-            <button onClick={() => setReselectOpen(true)} style={{ display: "flex", alignItems: "center", gap: 7, background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.plus /> 데이터 선택하기</button>
-          </div>
+          <div onClick={() => setReselectOpen(true)} style={{ flex: 1, minHeight: 0, cursor: "pointer", backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.09) 1px, transparent 1px)", backgroundSize: "18px 18px" }} />
         ) : previewBig ? (
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "#fff" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", borderBottom: `1px solid ${C.border}` }}>
@@ -1275,9 +1280,9 @@ function MergePage({ selected, onBack, onRun }) {
       {/* bottom bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 36px", borderTop: `1px solid ${C.border}`, background: "#FCFCFD" }}>
         <span style={{ fontSize: 14, fontWeight: 700 }}>총합</span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>행 <span style={{ ...pill, ...(over ? { color: "#DC2626", borderColor: "#FCA5A5" } : {}) }}>{ready ? afterRows.toLocaleString() : "—"}</span></span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>열 <span style={pill}>{ready ? "300" : "—"}</span></span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>용량 <span style={pill}>{ready ? "3,000MB" : "—"}</span></span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>행 <span style={{ ...pill, ...(over ? { color: "#DC2626", borderColor: "#FCA5A5" } : {}) }}>{ready ? afterRows.toLocaleString() : "0"}</span></span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>열 <span style={pill}>{ready ? "300" : "0"}</span></span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>용량 <span style={pill}>{ready ? "3,000MB" : "0"}</span></span>
         {ready && (over ? (
           <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#DC2626", background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "5px 10px" }}>
             <span style={{ width: 14, height: 14, borderRadius: "50%", background: C.red, color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>!</span> 행 수 한도 초과 · {afterRows.toLocaleString()} / 10,000행
@@ -1305,7 +1310,9 @@ function MergePage({ selected, onBack, onRun }) {
       )}
       {reselectOpen && (
         <ReselectModal
-          initial={committed.length >= 2 ? committed : picked}
+          initial={committed.length >= 2 ? committed : (picked.length ? picked : [0, 1])}
+          title={hasContent ? "데이터 재선택" : "어떤 데이터를 결합할까요?"}
+          confirmLabel={hasContent ? "적용" : "확인"}
           onClose={() => setReselectOpen(false)}
           onApply={(next) => { setPicked(next); setCommitted(next); setReselectOpen(false); }}
         />
@@ -2097,7 +2104,7 @@ export default function DatasetsApp() {
 
   const handleNav = (label) => {
     if (label === "Agent Analysis") setScreen("agent");
-    else if (label === "Combine") { setSelected([]); setScreen("combine"); }
+    else if (label === "Combine") { setSelected([]); setScreen("merge"); }
     else if (label === "Home" || label === "Dataset") { setSelected([]); setScreen("list"); }
   };
 
@@ -2135,8 +2142,7 @@ export default function DatasetsApp() {
             <div style={scrollArea}>{tab === "AI Readiness" ? <AIReadinessTab /> : <DetailTab />}</div>
           </>
         )}
-        {screen === "combine" && <CombinePage onStart={() => { setSelected(datasets.slice(0, 2).map((d) => d.id)); setScreen("merge"); }} />}
-        {screen === "merge" && <MergePage selected={selected} onBack={() => setScreen("combine")} onRun={startMerge} />}
+        {screen === "merge" && <MergePage key={`merge-${selected.join("-")}`} selected={selected} onBack={() => { setSelected([]); setScreen("list"); }} onRun={startMerge} />}
         {screen === "merging" && <MergingPage names={mergeJob?.names || DEFAULT_NAMES} onLeave={() => setScreen("list")} />}
         {screen === "result" && <ResultPage names={resultNames} onClose={closeResult} />}
 
