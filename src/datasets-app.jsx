@@ -962,6 +962,7 @@ function MergePage({ selected, onBack, onRun }) {
   const [previewOpen, setPreviewOpen] = useState(false); // 구성 미리보기(on-demand)
   const [previewBig, setPreviewBig] = useState(false); // 넓게 보기(인라인 높이 확장)
   const [sideOpen, setSideOpen] = useState(false); // 합칠 데이터 사이드바(기본 접힘, ▢로 오픈)
+  const [peek, setPeek] = useState(false); // ▢ hover 미리보기
   const [reselectOpen, setReselectOpen] = useState(false); // 데이터 재선택 모달
 
   // 완료(committed 변경) 시에만 매칭 재계산 스켈레톤
@@ -996,7 +997,30 @@ function MergePage({ selected, onBack, onRun }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignSelf: "stretch", flex: 1, minHeight: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "18px 28px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 28px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
+        {hasContent && (
+          <div style={{ position: "relative", marginRight: 4 }} onMouseEnter={() => !sideOpen && setPeek(true)} onMouseLeave={() => setPeek(false)}>
+            <span onClick={() => { setSideOpen((v) => !v); setPeek(false); }} title="합칠 데이터" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 8, border: `1px solid ${sideOpen ? C.dark : C.border}`, background: sideOpen ? "#F4F5F7" : "#fff", cursor: "pointer", color: C.sub }}><Icon.panel width={16} height={16} /></span>
+            {peek && !sideOpen && (
+              <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, width: 280, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: "0 14px 36px rgba(0,0,0,0.16)", zIndex: 40, padding: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 6px 8px" }}>
+                  <span style={{ fontSize: 12.5, color: C.faint, fontWeight: 600 }}>합칠 데이터 {committed.length}개</span>
+                  <span onClick={() => { setSideOpen(true); setPeek(false); }} style={{ fontSize: 11.5, color: C.purple, fontWeight: 600, cursor: "pointer" }}>옆에 펼치기</span>
+                </div>
+                {committed.map((idx, i) => (
+                  <div key={idx} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 6px" }}>
+                    <span style={{ width: 28, height: 28, borderRadius: 7, background: i === 0 ? "#EEF2FF" : "#F3F4F6", color: i === 0 ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db width={15} height={15} /></span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 13, fontWeight: 600 }}>{poolLabel(idx)}</span>{i === 0 && <span style={{ fontSize: 10, fontWeight: 700, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 4, padding: "0 5px" }}>기준</span>}</div>
+                      <div style={{ fontSize: 11, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div>
+                    </div>
+                  </div>
+                ))}
+                <button onClick={() => { setReselectOpen(true); setPeek(false); }} style={{ width: "100%", marginTop: 6, padding: "9px 0", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon.swap width={13} height={13} /> 데이터 재선택</button>
+              </div>
+            )}
+          </div>
+        )}
         <span onClick={onBack} style={{ fontSize: 14, color: C.sub, cursor: "pointer" }}>Dataset</span>
         <span style={{ color: C.faint, display: "flex" }}><Icon.chevR width={16} height={16} /></span>
         <span style={{ fontSize: 14, fontWeight: 700 }}>Data Merge</span>
@@ -1050,13 +1074,8 @@ function MergePage({ selected, onBack, onRun }) {
             <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} big />
           </div>
         ) : (
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 36px 120px", position: "relative", background: "#FBFBFB" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px 120px", position: "relative", background: "#FBFBFB" }}>
           <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          {!sideOpen && (
-            <div style={{ marginBottom: 8 }}>
-              <span onClick={() => setSideOpen(true)} title="합칠 데이터 보기" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", cursor: "pointer", color: C.sub }}><Icon.panel width={16} height={16} /></span>
-            </div>
-          )}
           {over ? (
             <div style={{ minHeight: 460, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 18 }}>
               <span style={{ width: 64, height: 64, borderRadius: 18, background: "#FEF2F2", border: `1px solid #FCA5A5`, color: C.red, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 800 }}>!</span>
