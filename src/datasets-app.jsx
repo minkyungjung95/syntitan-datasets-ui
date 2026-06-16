@@ -1163,8 +1163,42 @@ function MergePage({ selected, onBack, onRun }) {
             )}
           </div>
 
-          {/* 검토 필요 (우선 노출) */}
-          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff", marginBottom: 14 }}>
+          {/* 02 매칭 결과 — 좌우 2단 (AI 자동 매칭 | 검토 필요) */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start", marginBottom: 30 }}>
+          {/* AI 자동 매칭 (좌) */}
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
+            <div onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#F5F3FF", borderBottom: autoOpen ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                <span style={{ color: C.purple, display: "flex" }}><Icon.spark /></span>
+                <span style={{ fontWeight: 700, color: C.purple }}>AI 자동 매칭</span>
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 8, color: C.purple }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{AUTO_ROWS.length}건</span>
+                <span style={{ display: "flex", transform: autoOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD /></span>
+              </span>
+            </div>
+            {autoOpen && (
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", padding: "11px 16px", fontSize: 12.5, color: C.faint, fontWeight: 600, borderBottom: `1px solid ${C.borderSoft}` }}>
+                <span>Table 1</span><span /><span>Table 2</span>
+              </div>
+            )}
+            {autoOpen && AUTO_ROWS.map((r, i) => {
+              const dup = autoDupes.has(autoSel[i]);
+              return (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", alignItems: "center", padding: "11px 16px", borderBottom: i === AUTO_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14 }}><TypeIcon kind={r[1]} /> {r[0]}</span>
+                <span style={{ color: C.faint, display: "flex", justifyContent: "center", fontSize: 16 }}>→</span>
+                <div>
+                  <MatchDropdown value={autoSel[i]} error={dup} onChange={(v) => setAutoSel((s) => s.map((x, idx) => (idx === i ? v : x)))} />
+                  {dup && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#DC2626", marginTop: 6 }}><Icon.infoCircle width={12} height={12} /> 중복된 칼럼이 있어요.</div>}
+                </div>
+              </div>
+              );
+            })}
+          </div>
+
+          {/* 검토 필요 (우) */}
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
             <div onClick={() => setReviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#FAFAFB", borderBottom: reviewOpen ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.text, display: "inline-block" }} />
@@ -1177,11 +1211,11 @@ function MergePage({ selected, onBack, onRun }) {
             </div>
             {reviewOpen && (
               <>
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 48px minmax(0,1.25fr)", padding: "11px 16px", fontSize: 12.5, color: C.faint, fontWeight: 600, borderBottom: `1px solid ${C.borderSoft}` }}>
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", padding: "11px 16px", fontSize: 12.5, color: C.faint, fontWeight: 600, borderBottom: `1px solid ${C.borderSoft}` }}>
                   <span>Table 1</span><span /><span>Table 2</span>
                 </div>
                 {REVIEW_ROWS.map((r, i) => (
-                  <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 48px minmax(0,1.25fr)", alignItems: "start", padding: "14px 16px", borderBottom: i === REVIEW_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", alignItems: "start", padding: "14px 16px", borderBottom: i === REVIEW_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
                     <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14, paddingTop: 9 }}><TypeIcon kind={r.lt} /> {r.left}</span>
                     <span style={{ color: C.faint, display: "flex", justifyContent: "center", paddingTop: 9, fontSize: 16 }}>→</span>
                     <div>
@@ -1195,50 +1229,10 @@ function MergePage({ selected, onBack, onRun }) {
               </>
             )}
           </div>
-
-          {/* AI 자동 매칭 */}
-          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff", marginBottom: 30 }}>
-            <div onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#F5F3FF", borderBottom: autoOpen ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-                <span style={{ color: C.purple, display: "flex" }}><Icon.spark /></span>
-                <span style={{ fontWeight: 700, color: C.purple }}>AI 자동 매칭</span>
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 8, color: C.purple }}>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>{AUTO_ROWS.length}건</span>
-                <span style={{ display: "flex", transform: autoOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD /></span>
-              </span>
-            </div>
-            {autoOpen && AUTO_ROWS.map((r, i) => {
-              const dup = autoDupes.has(autoSel[i]);
-              return (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 48px minmax(0,1.25fr)", alignItems: "center", padding: "11px 16px", borderBottom: i === AUTO_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14 }}><TypeIcon kind={r[1]} /> {r[0]}</span>
-                <span style={{ color: C.faint, display: "flex", justifyContent: "center", fontSize: 16 }}>→</span>
-                <div>
-                  <MatchDropdown value={autoSel[i]} error={dup} onChange={(v) => setAutoSel((s) => s.map((x, idx) => (idx === i ? v : x)))} />
-                  {dup && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#DC2626", marginTop: 6 }}><Icon.infoCircle width={12} height={12} /> 중복된 칼럼이 있어요. 다시 선택해 주세요.</div>}
-                </div>
-              </div>
-              );
-            })}
           </div>
           </>
           )}
 
-          {/* 03 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}><StepNum n="03" /><span style={{ fontSize: 15, fontWeight: 700 }}>저장 위치</span></div>
-          <div style={{ maxWidth: 560, marginBottom: 8, border: `1px solid ${C.border}`, borderRadius: 12, background: "#fff", overflow: "hidden" }}>
-            <div style={{ padding: "16px 18px" }}>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>{names[0]}</div>
-              <div style={{ fontSize: 12.5, color: C.sub, marginTop: 3 }}>병합 결과는 ‘기준 데이터셋’에 업데이트 돼요.</div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", borderTop: `1px solid ${C.borderSoft}`, background: "#FBFBFC" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 7, padding: "5px 11px" }}><Icon.clock width={13} height={13} /> 현재 버전</span>
-              <span style={{ display: "flex", color: C.faint }}><Icon.chevR width={14} height={14} /></span>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: C.purple, background: "#EEF2FF", borderRadius: 7, padding: "5px 11px" }}><Icon.clock width={13} height={13} /> 새 스냅샷 추가</span>
-              <span style={{ marginLeft: "auto", fontSize: 12, color: C.faint, textDecoration: "underline", textUnderlineOffset: 2 }}>a3f8c2d</span>
-            </div>
-          </div>
           </>
           )}
           </div>
