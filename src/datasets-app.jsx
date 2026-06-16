@@ -1093,8 +1093,8 @@ function MergePage({ selected, onBack, onRun }) {
             <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} big />
           </div>
         ) : (
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px 28px", position: "relative", background: "#FBFBFB" }}>
-          <div style={{ width: "100%" }}>
+        <div style={{ flex: 1, minHeight: 0, overflow: "hidden", position: "relative", background: "#FBFBFB", display: "flex", flexDirection: "column" }}>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
           {over ? (
             <div style={{ minHeight: 460, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 18 }}>
               <span style={{ width: 64, height: 64, borderRadius: 18, background: "#FEF2F2", border: `1px solid #FCA5A5`, color: C.red, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 800 }}>!</span>
@@ -1106,7 +1106,7 @@ function MergePage({ selected, onBack, onRun }) {
           <>
           {/* 02 */}
           {method === "join" ? (
-            <>
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "20px 24px 28px" }}>
               {/* 02 조인 조건 (조인키) — 먼저 */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>조인 조건</span></div>
               <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>두 데이터를 어떤 칼럼으로 연결할지 정해요. <b>기준 칼럼 = 추가 칼럼</b> 한 쌍이면 되고, 이름이 달라도 짝지을 수 있어요.</div>
@@ -1172,13 +1172,11 @@ function MergePage({ selected, onBack, onRun }) {
                   </div>
                 )}
               </div>
-            </>
+            </div>
           ) : (
-          <>
-          {/* 좌: 매칭 시각화 미리보기 (그래프) | 우: 매칭(검토+자동) */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 16, alignItems: "stretch", minHeight: "calc(100vh - 230px)" }}>
-          {/* LEFT — 매칭 시각화 미리보기 */}
-          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff", display: "flex", flexDirection: "column", minHeight: 560 }}>
+          <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
+          {/* LEFT — 매칭 시각화 그래프 (풀블리드) */}
+          <div style={{ flex: 1.1, minWidth: 0, borderRight: `1px solid ${C.border}`, background: "#fff", display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${C.borderSoft}` }}>
               <span style={{ fontSize: 14, fontWeight: 700 }}>매칭 시각화 미리보기</span>
               <span style={{ fontSize: 11.5, color: C.faint }}>*업데이트를 눌러야 바뀐 값이 반영됩니다</span>
@@ -1196,11 +1194,11 @@ function MergePage({ selected, onBack, onRun }) {
             </div>
           </div>
 
-          {/* RIGHT — 매칭(자동 + 검토) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* RIGHT — 매칭(검토 + 자동) 풀블리드 스크롤 */}
+          <div style={{ width: 600, flexShrink: 0, overflowY: "auto", background: "#fff" }}>
           {/* 검토 필요 (먼저) */}
-          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-            <div onClick={() => setReviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#FAFAFB", borderBottom: reviewOpen ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer" }}>
+          <div>
+            <div onClick={() => setReviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", background: "#FAFAFB", borderBottom: `1px solid ${C.border}`, cursor: "pointer", position: "sticky", top: 0, zIndex: 2 }}>
               <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
                 <span style={{ display: "flex", color: "#B45309" }}><Icon.warn width={16} height={16} /></span>
                 <span style={{ fontWeight: 700 }}>검토 필요</span>
@@ -1232,8 +1230,8 @@ function MergePage({ selected, onBack, onRun }) {
           </div>
 
           {/* AI 자동 매칭 (다음) */}
-          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-            <div onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#F5F3FF", borderBottom: autoOpen ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer" }}>
+          <div style={{ borderTop: `1px solid ${C.border}` }}>
+            <div onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", background: "#F5F3FF", borderBottom: `1px solid ${C.borderSoft}`, cursor: "pointer", position: "sticky", top: 0, zIndex: 2 }}>
               <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
                 <span style={{ color: C.purple, display: "flex" }}><Icon.spark /></span>
                 <span style={{ fontWeight: 700, color: C.purple }}>AI 자동 매칭</span>
@@ -1264,7 +1262,6 @@ function MergePage({ selected, onBack, onRun }) {
           </div>
           </div>
           </div>
-          </>
           )}
 
           </>
