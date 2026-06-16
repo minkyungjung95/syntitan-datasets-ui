@@ -646,16 +646,18 @@ const WF_OPS = [
 ];
 const WF_BASE = [["customer_id", "Integer"], ["name", "String"], ["email", "String"], ["signup_date", "Integer"]];
 const WF_ADD = [["customer_id", "Integer"], ["name", "String"], ["region", "String"], ["age", "Integer"]];
-// 결합 결과 칼럼: 결합(양쪽) / 유지(기준만) / 제외(추가만, 기준에 없음)
+// 결과 칼럼 상태(오른쪽 매칭과 동일): 공통(양쪽 다 있음=AI 자동) / 일부 Null(한쪽만=검토 필요)
 const WF_RESULT = [
-  ["customer_id", "Integer", "결합"], ["name", "String", "결합"],
-  ["email", "String", "유지"], ["signup_date", "Integer", "유지"],
-  ["region", "String", "제외"], ["age", "Integer", "제외"],
+  ["customer_id", "Integer", "공통"], ["name", "String", "공통"],
+  ["email", "String", "일부 Null"], ["signup_date", "Integer", "일부 Null"],
+  ["region", "String", "일부 Null"], ["age", "Integer", "일부 Null"],
 ];
 const WF_STATUS = {
+  공통: { bg: "#EEEDFE", fg: "#534AB7" },
   결합: { bg: "#EEEDFE", fg: "#534AB7" },
   유지: { bg: "#E6F1FB", fg: "#185FA5" },
   제외: { bg: "#F4F4F5", fg: "#9CA3AF" },
+  "일부 Null": { bg: "#FEF6E7", fg: "#B45309" },
   Null: { bg: "#FEF6E7", fg: "#B45309" },
 };
 function WfIcon({ k }) {
@@ -713,7 +715,7 @@ function WorkflowGraph({ names, isJoin, afterRows, big }) {
         <WfNode x={pos.add.x} y={pos.add.y} w={230} icon="db" name={names[1]} sub="Source · 추가 · 4 columns" onDragStart={startDrag("add")} dragging={dragId === "add"}>
           {WF_ADD.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} last={i === WF_ADD.length - 1} />)}
         </WfNode>
-        <WfNode x={pos.merge.x} y={pos.merge.y} w={320} accent icon={isJoin ? "join" : "union"} name={isJoin ? "병합 · Join" : "병합 · Union"} sub={`${afterRows.toLocaleString()}행 · 결합 2 · 유지 2 · 제외 2`} onDragStart={startDrag("merge")} dragging={dragId === "merge"}>
+        <WfNode x={pos.merge.x} y={pos.merge.y} w={320} accent icon={isJoin ? "join" : "union"} name={isJoin ? "병합 · Join" : "병합 · Union"} sub={isJoin ? `${afterRows.toLocaleString()}행 · 유지 4 · 추가 2` : `${afterRows.toLocaleString()}행 · 공통 2 · 일부 Null 4`} onDragStart={startDrag("merge")} dragging={dragId === "merge"}>
           {WF_RESULT.map((c, i) => <WfColRow key={c[0]} name={c[0]} type={c[1]} status={c[2]} last={i === WF_RESULT.length - 1} />)}
         </WfNode>
       </div>
@@ -1142,37 +1144,30 @@ function MergePage({ selected, onBack, onRun }) {
           <>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>칼럼 매칭</span></div>
 
-          {/* 매칭 시각화 미리보기 — on-demand, 리셋 버튼으로 반영 / 넓게 보기는 인라인 확장 */}
-          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 18, background: "#fff" }}>
-            <div onClick={() => setPreviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", cursor: "pointer", background: previewOpen ? "#FAFAFB" : "#fff", borderBottom: previewOpen ? `1px solid ${C.borderSoft}` : "none" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
-                <span style={{ display: "flex", color: C.faint, transform: previewOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD /></span>
-                <span style={{ fontWeight: 700 }}>매칭 시각화 미리보기</span>
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 11.5, color: C.faint }}>*리셋 버튼을 눌러야 바뀐 값이 반영됩니다</span>
-              </span>
+          {/* 좌: 매칭 시각화 미리보기 (그래프) | 우: 매칭(자동+검토) */}
+          <div style={{ display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 16, alignItems: "stretch", marginBottom: 30 }}>
+          {/* LEFT — 매칭 시각화 미리보기 */}
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff", display: "flex", flexDirection: "column", minHeight: 560 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${C.borderSoft}` }}>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>매칭 시각화 미리보기</span>
+              <span style={{ fontSize: 11.5, color: C.faint }}>*업데이트를 눌러야 바뀐 값이 반영됩니다</span>
             </div>
-            {previewOpen && (
-              <div style={{ position: "relative" }}>
-                <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6, zIndex: 3 }}>
-                  <button onClick={(e) => { e.stopPropagation(); setPreviewBig((v) => !v); }} title={previewBig ? "좁게 보기" : "넓게 보기"} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.sub }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); setPreviewBig(false); }} title="리셋 · 현재 설정 반영" style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: C.dark, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  </button>
-                </div>
-                <div style={{ height: previewBig ? "72vh" : 380, display: "flex", transition: "height .2s ease" }}>
-                  <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} />
-                </div>
+            <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex" }}>
+              <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6, zIndex: 3 }}>
+                <button onClick={() => setPreviewBig(true)} title="넓게 보기" style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.sub }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </button>
+                <button title="업데이트 · 현재 설정 반영" style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: C.dark, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </button>
               </div>
-            )}
+              <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} />
+            </div>
           </div>
 
-          {/* 02 매칭 결과 — 좌우 2단 (AI 자동 매칭 | 검토 필요) */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "stretch", marginBottom: 30 }}>
-          {/* AI 자동 매칭 (좌) */}
+          {/* RIGHT — 매칭(자동 + 검토) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* AI 자동 매칭 */}
           <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
             <div onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#F5F3FF", borderBottom: autoOpen ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
@@ -1186,7 +1181,7 @@ function MergePage({ selected, onBack, onRun }) {
             </div>
             {autoOpen && (
               <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", padding: "11px 16px", fontSize: 12.5, color: C.faint, fontWeight: 600, borderBottom: `1px solid ${C.borderSoft}` }}>
-                <span>Table 1</span><span /><span>Table 2</span>
+                <span>Data 1</span><span /><span>Data 2</span>
               </div>
             )}
             {autoOpen && AUTO_ROWS.map((r, i) => {
@@ -1219,7 +1214,7 @@ function MergePage({ selected, onBack, onRun }) {
             {reviewOpen && (
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", padding: "11px 16px", fontSize: 12.5, color: C.faint, fontWeight: 600, borderBottom: `1px solid ${C.borderSoft}` }}>
-                  <span>Table 1</span><span /><span>Table 2</span>
+                  <span>Data 1</span><span /><span>Data 2</span>
                 </div>
                 {REVIEW_ROWS.map((r, i) => (
                   <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", alignItems: "start", padding: "14px 16px", borderBottom: i === REVIEW_ROWS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
@@ -1228,13 +1223,14 @@ function MergePage({ selected, onBack, onRun }) {
                     <div>
                       <MatchDropdown value={reviewSel[i]} onChange={(v) => setReviewSel((s) => s.map((x, idx) => (idx === i ? v : x)))} />
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: reviewSel[i] === NO_MATCH ? C.yellowText : C.sub, marginTop: 8, lineHeight: 1.5 }}>
-                        <span style={{ display: "flex", flexShrink: 0, marginTop: 1 }}><Icon.infoCircle width={13} height={13} /></span> {reviewSel[i] === NO_MATCH ? "매칭 칼럼이 없어 Secondary 데이터행은 Null로 채워져요." : r.note}
+                        <span style={{ display: "flex", flexShrink: 0, marginTop: 1 }}><Icon.infoCircle width={13} height={13} /></span> {reviewSel[i] === NO_MATCH ? "매칭 칼럼이 없어 2번 데이터 행은 Null로 채워져요." : r.note}
                       </div>
                     </div>
                   </div>
                 ))}
               </>
             )}
+          </div>
           </div>
           </div>
           </>
