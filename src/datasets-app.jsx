@@ -893,7 +893,8 @@ function MergePage({ selected, onBack, onRun }) {
   const [autoSel, setAutoSel] = useState(AUTO_ROWS.map((r) => r[0]));
   const [reviewOpen, setReviewOpen] = useState(true);
   const [reviewSel, setReviewSel] = useState(REVIEW_ROWS.map((r) => r.right));
-  const [relOpen, setRelOpen] = useState(false); // 데이터 관계 모달
+  const [relOpen, setRelOpen] = useState(false); // 데이터 관계 풀스크린
+  const [previewOpen, setPreviewOpen] = useState(false); // 구성 미리보기(on-demand)
 
   // 완료(committed 변경) 시에만 매칭 재계산 스켈레톤
   const committedKey = committed.join(",");
@@ -1013,30 +1014,55 @@ function MergePage({ selected, onBack, onRun }) {
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.faint, marginBottom: 24, lineHeight: 1.5 }}><Icon.infoCircle width={13} height={13} /> <span><b>매칭률</b> = 두 데이터에서 이 키 값이 양쪽에 모두 존재해 연결되는 행의 비율. 낮을수록 매칭 안 되는 기준 행이 많아(추가 컬럼은 Null) 져요.</span></div>
-              {/* 데이터 관계 — 결정하면서 보는 라이브 그래프 */}
-              <div style={{ marginBottom: 30 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: C.sub }}>데이터 관계 <span style={{ fontWeight: 500, color: C.faint }}>· 키({joinLeft}={joinRight})로 연결, 매칭 안 되면 Null</span></span>
-                  <span onClick={() => setRelOpen(true)} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: C.purple, fontWeight: 600, cursor: "pointer" }}><Icon.union width={13} height={13} /> 크게 보기</span>
+              {/* 구성 미리보기 — 버튼으로 열어서 확인 (on-demand) */}
+              <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 30, background: "#fff" }}>
+                <div onClick={() => setPreviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", cursor: "pointer", background: previewOpen ? "#FAFAFB" : "#fff", borderBottom: previewOpen ? `1px solid ${C.borderSoft}` : "none" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
+                    <span style={{ display: "flex", color: C.faint, transform: previewOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD /></span>
+                    <span style={{ color: C.purple, display: "flex" }}><Icon.union width={16} height={16} /></span>
+                    <span style={{ fontWeight: 700 }}>구성 미리보기</span>
+                    <span style={{ fontWeight: 500, color: C.faint, fontSize: 12.5 }}>· 키({joinLeft}={joinRight})로 연결, 매칭 안 되면 Null</span>
+                  </span>
+                  <span style={{ fontSize: 12.5, color: C.purple, fontWeight: 600 }}>{previewOpen ? "접기" : "오픈하기"}</span>
                 </div>
-                <div style={{ height: 380, display: "flex", border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-                  <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} />
-                </div>
+                {previewOpen && (
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, padding: "8px 14px 0", fontSize: 11.5, color: C.faint }}>
+                      <span>현재 설정 기준 미리보기</span><span style={{ color: C.borderSoft }}>·</span>
+                      <span onClick={(e) => { e.stopPropagation(); setRelOpen(true); }} style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }}>크게 보기</span>
+                    </div>
+                    <div style={{ height: 360, display: "flex" }}><WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} /></div>
+                  </>
+                )}
               </div>
             </>
           ) : (
           <>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>칼럼 매칭</span></div>
 
-          {/* 데이터 관계 — 결정하면서 보는 라이브 그래프 */}
-          <div style={{ marginBottom: 18 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: C.sub }}>데이터 관계 <span style={{ fontWeight: 500, color: C.faint }}>· 무엇이 결합·유지·제외되는지</span></span>
-              <span onClick={() => setRelOpen(true)} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: C.purple, fontWeight: 600, cursor: "pointer" }}><Icon.union width={13} height={13} /> 크게 보기</span>
+          {/* 구성 미리보기 — 버튼으로 열어서 확인 (드롭다운 실시간 연동 X, 열 때 현재 설정 반영) */}
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 18, background: "#fff" }}>
+            <div onClick={() => setPreviewOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", cursor: "pointer", background: previewOpen ? "#FAFAFB" : "#fff", borderBottom: previewOpen ? `1px solid ${C.borderSoft}` : "none" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14 }}>
+                <span style={{ display: "flex", color: C.faint, transform: previewOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}><Icon.chevD /></span>
+                <span style={{ color: C.purple, display: "flex" }}><Icon.union width={16} height={16} /></span>
+                <span style={{ fontWeight: 700 }}>구성 미리보기</span>
+                <span style={{ fontWeight: 500, color: C.faint, fontSize: 12.5 }}>· 무엇이 결합·유지·제외되는지</span>
+              </span>
+              <span style={{ fontSize: 12.5, color: C.purple, fontWeight: 600 }}>{previewOpen ? "접기" : "오픈하기"}</span>
             </div>
-            <div style={{ height: 380, display: "flex", border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-              <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} />
-            </div>
+            {previewOpen && (
+              <>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, padding: "8px 14px 0", fontSize: 11.5, color: C.faint }}>
+                  <span>현재 설정 기준 미리보기</span>
+                  <span style={{ color: C.borderSoft }}>·</span>
+                  <span onClick={(e) => { e.stopPropagation(); setRelOpen(true); }} style={{ color: C.purple, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>크게 보기</span>
+                </div>
+                <div style={{ height: 360, display: "flex" }}>
+                  <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} />
+                </div>
+              </>
+            )}
           </div>
 
           {/* 검토 필요 (우선 노출) */}
