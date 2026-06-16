@@ -893,8 +893,9 @@ function MergePage({ selected, onBack, onRun }) {
   const [autoSel, setAutoSel] = useState(AUTO_ROWS.map((r) => r[0]));
   const [reviewOpen, setReviewOpen] = useState(true);
   const [reviewSel, setReviewSel] = useState(REVIEW_ROWS.map((r) => r.right));
-  const [relOpen, setRelOpen] = useState(false); // 데이터 관계 풀스크린
+  const [relOpen, setRelOpen] = useState(false); // (미사용) 풀스크린 — 인라인 확장으로 대체
   const [previewOpen, setPreviewOpen] = useState(false); // 구성 미리보기(on-demand)
+  const [previewBig, setPreviewBig] = useState(false); // 넓게 보기(인라인 높이 확장)
 
   // 완료(committed 변경) 시에만 매칭 재계산 스켈레톤
   const committedKey = committed.join(",");
@@ -1027,11 +1028,11 @@ function MergePage({ selected, onBack, onRun }) {
                 </div>
                 {previewOpen && (
                   <>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, padding: "8px 14px 0", fontSize: 11.5, color: C.faint }}>
-                      <span>현재 설정 기준 미리보기</span><span style={{ color: C.borderSoft }}>·</span>
-                      <span onClick={(e) => { e.stopPropagation(); setRelOpen(true); }} style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }}>크게 보기</span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, padding: "8px 14px 0", fontSize: 11.5, color: C.faint }}>
+                      <span>현재 설정 기준 미리보기</span>
+                      <span onClick={(e) => { e.stopPropagation(); setPreviewBig((v) => !v); }} style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }}>{previewBig ? "좁게 보기" : "넓게 보기"}</span>
                     </div>
-                    <div style={{ height: 360, display: "flex" }}><WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} /></div>
+                    <div style={{ height: previewBig ? "72vh" : 360, display: "flex", transition: "height .2s ease" }}><WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} /></div>
                   </>
                 )}
               </div>
@@ -1053,12 +1054,11 @@ function MergePage({ selected, onBack, onRun }) {
             </div>
             {previewOpen && (
               <>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, padding: "8px 14px 0", fontSize: 11.5, color: C.faint }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, padding: "8px 14px 0", fontSize: 11.5, color: C.faint }}>
                   <span>현재 설정 기준 미리보기</span>
-                  <span style={{ color: C.borderSoft }}>·</span>
-                  <span onClick={(e) => { e.stopPropagation(); setRelOpen(true); }} style={{ color: C.purple, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>크게 보기</span>
+                  <span onClick={(e) => { e.stopPropagation(); setPreviewBig((v) => !v); }} style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }}>{previewBig ? "좁게 보기" : "넓게 보기"}</span>
                 </div>
-                <div style={{ height: 360, display: "flex" }}>
+                <div style={{ height: previewBig ? "72vh" : 360, display: "flex", transition: "height .2s ease" }}>
                   <WorkflowGraph names={names} isJoin={isJoin} afterRows={afterRows} />
                 </div>
               </>
