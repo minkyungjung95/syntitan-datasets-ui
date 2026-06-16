@@ -897,6 +897,7 @@ function MergePage({ selected, onBack, onRun }) {
   const [relOpen, setRelOpen] = useState(false); // (미사용) 풀스크린 — 인라인 확장으로 대체
   const [previewOpen, setPreviewOpen] = useState(false); // 구성 미리보기(on-demand)
   const [previewBig, setPreviewBig] = useState(false); // 넓게 보기(인라인 높이 확장)
+  const [selOpen, setSelOpen] = useState(false); // 선택 데이터 팝오버
 
   // 완료(committed 변경) 시에만 매칭 재계산 스켈레톤
   const committedKey = committed.join(",");
@@ -933,12 +934,35 @@ function MergePage({ selected, onBack, onRun }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 28px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
         <span onClick={onBack} style={{ cursor: "pointer", display: "flex", color: C.sub }}><Icon.back /></span>
         <span style={{ fontSize: 16, fontWeight: 700 }}>데이터 합치기</span>
+        {!picking && hasContent && (
+          <div style={{ position: "relative", marginLeft: 4 }}>
+            <span onClick={() => setSelOpen((v) => !v)} title="선택한 데이터" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 8, border: `1px solid ${selOpen ? C.dark : C.border}`, cursor: "pointer", color: C.sub }}><Icon.panel width={16} height={16} /></span>
+            {selOpen && (
+              <>
+                <div onClick={() => setSelOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
+                <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, width: 284, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: "0 12px 32px rgba(0,0,0,0.14)", zIndex: 31, padding: 12 }}>
+                  <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "2px 4px 8px" }}>selected data</div>
+                  {committed.map((idx, i) => (
+                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 6px" }}>
+                      <span style={{ width: 30, height: 30, borderRadius: 7, background: i === 0 ? "#EEF2FF" : "#F3F4F6", color: i === 0 ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db /></span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 600 }}>{poolLabel(idx)}</span>{i === 0 && <span style={{ fontSize: 10, fontWeight: 700, color: C.sub, background: C.chipBg, borderRadius: 4, padding: "1px 5px" }}>기준</span>}</div>
+                        <div style={{ fontSize: 11, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div>
+                      </div>
+                    </div>
+                  ))}
+                  <button onClick={() => { setSelOpen(false); setPicking(true); }} style={{ width: "100%", marginTop: 8, padding: "10px 0", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon.swap width={14} height={14} /> Reselect Data</button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <LeftPanel picked={picked} setPicked={setPicked} picking={picking} setPicking={setPicking} canCancel={committed.length >= 2}
+        {picking && <LeftPanel picked={picked} setPicked={setPicked} picking={picking} setPicking={setPicking} canCancel={committed.length >= 2}
           onDone={() => { setCommitted(picked); setPicking(false); }}
-          onCancel={() => { setPicked(committed); setPicking(false); }} />
+          onCancel={() => { setPicked(committed); setPicking(false); }} />}
 
         {picking ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, textAlign: "center", color: C.faint }}>
