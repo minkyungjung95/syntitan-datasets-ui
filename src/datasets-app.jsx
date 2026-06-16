@@ -982,7 +982,8 @@ function MergePage({ selected, onBack, onRun }) {
   // Union=행 추가(많아지면 행 한도 초과), Join=열 추가(행은 기준 기준 유지)
   const over = hasContent && committed.length > MAX_MERGE; // 3개 이상 = 용량 초과
   const afterCols = 6; // 합치면 생기는 distinct 칼럼 (결합2 + 유지2 + 제외2)
-  const afterRows = isJoin ? 40 : committed.length > MAX_MERGE ? 25296 : 16864;
+  const JOIN_ROWS = { left: 8432, inner: 7756, right: 8432, full: 9108 }; // 조인 타입별 결과 행수
+  const afterRows = isJoin ? (JOIN_ROWS[joinType] ?? 8432) : committed.length > MAX_MERGE ? 25296 : 16864;
   // 매칭 검증: 같은 컬럼 중복 선택 / 전부 매칭 없음
   const autoDupes = useMemo(() => {
     const c = {}; autoSel.forEach((v) => { if (v !== NO_MATCH) c[v] = (c[v] || 0) + 1; });
@@ -1069,9 +1070,9 @@ function MergePage({ selected, onBack, onRun }) {
             <>
               {/* 조인 방식 (1차: Left만 지원) */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}><StepNum n="02" /><span style={{ fontSize: 15, fontWeight: 700 }}>조인 방식</span></div>
-              <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>기준 데이터를 모두 유지하고, 키가 맞는 추가 데이터를 옆에 붙여요. <b>현재 Left Join만 지원해요.</b></div>
+              <div style={{ fontSize: 13, color: C.sub, marginBottom: 14 }}>어떤 행을 결과에 남길지 정해요. 키가 맞는 추가 데이터를 기준 데이터 옆에 붙여요.</div>
               <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-                {[["left", "Left Join", "기준 전부 유지", false], ["inner", "Inner", "양쪽 매칭만", true], ["right", "Right", "추가 전부 유지", true], ["full", "Full Outer", "양쪽 전부", true]].map(([t, label, desc, soon]) => {
+                {[["left", "Left Join", "기준 전부 유지", false], ["inner", "Inner", "양쪽 매칭만", false], ["right", "Right", "추가 전부 유지", false], ["full", "Full Outer", "양쪽 전부", false]].map(([t, label, desc, soon]) => {
                   const active = joinType === t;
                   return (
                     <div key={t} onClick={() => !soon && setJoinType(t)} style={{ flex: 1, border: `1.5px solid ${active ? C.blue : C.border}`, borderRadius: 12, padding: "14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: soon ? "default" : "pointer", opacity: soon ? 0.5 : 1, background: active ? "#F5F9FF" : "#fff", position: "relative" }}>
@@ -1164,7 +1165,7 @@ function MergePage({ selected, onBack, onRun }) {
           </div>
 
           {/* 02 매칭 결과 — 좌우 2단 (AI 자동 매칭 | 검토 필요) */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start", marginBottom: 30 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "stretch", marginBottom: 30 }}>
           {/* AI 자동 매칭 (좌) */}
           <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
             <div onClick={() => setAutoOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#F5F3FF", borderBottom: autoOpen ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer" }}>
