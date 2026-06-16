@@ -338,6 +338,7 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
   const [moveTarget, setMoveTarget] = useState(null);
   const [panelOpen, setPanelOpen] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [mergeModalOpen, setMergeModalOpen] = useState(false);
   const rows = useMemo(() => {
     let list = [...datasets].sort((a, b) => b.ts - a.ts); // 업데이트 최신순
     if (activeFolder !== null) list = list.filter((d) => d.folderId === activeFolder);
@@ -394,7 +395,7 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
                 <div onClick={() => setCreateOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
                 <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 244, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: "0 12px 32px rgba(0,0,0,0.14)", zIndex: 31, padding: 6 }}>
                   <div onClick={() => setCreateOpen(false)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", fontSize: 13.5, borderRadius: 8, cursor: "pointer", color: C.text }}><span style={{ color: C.blue, display: "flex" }}><Icon.download width={17} height={17} /></span> 데이터 업로드</div>
-                  <div onClick={() => { setCreateOpen(false); onMergeDirect(); }} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", fontSize: 13.5, borderRadius: 8, cursor: "pointer", color: C.text }}><span style={{ color: C.purple, display: "flex" }}><Icon.union width={17} height={17} /></span> 데이터 합치기</div>
+                  <div onClick={() => { setCreateOpen(false); setMergeModalOpen(true); }} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", fontSize: 13.5, borderRadius: 8, cursor: "pointer", color: C.text }}><span style={{ color: C.purple, display: "flex" }}><Icon.union width={17} height={17} /></span> 데이터 합치기</div>
                   <div style={{ height: 1, background: C.borderSoft, margin: "5px 8px" }} />
                   <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", fontSize: 13.5, borderRadius: 8, color: C.faint, cursor: "default" }}><span style={{ display: "flex" }}><Icon.link width={17} height={17} /></span> 소스 연동 <span style={{ marginLeft: "auto", fontSize: 11, color: C.faint, border: `1px solid ${C.border}`, borderRadius: 5, padding: "1px 6px" }}>예정</span></div>
                 </div>
@@ -489,6 +490,18 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
               style={{ width: "100%", marginTop: 14, padding: "12px 0", borderRadius: 10, border: "none", background: moveTarget !== undefined ? C.dark : "#E5E7EB", color: moveTarget !== undefined ? "#fff" : C.faint, fontSize: 14, fontWeight: 600, cursor: moveTarget !== undefined ? "pointer" : "default", fontFamily: FONT }}>이동</button>
           </div>
         </div>
+      )}
+
+      {/* 데이터 합치기 진입 모달 */}
+      {mergeModalOpen && (
+        <ReselectModal
+          initial={[0, 1]}
+          title="어떤 데이터를 합칠까요?"
+          desc="합칠 두 데이터를 선택해주세요."
+          confirmLabel="확인"
+          onClose={() => setMergeModalOpen(false)}
+          onApply={() => { setMergeModalOpen(false); onMergeDirect(); }}
+        />
       )}
     </div>
   );
@@ -875,7 +888,7 @@ function KeyPicker({ value, options, onChange }) {
   );
 }
 
-function ReselectModal({ initial, onApply, onClose }) {
+function ReselectModal({ initial, onApply, onClose, title = "데이터 재선택", desc = "합칠 두 데이터를 선택해주세요.", confirmLabel = "적용" }) {
   const pool = useMemo(() => Array.from({ length: 18 }, (_, i) => poolLabel(i)), []);
   const [draft, setDraft] = useState(initial);
   const atMax = draft.length >= PICK_MAX;
@@ -885,10 +898,10 @@ function ReselectModal({ initial, onApply, onClose }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,0.45)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: 560, maxHeight: "82vh", background: "#fff", borderRadius: 18, boxShadow: "0 24px 64px rgba(0,0,0,0.28)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "18px 22px 14px", borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "20px 22px 16px" }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>데이터 재선택</div>
-            <div style={{ fontSize: 12.5, color: overPick ? "#DC2626" : C.faint, marginTop: 4, display: "flex", alignItems: "center", gap: 5 }}><Icon.infoCircle width={12} height={12} /> {overPick ? `최대 ${MAX_MERGE}개까지 합칠 수 있어요` : `처음 선택한 데이터셋이 기준이 돼요 · 최대 ${MAX_MERGE}개`}</div>
+            <div style={{ fontSize: 17, fontWeight: 700 }}>{title}</div>
+            <div style={{ fontSize: 13, color: overPick ? "#DC2626" : C.sub, marginTop: 5 }}>{overPick ? `최대 ${MAX_MERGE}개까지 합칠 수 있어요` : desc}</div>
           </div>
           <span onClick={onClose} style={{ cursor: "pointer", color: C.faint, display: "flex", padding: 2 }}><Icon.x /></span>
         </div>
@@ -918,7 +931,7 @@ function ReselectModal({ initial, onApply, onClose }) {
           <span style={{ fontSize: 12.5, fontWeight: 600, color: overPick ? "#DC2626" : C.faint }}>{draft.length}/{MAX_MERGE} 선택됨</span>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={onClose} style={{ padding: "10px 18px", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>취소</button>
-            <button onClick={() => canApply && onApply(draft)} disabled={!canApply} style={{ padding: "10px 20px", borderRadius: 9, border: "none", background: canApply ? C.dark : "#E5E7EB", color: canApply ? "#fff" : C.faint, fontSize: 13.5, fontWeight: 600, cursor: canApply ? "pointer" : "default", fontFamily: FONT }}>적용</button>
+            <button onClick={() => canApply && onApply(draft)} disabled={!canApply} style={{ padding: "10px 20px", borderRadius: 9, border: "none", background: canApply ? C.dark : "#E5E7EB", color: canApply ? "#fff" : C.faint, fontSize: 13.5, fontWeight: 600, cursor: canApply ? "pointer" : "default", fontFamily: FONT }}>{confirmLabel}</button>
           </div>
         </div>
       </div>
@@ -986,62 +999,26 @@ function MergePage({ selected, onBack, onRun }) {
     <div style={{ display: "flex", flexDirection: "column", alignSelf: "stretch", flex: 1, minHeight: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 28px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
         <span onClick={onBack} style={{ cursor: "pointer", display: "flex", color: C.sub }}><Icon.back /></span>
-        <span style={{ fontSize: 16, fontWeight: 700 }}>데이터 합치기</span>
-        {!picking && hasContent && sideCollapsed && (
-          <div style={{ position: "relative", marginLeft: 4 }}>
-            <span onClick={() => setSelOpen((v) => !v)} title="선택한 데이터" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 8, border: `1px solid ${selOpen ? C.dark : C.border}`, cursor: "pointer", color: C.sub }}><Icon.panel width={16} height={16} /></span>
-            {selOpen && (
-              <>
-                <div onClick={() => setSelOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
-                <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, width: 284, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: "0 12px 32px rgba(0,0,0,0.14)", zIndex: 31, padding: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 4px 8px" }}>
-                    <span style={{ fontSize: 12, color: C.faint, fontWeight: 600 }}>selected data</span>
-                    <span onClick={() => { setSelOpen(false); setSideCollapsed(false); }} title="사이드바로 펼치기" style={{ fontSize: 11.5, color: C.purple, fontWeight: 600, cursor: "pointer" }}>펼치기</span>
-                  </div>
-                  {committed.map((idx, i) => (
-                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 6px" }}>
-                      <span style={{ width: 30, height: 30, borderRadius: 7, background: i === 0 ? "#EEF2FF" : "#F3F4F6", color: i === 0 ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db /></span>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 600 }}>{poolLabel(idx)}</span>{i === 0 && <span style={{ fontSize: 10, fontWeight: 700, color: C.sub, background: C.chipBg, borderRadius: 4, padding: "1px 5px" }}>기준</span>}</div>
-                        <div style={{ fontSize: 11, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div>
-                      </div>
-                    </div>
-                  ))}
-                  <button onClick={() => { setSelOpen(false); setReselectOpen(true); }} style={{ width: "100%", marginTop: 8, padding: "10px 0", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon.swap width={14} height={14} /> Reselect Data</button>
-                </div>
-              </>
-            )}
-          </div>
+        <span style={{ fontSize: 16, fontWeight: 700, whiteSpace: "nowrap" }}>데이터 합치기</span>
+        {hasContent && (
+          <>
+            <span style={{ width: 1, height: 18, background: C.border, margin: "0 6px" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              {committed.map((idx, i) => (
+                <span key={idx} style={{ display: "flex", alignItems: "center", gap: 7, background: "#F4F5F7", border: `1px solid ${C.borderSoft}`, borderRadius: 9, padding: "5px 10px" }}>
+                  <span style={{ color: i === 0 ? C.purple : C.sub, display: "flex" }}><Icon.db width={14} height={14} /></span>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{poolLabel(idx)}</span>
+                  {i === 0 && <span style={{ fontSize: 10, fontWeight: 700, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 4, padding: "0 5px" }}>기준</span>}
+                </span>
+              ))}
+            </div>
+            <div style={{ flex: 1 }} />
+            <button onClick={() => setReselectOpen(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT, color: C.text }}><Icon.swap width={14} height={14} /> 데이터 재선택</button>
+          </>
         )}
       </div>
 
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        {picking && <LeftPanel picked={picked} setPicked={setPicked} picking={picking} setPicking={setPicking} canCancel={committed.length >= 2}
-          onDone={() => { setCommitted(picked); setPicking(false); }}
-          onCancel={() => { setPicked(committed); setPicking(false); }} />}
-
-        {!picking && hasContent && !sideCollapsed && (
-          <aside style={{ width: 300, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: C.panel, display: "flex", flexDirection: "column", overflowY: "auto" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 10px" }}>
-              <span style={{ fontSize: 14, fontWeight: 700 }}>선택한 데이터</span>
-              <span onClick={() => setSideCollapsed(true)} title="접기" style={{ cursor: "pointer", color: C.faint, display: "flex" }}><span style={{ display: "flex", transform: "rotate(180deg)" }}><Icon.chevR /></span></span>
-            </div>
-            <div style={{ padding: "0 12px 8px" }}>
-              <button onClick={() => setReselectOpen(true)} style={{ width: "100%", padding: "11px 0", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon.swap width={14} height={14} /> 데이터 재선택</button>
-            </div>
-            <div style={{ padding: "4px 18px 8px", fontSize: 12, color: C.faint, fontWeight: 600 }}>데이터셋 {committed.length}개</div>
-            {committed.map((idx, i) => (
-              <div key={idx} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", margin: "0 8px 6px", borderRadius: 10 }}>
-                <span style={{ width: 30, height: 30, borderRadius: 7, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db /></span>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 600 }}>{poolLabel(idx)}</span>{i === 0 && <span style={{ fontSize: 10.5, fontWeight: 700, color: C.sub, background: C.chipBg, borderRadius: 5, padding: "1px 6px" }}>기준</span>}</div>
-                  <div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div>
-                </div>
-              </div>
-            ))}
-          </aside>
-        )}
-
         {picking ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, textAlign: "center", color: C.faint }}>
             <span style={{ width: 56, height: 56, borderRadius: 14, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.union width={26} height={26} /></span>
@@ -1054,7 +1031,7 @@ function MergePage({ selected, onBack, onRun }) {
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, textAlign: "center", color: C.faint }}>
             <span style={{ width: 56, height: 56, borderRadius: 14, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.union width={26} height={26} /></span>
             <div style={{ fontSize: 17, fontWeight: 700, color: C.text }}>합칠 데이터를 선택해 주세요</div>
-            <button onClick={() => setPicking(true)} style={{ display: "flex", alignItems: "center", gap: 7, background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.plus /> 데이터 선택하기</button>
+            <button onClick={() => setReselectOpen(true)} style={{ display: "flex", alignItems: "center", gap: 7, background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.plus /> 데이터 선택하기</button>
           </div>
         ) : previewBig ? (
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "#fff" }}>
@@ -1075,7 +1052,7 @@ function MergePage({ selected, onBack, onRun }) {
               <span style={{ width: 64, height: 64, borderRadius: 18, background: "#FEF2F2", border: `1px solid #FCA5A5`, color: C.red, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 800 }}>!</span>
               <div style={{ fontSize: 19, fontWeight: 700, color: C.text }}>용량 한도를 초과했어요</div>
               <div style={{ fontSize: 14, color: C.sub, lineHeight: 1.7, maxWidth: 470 }}>한 번에 최대 <b>{MAX_MERGE}개</b>까지만 합칠 수 있어요.<br />지금 <b>{committed.length}개</b>를 합치면 <b>{afterRows.toLocaleString()}행</b>이 되어 한도(<b>10,000행</b> · 100MB)를 넘어요.</div>
-              <button onClick={() => setPicking(true)} style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 7, background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.swap width={15} height={15} /> 데이터 다시 선택</button>
+              <button onClick={() => setReselectOpen(true)} style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 7, background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.swap width={15} height={15} /> 데이터 다시 선택</button>
             </div>
           ) : (
           <>
@@ -2087,7 +2064,7 @@ export default function DatasetsApp() {
         {screen === "agent" && <div style={scrollArea}><AgentAnalysisPage /></div>}
         {screen === "list" && (
           <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", background: "#fff" }}>
-            <DatasetsPage datasets={datasets} setDatasets={setDatasets} folders={folders} setFolders={setFolders} activeFolder={activeFolder} setActiveFolder={setActiveFolder} selected={selected} setSelected={setSelected} onOpen={() => { setScreen("detail"); setTab("AI Readiness"); }} onMerge={() => setScreen("merge")} onMergeDirect={() => { setSelected([]); setScreen("merge"); }} />
+            <DatasetsPage datasets={datasets} setDatasets={setDatasets} folders={folders} setFolders={setFolders} activeFolder={activeFolder} setActiveFolder={setActiveFolder} selected={selected} setSelected={setSelected} onOpen={() => { setScreen("detail"); setTab("AI Readiness"); }} onMerge={() => setScreen("merge")} onMergeDirect={() => { setSelected(datasets.slice(0, 2).map((d) => d.id)); setScreen("merge"); }} />
           </div>
         )}
         {screen === "detail" && (
