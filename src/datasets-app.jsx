@@ -2347,7 +2347,7 @@ function CombinePage({ selected, onRun }) {
                         {picked.length < MAX_MERGE ? (
                           <div style={{ flex: 1, minHeight: 90, border: `1.5px dashed ${cardOver ? C.purple : C.border}`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: cardOver ? C.purple : C.faint, fontSize: 12.5 }}>데이터셋 하나 더 끌어다 놓기</div>
                         ) : (
-                          <button onClick={() => setDone(true)} style={{ marginTop: 6, width: "100%", padding: "13px 0", borderRadius: 10, border: "none", background: C.dark, color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>칼럼 매칭하기 →</button>
+                          <button onClick={() => setDone(true)} style={{ marginTop: 6, width: "100%", padding: "13px 0", borderRadius: 10, border: "none", background: C.dark, color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>병합 방식 추천받기 →</button>
                         )}
                       </>
                     )}
