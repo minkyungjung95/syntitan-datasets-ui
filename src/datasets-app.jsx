@@ -2098,6 +2098,7 @@ function CombinePage({ selected, onRun }) {
   const [q, setQ] = useState("");
   const [method, setMethod] = useState("union");
   const REC_METHOD = "union";   // AI 추천 병합 방식 (칼럼 구성이 같아 Union 권장)
+  const [methodSrc, setMethodSrc] = useState(came ? "ai" : "none"); // none(미정) | user(드래그로 직접) | ai(추천받음)
   const [loading, setLoading] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(true);
   const [autoOpen, setAutoOpen] = useState(true);
@@ -2144,7 +2145,7 @@ function CombinePage({ selected, onRun }) {
         suppressClick.current = true;
         const z = zoneAt(e.clientX, e.clientY);
         if (z === "base") setPicked((p) => (p.length ? p : [s.idx]));
-        else if (z === "union" || z === "join") { setMethod(z); setPicked((p) => (p.includes(s.idx) || p.length >= MAX_MERGE ? p : [...p, s.idx])); }
+        else if (z === "union" || z === "join") { setMethod(z); setMethodSrc("user"); setPicked((p) => (p.includes(s.idx) || p.length >= MAX_MERGE ? p : [...p, s.idx])); }
       }
       setDrag(null); setOverZone(null);
     };
@@ -2153,14 +2154,13 @@ function CombinePage({ selected, onRun }) {
     return () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
   }, []);
 
+  // 2개 미만이면 방식 미정으로 리셋 (제거 시)
+  useEffect(() => { if (picked.length < 2) setMethodSrc("none"); }, [picked.length]);
+
   const ready = done && !loading;
   const names = picked.map(poolLabel);
-  // 클릭 추가: 2번째를 클릭으로 담으면 AI 추천 방식(Union)으로
-  const togglePick = (i) => {
-    const has = picked.includes(i);
-    if (!has && picked.length === 1) setMethod(REC_METHOD);
-    setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : p.length >= MAX_MERGE ? p : [...p, i]));
-  };
+  // 클릭 추가: 방식을 정하지 않음 (미정 → 다음 단계에서 AI 추천)
+  const togglePick = (i) => setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : p.length >= MAX_MERGE ? p : [...p, i]));
   const editAuto = (idx, v) => { setAutoSel((s) => s.map((x, i) => (i === idx ? v : x))); setStale(true); };
   const editReview = (idx, v) => { setReviewSel((s) => s.map((x, i) => (i === idx ? v : x))); setStale(true); };
 
@@ -2230,8 +2230,8 @@ function CombinePage({ selected, onRun }) {
     );
   };
   const methodChip = (m) => (
-    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 999, padding: "4px 11px", whiteSpace: "nowrap" }}>
-      {m === "join" ? "→ Join" : "↓ Union"}{m === REC_METHOD && <span style={{ fontSize: 10.5 }}>✦ AI 추천</span>}
+    <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 999, padding: "4px 11px", whiteSpace: "nowrap" }}>
+      {m === "join" ? "→ Join" : "↓ Union"}<span style={{ fontSize: 10.5, fontWeight: 600, opacity: 0.8 }}>직접 선택</span>
     </span>
   );
 
@@ -2278,8 +2278,8 @@ function CombinePage({ selected, onRun }) {
                 })}
               </div>
               <div style={{ padding: 12, borderTop: `1px solid ${C.border}`, background: "#fff" }}>
-                <button disabled={picked.length !== MAX_MERGE} onClick={() => picked.length === MAX_MERGE && setDone(true)} style={{ width: "100%", padding: "14px 0", borderRadius: 11, border: "none", background: picked.length === MAX_MERGE ? C.dark : "#E5E7EB", color: picked.length === MAX_MERGE ? "#fff" : C.faint, fontSize: 14.5, fontWeight: 700, cursor: picked.length === MAX_MERGE ? "pointer" : "default", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-                  {picked.length === MAX_MERGE ? `${method === "join" ? "Join" : "Union"} 방식으로 매칭하기 →` : picked.length === 1 ? "두 번째 데이터셋의 위치로 방식 선택" : "데이터셋을 선택하세요"}
+                <button disabled={picked.length !== MAX_MERGE} onClick={() => { if (picked.length !== MAX_MERGE) return; if (methodSrc === "none") { setMethod(REC_METHOD); setMethodSrc("ai"); } setDone(true); }} style={{ width: "100%", padding: "14px 0", borderRadius: 11, border: "none", background: picked.length === MAX_MERGE ? C.dark : "#E5E7EB", color: picked.length === MAX_MERGE ? "#fff" : C.faint, fontSize: 14.5, fontWeight: 700, cursor: picked.length === MAX_MERGE ? "pointer" : "default", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                  {picked.length !== MAX_MERGE ? (picked.length === 1 ? "두 번째 데이터셋을 선택하세요" : "데이터셋을 선택하세요") : methodSrc === "user" ? `${method === "join" ? "Join" : "Union"} 방식으로 매칭하기 →` : "데이터 매칭 추천받기 →"}
                 </button>
               </div>
             </>
@@ -2357,23 +2357,24 @@ function CombinePage({ selected, onRun }) {
         {/* RIGHT — 캔버스(빈 상태 / 시각화) */}
         <div style={{ flex: 1, minWidth: 0, position: "relative", overflow: "auto", backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)", backgroundSize: "18px 18px" }}>
           {/* 방식 칩 (단일 · 클릭해서 Union/Join 전환) + AI 추천 표시 */}
+          {done && (() => { const isAi = methodSrc === "ai"; return (
           <div style={{ position: "absolute", top: 18, left: 18, zIndex: 4, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7 }}>
-            {(() => { const isRec = method === REC_METHOD; return (
-            <button onClick={() => setMethod(method === "union" ? "join" : "union")} title="클릭해서 Union / Join 전환" style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px 9px 14px", borderRadius: 10, border: `1px solid ${isRec ? C.purple : C.border}`, background: isRec ? "#FAF8FF" : "#fff", cursor: "pointer", fontFamily: FONT, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-              <span style={{ width: 26, height: 26, borderRadius: 7, background: isRec ? "#fff" : "#F3F4F6", color: isRec ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>{method === "join" ? <Icon.join width={15} height={15} /> : <Icon.union width={15} height={15} />}</span>
+            <button onClick={() => { setMethod(method === "union" ? "join" : "union"); setMethodSrc("user"); }} title="클릭해서 Union / Join 전환" style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px 9px 14px", borderRadius: 10, border: `1px solid ${isAi ? C.purple : C.border}`, background: isAi ? "#FAF8FF" : "#fff", cursor: "pointer", fontFamily: FONT, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+              <span style={{ width: 26, height: 26, borderRadius: 7, background: isAi ? "#fff" : "#F3F4F6", color: isAi ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>{method === "join" ? <Icon.join width={15} height={15} /> : <Icon.union width={15} height={15} />}</span>
               <span style={{ fontSize: 14, fontWeight: 700 }}>{method === "join" ? "Join" : "Union"}</span>
-              {isRec
+              {isAi
                 ? <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "3px 7px" }}>✦ AI 추천</span>
                 : <span style={{ fontSize: 11, fontWeight: 600, color: C.faint, background: "#F3F4F6", borderRadius: 6, padding: "3px 7px" }}>직접 선택</span>}
             </button>
-            ); })()}
             {method !== REC_METHOD && (
-              <button onClick={() => setMethod(REC_METHOD)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: C.purple, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, padding: "0 2px" }}>
+              <button onClick={() => { setMethod(REC_METHOD); setMethodSrc("ai"); }} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: C.purple, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, padding: "0 2px" }}>
                 ✦ AI 추천 「{REC_METHOD === "join" ? "Join" : "Union"}」으로 되돌리기
               </button>
             )}
           </div>
+          ); })()}
           {/* ⤢ / ↻ */}
+          {done && (
           <div style={{ position: "absolute", top: 18, right: 18, zIndex: 4, display: "flex", flexDirection: "column", gap: 8 }}>
             <button title="넓게 보기" style={{ width: 36, height: 36, borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
             <div style={{ position: "relative" }} onMouseEnter={() => setTip(true)} onMouseLeave={() => setTip(false)}>
@@ -2386,6 +2387,7 @@ function CombinePage({ selected, onRun }) {
               )}
             </div>
           </div>
+          )}
 
           {!done ? (
             <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, gap: 22 }}>
@@ -2411,6 +2413,12 @@ function CombinePage({ selected, onRun }) {
                     <MethodSlot slotRef={unionZoneRef} dir="union" active={overZone === "union"} w={248} />
                   </div>
                 </div>
+              ) : methodSrc !== "user" ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                  <DsCard idx={picked[0]} isBase w={252} />
+                  <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#fff", border: `1px solid ${C.border}`, color: C.sub, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 500, lineHeight: 1, boxShadow: "0 1px 2px rgba(0,0,0,0.06)" }}>+</span>
+                  <DsCard idx={picked[1]} w={252} />
+                </div>
               ) : method === "join" ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <DsCard idx={picked[0]} isBase w={224} />
@@ -2434,8 +2442,10 @@ function CombinePage({ selected, onRun }) {
                 {picked.length === 0
                   ? "먼저 기준이 될 데이터셋을 선택하세요."
                   : picked.length === 1
-                    ? <>두 번째 데이터셋을 <b style={{ color: C.sub }}>아래(Union·행↑)</b>나 <b style={{ color: C.sub }}>오른쪽(Join·열→)</b>으로 끌어다 놓으세요.<br />그냥 <b style={{ color: C.sub }}>클릭</b>하면 AI 추천(Union)으로 담겨요.</>
-                    : <>방식이 <b style={{ color: C.sub }}>{method === "join" ? "Join" : "Union"}</b>으로 정해졌어요. 다음 단계에서 바꿀 수 있어요.</>}
+                    ? <>방식이 명확하면 — 2번째를 <b style={{ color: C.sub }}>아래(Union·행↑)</b>나 <b style={{ color: C.sub }}>오른쪽(Join·열→)</b>으로 <b style={{ color: C.sub }}>끌어다 놓기</b>.<br />잘 모르겠으면 — 왼쪽에서 <b style={{ color: C.sub }}>그냥 클릭</b> → 아래 <b style={{ color: C.sub }}>「데이터 매칭 추천받기」</b>를 누르면 AI가 방식을 추천해요.</>
+                    : methodSrc === "user"
+                      ? <>방식을 <b style={{ color: C.sub }}>{method === "join" ? "Join(옆으로)" : "Union(위아래)"}</b>으로 직접 골랐어요. 다음 단계에서 바꿀 수 있어요.</>
+                      : <>방식 미정 — <b style={{ color: C.sub }}>「데이터 매칭 추천받기」</b>를 누르면 AI가 Union/Join을 추천해줘요.</>}
               </div>
             </div>
           ) : loading ? (
