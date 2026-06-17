@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>Data Union Animation</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --grid: #d8dde3;
+        --header-bg: #f4f5f7;
+        --header-text: #5b6573;
+        --text: #1f2937;
+        --union-bg: #e7f6ee;
+        --union-text: #146c43;
+        --union-line: #34c77b;
+        --card-bg: #ffffff;
+      }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #f6f7f9;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+        color: var(--text);
+      }
+
+      .stage {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .card {
+        width: 266px;
+        height: 126px;
+        background: var(--card-bg);
+        border-radius: 12px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+        box-sizing: border-box;
+      }
+
+      /* Two stacked tables share one frame; the bottom one slides up to merge. */
+      .union {
+        position: relative;
+        width: 200px;
+        transform: scale(0.78);
+        transform-origin: center;
+        animation: loopFade 5s ease-in-out infinite;
+      }
+
+      .tbl {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+        background: var(--bg);
+        border: 1px solid var(--grid);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .tbl col.c-id    { width: 40%; }
+      .tbl col.c-age   { width: 30%; }
+      .tbl col.c-class { width: 30%; }
+
+      .tbl thead th {
+        background: var(--header-bg);
+        color: var(--header-text);
+        font-weight: 600;
+        text-align: left;
+        padding: 4px 10px;
+        border-bottom: 1px solid var(--grid);
+        font-size: 9px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .tbl tbody td {
+        padding: 3px 10px;
+        border-bottom: 1px solid var(--grid);
+        line-height: 1.35;
+      }
+      .tbl tbody tr:last-child td { border-bottom: none; }
+
+      /* ---- Top table (Dataset A) ---- */
+      .tbl-a { border-radius: 6px 6px 0 0; border-bottom: none; }
+
+      /* ---- Bottom table (Dataset B) — slides up and docks ---- */
+      .tbl-b-wrap {
+        position: relative;
+        animation: dockUp 5s ease-in-out infinite;
+      }
+      .tbl-b {
+        border-radius: 0 0 6px 6px;
+        background: var(--union-bg);
+      }
+      .tbl-b tbody td {
+        color: var(--union-text);
+        border-color: rgba(52,199,123,0.35);
+      }
+      /* the seam between A and B fades once docked */
+      .tbl-b {
+        border-top: 1px dashed var(--union-line);
+        animation: seamMerge 5s ease-in-out infinite;
+      }
+
+      /* B starts detached lower with a gap, then slides up flush against A. */
+      @keyframes dockUp {
+        0%, 12%  { transform: translateY(14px); opacity: 0; }
+        24%      { transform: translateY(14px); opacity: 1; } /* appears below, gap visible */
+        44%      { transform: translateY(0);    opacity: 1; } /* slides up, docks */
+        88%      { transform: translateY(0);    opacity: 1; }
+        100%     { transform: translateY(14px); opacity: 0; }
+      }
+
+      /* Once docked, the dashed seam + green tint settle into the unified table. */
+      @keyframes seamMerge {
+        0%, 44%  { border-top-color: var(--union-line); background: var(--union-bg); }
+        58%      { border-top-color: var(--grid);       background: var(--bg); }
+        88%      { border-top-color: var(--grid);       background: var(--bg); }
+        100%     { border-top-color: var(--union-line); background: var(--union-bg); }
+      }
+      @keyframes seamMergeText {
+        0%, 44%  { color: var(--union-text); }
+        58%, 88% { color: var(--text); }
+        100%     { color: var(--union-text); }
+      }
+      .tbl-b tbody td { animation: seamMergeText 5s ease-in-out infinite; }
+
+      @keyframes loopFade {
+        0%, 90%  { opacity: 1; }
+        96%      { opacity: 0; }
+        100%     { opacity: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <div class="card">
+        <div class="union">
+          <table class="tbl tbl-a">
+            <colgroup><col class="c-id"><col class="c-age"><col class="c-class"></colgroup>
+            <thead>
+              <tr><th>ID</th><th>Age</th><th>Class</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>001</td><td>27</td><td>A</td></tr>
+              <tr><td>002</td><td>34</td><td>B</td></tr>
+              <tr><td>003</td><td>41</td><td>A</td></tr>
+            </tbody>
+          </table>
+          <div class="tbl-b-wrap">
+            <table class="tbl tbl-b">
+              <colgroup><col class="c-id"><col class="c-age"><col class="c-class"></colgroup>
+              <tbody>
+                <tr><td>004</td><td>29</td><td>C</td></tr>
+                <tr><td>005</td><td>31</td><td>B</td></tr>
+                <tr><td>006</td><td>38</td><td>A</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

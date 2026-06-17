@@ -2104,7 +2104,10 @@ function CombinePage({ selected, onRun }) {
   const [reviewSel, setReviewSel] = useState(REVIEW_ROWS.map((r) => r.right));
   const [stale, setStale] = useState(false);   // 매칭 변경됨 → 반영 필요
   const [tip, setTip] = useState(false);        // ↻ 호버 툴팁
-  const [dragId, setDragId] = useState(null);   // 좌측에서 드래그 중인 데이터셋 idx
+  const [drag, setDrag] = useState(null);       // {idx,x,y} 마우스 드래그 중인 데이터셋
+  const dragStart = useRef(null);               // {idx,sx,sy,started}
+  const suppressClick = useRef(false);          // 드래그 직후 클릭 무시
+  const zoneRef = useRef(null);                 // 우측 드롭 카드 DOM
   const [cardOver, setCardOver] = useState(false); // 우측 드롭 카드 hover
   const [infoOpen, setInfoOpen] = useState(false); // 방식 설명 툴팁
   const [infoPos, setInfoPos] = useState(null);
@@ -2114,6 +2117,28 @@ function CombinePage({ selected, onRun }) {
     if (done) { setLoading(true); const t = setTimeout(() => setLoading(false), 1500); return () => clearTimeout(t); }
     setLoading(false);
   }, [done]);
+
+  // 좌측 행 → 우측 카드 마우스 드래그앤드랍
+  useEffect(() => {
+    const over = (x, y) => { const z = zoneRef.current; if (!z) return false; const r = z.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; };
+    const move = (e) => {
+      const s = dragStart.current; if (!s) return;
+      if (!s.started) { if (Math.abs(e.clientX - s.sx) + Math.abs(e.clientY - s.sy) < 5) return; s.started = true; }
+      setDrag({ idx: s.idx, x: e.clientX, y: e.clientY });
+      setCardOver(over(e.clientX, e.clientY));
+    };
+    const up = (e) => {
+      const s = dragStart.current; dragStart.current = null;
+      if (s && s.started) {
+        suppressClick.current = true;
+        if (over(e.clientX, e.clientY)) setPicked((p) => (p.includes(s.idx) || p.length >= MAX_MERGE ? p : [...p, s.idx]));
+      }
+      setDrag(null); setCardOver(false);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    return () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+  }, []);
 
   const ready = done && !loading;
   const names = picked.map(poolLabel);
@@ -2157,6 +2182,12 @@ function CombinePage({ selected, onRun }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignSelf: "stretch", flex: 1, minHeight: 0 }}>
+      {drag && (
+        <div style={{ position: "fixed", top: drag.y + 14, left: drag.x + 14, zIndex: 200, pointerEvents: "none", display: "flex", alignItems: "center", gap: 9, padding: "9px 13px", borderRadius: 10, background: "#fff", border: `1px solid ${C.border}`, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", opacity: 0.96 }}>
+          <span style={{ width: 26, height: 26, borderRadius: 6, background: "#EEF4FF", color: C.blue, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db width={14} height={14} /></span>
+          <span style={{ fontSize: 13, fontWeight: 700 }}>{poolLabel(drag.idx)}</span>
+        </div>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 28px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
         <span style={{ fontSize: 14, color: C.sub }}>Dataset</span>
         <span style={{ color: C.faint, display: "flex" }}><Icon.chevR width={16} height={16} /></span>
@@ -2180,7 +2211,10 @@ function CombinePage({ selected, onRun }) {
                   const atMax = !checked && picked.length >= MAX_MERGE;
                   const order = picked.indexOf(i) + 1;
                   return (
-                    <div key={i} draggable onDragStart={(e) => { e.dataTransfer.setData("text/plain", String(i)); e.dataTransfer.effectAllowed = "copy"; setDragId(i); }} onDragEnd={() => setDragId(null)} onClick={() => !atMax && togglePick(i)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", borderRadius: 10, cursor: atMax ? "default" : "grab", background: checked ? "#EEF4FF" : "transparent", opacity: atMax ? 0.45 : 1, userSelect: "none" }}>
+                    <div key={i}
+                      onMouseDown={(e) => { if (atMax) return; e.preventDefault(); dragStart.current = { idx: i, sx: e.clientX, sy: e.clientY, started: false }; }}
+                      onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } if (!atMax) togglePick(i); }}
+                      style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", borderRadius: 10, cursor: atMax ? "default" : (drag && drag.idx === i ? "grabbing" : "grab"), background: checked ? "#EEF4FF" : (drag && drag.idx === i ? "#F3F4F6" : "transparent"), opacity: atMax ? 0.45 : 1, userSelect: "none" }}>
                       <span style={{ width: 30, height: 30, borderRadius: 7, background: checked ? "#fff" : "#F3F4F6", color: checked ? C.blue : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db /></span>
                       <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{poolLabel(i)}</div><div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
                       {checked && <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", border: `1px solid ${C.blue}`, color: C.blue, fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{order}</span>}
@@ -2293,9 +2327,7 @@ function CombinePage({ selected, onRun }) {
                 </div>
                 <div style={{ padding: 16 }}>
                   <div
-                    onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setCardOver(true); }}
-                    onDragLeave={() => setCardOver(false)}
-                    onDrop={(e) => { e.preventDefault(); setCardOver(false); const raw = e.dataTransfer.getData("text/plain"); const id = dragId != null ? dragId : (raw === "" ? null : parseInt(raw, 10)); if (id != null && !isNaN(id)) setPicked((p) => (p.includes(id) || p.length >= MAX_MERGE ? p : [...p, id])); setDragId(null); }}
+                    ref={zoneRef}
                     style={{ minHeight: 330, border: picked.length ? `1px solid ${C.border}` : `1.5px dashed ${cardOver ? C.purple : C.border}`, borderRadius: 12, background: cardOver && !picked.length ? "#F5F3FF" : picked.length ? "#fff" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: picked.length ? "stretch" : "center", justifyContent: picked.length ? "flex-start" : "center", gap: 10, padding: picked.length ? 14 : 0, textAlign: "center", transition: "all .12s" }}>
                     {picked.length === 0 ? (
                       cardOver ? (
