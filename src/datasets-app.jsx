@@ -155,11 +155,13 @@ function Sidebar({ active = "Home", onNav = () => {} }) {
         <span onClick={() => setCollapsed(false)} title="사이드바 펼치기" style={{ color: C.sub, cursor: "pointer", display: "flex", padding: 6, borderRadius: 8, marginBottom: 14 }}><Icon.panel /></span>
         <NavItem icon={<Icon.home />} label="Home" active={active === "Home"} onClick={() => onNav("Home")} collapsed />
         <div style={{ height: 14 }} />
-        <NavItem icon={<Icon.db />} label="Edit Dataset" active={active === "Edit Dataset"} onClick={() => onNav("Edit Dataset")} collapsed />
-        <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} collapsed />
-        <NavItem icon={<Icon.users />} label="Discussion Room" onClick={() => onNav("Discussion Room")} collapsed />
+        <NavItem icon={<Icon.db />} label="Dataset" active={active === "Dataset"} onClick={() => onNav("Dataset")} collapsed />
+        <NavItem icon={<Icon.union />} label="Combine" active={active === "Combine"} onClick={() => onNav("Combine")} collapsed />
         <div style={{ height: 14 }} />
+        <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} collapsed />
         <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} collapsed />
+        <div style={{ height: 14 }} />
+        <NavItem icon={<Icon.users />} label="Discussion Room" onClick={() => onNav("Discussion Room")} collapsed />
         <div style={{ flex: 1 }} />
         <div title="Basic plan" style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#5B9BFF 0%,#7FB6FF 100%)", color: "#fff", fontWeight: 700, fontSize: 12, fontStyle: "italic", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>Basic</div>
         <Avatar size={30} />
@@ -173,12 +175,14 @@ function Sidebar({ active = "Home", onNav = () => {} }) {
         <span onClick={() => setCollapsed(true)} title="사이드바 접기" style={{ color: C.faint, cursor: "pointer", display: "flex", padding: 2 }}><Icon.panel /></span>
       </div>
       <NavItem icon={<Icon.home />} label="Home" active={active === "Home"} onClick={() => onNav("Home")} />
-      <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Workspace</div>
-      <NavItem icon={<Icon.db />} label="Edit Dataset" active={active === "Edit Dataset"} onClick={() => onNav("Edit Dataset")} />
-      <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} />
-      <NavItem icon={<Icon.users />} label="Discussion Room" onClick={() => onNav("Discussion Room")} />
+      <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Edit dataset</div>
+      <NavItem icon={<Icon.db />} label="Dataset" active={active === "Dataset"} onClick={() => onNav("Dataset")} />
+      <NavItem icon={<Icon.union />} label="Combine" active={active === "Combine"} onClick={() => onNav("Combine")} />
       <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Analyze</div>
+      <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} />
       <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} />
+      <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Workspace</div>
+      <NavItem icon={<Icon.users />} label="Discussion Room" onClick={() => onNav("Discussion Room")} />
       <div style={{ flex: 1 }} />
       <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2138,13 +2142,6 @@ function CombinePage({ selected, onRun }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignSelf: "stretch", flex: 1, minHeight: 0 }}>
-      {/* 브레드크럼 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 28px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
-        <span style={{ fontSize: 14, color: C.sub }}>Dataset</span>
-        <span style={{ color: C.faint, display: "flex" }}><Icon.chevR width={16} height={16} /></span>
-        <span style={{ fontSize: 14, fontWeight: 700 }}>Combine</span>
-      </div>
-
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         {/* LEFT — 선택 / 칼럼 매칭 */}
         <aside style={{ width: 380, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -2213,13 +2210,12 @@ function CombinePage({ selected, onRun }) {
 
         {/* RIGHT — 캔버스(빈 상태 / 시각화) */}
         <div style={{ flex: 1, minWidth: 0, position: "relative", overflow: "auto", backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)", backgroundSize: "18px 18px" }}>
-          {/* 방식(Union/Join) chip */}
+          {/* 방식 칩 (단일 · 클릭해서 Union/Join 전환) */}
           <div style={{ position: "absolute", top: 18, left: 18, zIndex: 4 }}>
-            <div style={{ display: "flex", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: 4, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-              {["union", "join"].map((m) => (
-                <button key={m} onClick={() => setMethod(m)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 13px", borderRadius: 7, border: "none", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT, background: method === m ? "#F1F2F4" : "transparent", color: method === m ? C.text : C.faint }}>{m === "join" ? <Icon.join width={15} height={15} /> : <Icon.union width={15} height={15} />} {m === "join" ? "Join" : "Union"}</button>
-              ))}
-            </div>
+            <button onClick={() => setMethod(method === "union" ? "join" : "union")} title="클릭해서 Union / Join 전환" style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: "#fff", cursor: "pointer", fontFamily: FONT, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+              <span style={{ width: 26, height: 26, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>{method === "join" ? <Icon.join width={15} height={15} /> : <Icon.union width={15} height={15} />}</span>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>{method === "join" ? "Join" : "Union"}</span>
+            </button>
           </div>
           {/* ⤢ / ↻ */}
           <div style={{ position: "absolute", top: 18, right: 18, zIndex: 4, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2319,11 +2315,14 @@ export default function DatasetsApp() {
     if (screen === "merging" && mergeJob?.done) setScreen("result");
   }, [screen, mergeJob?.done]);
 
-  const sidebarActive = screen === "agent" ? "Agent Analysis" : "Edit Dataset";
+  const sidebarActive = screen === "agent" ? "Agent Analysis"
+    : (screen === "combine" || screen === "merge" || screen === "merging" || screen === "result") ? "Combine"
+    : "Dataset";
 
   const handleNav = (label) => {
     if (label === "Agent Analysis") setScreen("agent");
-    else if (label === "Home" || label === "Edit Dataset") { setSelected([]); setScreen("list"); }
+    else if (label === "Combine") { setSelected([]); setScreen("combine"); }
+    else if (label === "Home" || label === "Dataset") { setSelected([]); setScreen("list"); }
   };
 
   const startMerge = (names) => { setMergeJob({ names, done: false }); setSelected([]); setScreen("merging"); };
