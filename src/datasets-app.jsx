@@ -2184,7 +2184,19 @@ function CombinePage({ selected, onRun }) {
             </>
           ) : (
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 28px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}><StepNum n="01" /><span style={{ fontSize: 15, fontWeight: 700 }}>칼럼 매칭</span></div>
+              {/* 헤더 — 방식 설명 (초보자용) */}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 15, fontWeight: 700 }}>
+                  <span style={{ width: 26, height: 26, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>{method === "join" ? <Icon.join width={15} height={15} /> : <Icon.union width={15} height={15} />}</span>
+                  {method === "join" ? "Join · 옆으로 붙이기" : "Union · 위아래로 이어붙이기"}
+                </span>
+                <span style={{ fontSize: 12, color: C.faint, whiteSpace: "nowrap", paddingTop: 5 }}>아래에서 짝을 연결해 주세요</span>
+              </div>
+              <div style={{ marginBottom: 18, fontSize: 12.5, color: C.sub, lineHeight: 1.7, background: "#F7F8FA", borderRadius: 10, padding: "12px 14px" }}>
+                {method === "join"
+                  ? <>두 데이터에서 <b>같은 값(예: 고객번호)을 가진 줄끼리</b> 찾아 <b>옆으로 나란히</b> 붙여요. → 칸(열)이 늘어나요.<br />아래 목록에서 <b>어떤 칸끼리 같은 뜻인지</b> 연결해 주세요. 짝이 없는 칸은 빈값으로 둬요.</>
+                  : <>두 데이터를 <b>위아래로 이어</b> 붙여요. → 줄(행)이 늘어나요 (예: 8,432 + 8,432 = 16,864줄).<br />단, <b>'이름·이메일'처럼 같은 뜻의 칸(칼럼)끼리 맞춰야</b> 해서, 아래 목록에서 짝을 연결해 주세요. <b>한쪽에만 있는 칸</b>은 반대쪽이 빈값(Null)으로 채워져요.</>}
+              </div>
               {/* 검토 필요 */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: "#B45309" }}><Icon.warn width={16} height={16} /></span> 검토 필요</span>
