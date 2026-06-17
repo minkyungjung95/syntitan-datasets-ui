@@ -343,7 +343,8 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
   const [panelOpen, setPanelOpen] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
-  const [dragSrc, setDragSrc] = useState(null);     // 드래그 중인 데이터셋 id
+  const [dragSrc, setDragSrc] = useState(null);     // 드래그 중인 데이터셋 id(단일)
+  const [dragMode, setDragMode] = useState(null);   // "single" | "multi"
   const [dragOverId, setDragOverId] = useState(null); // 드롭 대상(유효) id
   const [denyId, setDenyId] = useState(null);        // 잠긴(권한없음) 대상 id
   const [mergeAnim, setMergeAnim] = useState(null);  // 합쳐지는 순간 { a, b }
@@ -411,7 +412,8 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
           <span style={{ fontSize: 14, fontWeight: 600 }}>{selected.length}개 선택됨</span>
           <div style={{ flex: 1 }} />
           {overLimit && <span style={{ fontSize: 12.5, color: C.red }}>최대 {MAX_MERGE}개</span>}
-          {canMerge && <span style={{ fontSize: 12.5, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}><Icon.union width={14} height={14} /> 드래그해서 합치기</span>}
+          {canMerge && <span style={{ fontSize: 12, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}><Icon.union width={13} height={13} /> 드래그해서 합치기</span>}
+          <button onClick={() => canMerge && onMerge()} disabled={!canMerge} style={{ display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 16px", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 600, fontFamily: FONT, cursor: canMerge ? "pointer" : "default", background: canMerge ? C.dark : "#EEF0F3", color: canMerge ? "#fff" : C.faint }}><Icon.union width={15} height={15} /> Combine ({selected.length}/{MAX_MERGE})</button>
           <button onClick={() => { setMoveTarget(undefined); setMoveOpen(true); }} style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", color: C.text, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.folder width={15} height={15} /> 폴더로 이동</button>
           <button title="다운로드" style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", color: C.text, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.download /> 다운로드</button>
           <button title="삭제" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", color: C.sub, cursor: "pointer", fontFamily: FONT }}><Icon.trash /></button>
@@ -430,11 +432,11 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
           const showCb = !d.locked && (selecting || hover === d.id || checked);
           return (
             <div key={d.id} draggable={!d.locked}
-              onDragStart={(e) => { e.stopPropagation(); setDragSrc(d.id); }}
-              onDragEnd={() => { setDragSrc(null); setDragOverId(null); setDenyId(null); }}
+              onDragStart={(e) => { e.stopPropagation(); if (selected.length >= 2 && selected.includes(d.id)) { setDragMode("multi"); } else { setDragMode("single"); setDragSrc(d.id); } }}
+              onDragEnd={() => { if (dragMode === "multi" && selected.length >= 2) startMergeAnim(selected[0], selected[1]); setDragMode(null); setDragSrc(null); setDragOverId(null); setDenyId(null); }}
               onDragOver={(e) => { if (dragSrc == null || dragSrc === d.id) return; e.preventDefault(); if (d.locked) { setDenyId(d.id); setDragOverId(null); } else { setDragOverId(d.id); setDenyId(null); } }}
               onDragLeave={() => { if (dragOverId === d.id) setDragOverId(null); if (denyId === d.id) setDenyId(null); }}
-              onDrop={(e) => { e.preventDefault(); if (dragSrc != null && dragSrc !== d.id && !d.locked) startMergeAnim(dragSrc, d.id); else { setDragOverId(null); setDenyId(null); } }}
+              onDrop={(e) => { e.preventDefault(); if (dragMode === "single" && dragSrc != null && dragSrc !== d.id && !d.locked) startMergeAnim(dragSrc, d.id); else { setDragOverId(null); setDenyId(null); } }}
               onClick={() => { if (dragSrc == null) onOpen(d.id); }} onMouseEnter={() => setHover(d.id)} onMouseLeave={() => setHover(null)}
               style={{ position: "relative", display: "grid", gridTemplateColumns: grid, alignItems: "center", padding: "13px 20px", fontSize: 14, borderBottom: i === rows.length - 1 ? "none" : `1px solid ${C.borderSoft}`, cursor: dragSrc != null ? "grabbing" : "pointer", background: dragOverId === d.id ? "#EAF1FF" : denyId === d.id ? "#FEF2F2" : checked ? C.blueSoft : hover === d.id ? "#FAFAFB" : "transparent", boxShadow: dragOverId === d.id ? `inset 0 0 0 2px ${C.blue}` : "none", opacity: dragSrc === d.id ? 0.4 : 1, transition: "background .12s" }}>
               {denyId === d.id && (
