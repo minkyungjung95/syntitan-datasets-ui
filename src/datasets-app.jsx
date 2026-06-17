@@ -2072,6 +2072,8 @@ const TONE = [
   { key: "blue", line: "#BFD7FF", bg: "#F4F8FF", head: "#E8F1FF", fg: "#185FA5", badge: "기준" },
   { key: "green", line: "#BBF7D0", bg: "#F4FCF6", head: "#E6F8EC", fg: "#15803D", badge: "추가" },
 ];
+const PV_SHARED = ["customer_id", "name", "email", "signup_data", "date", "time", "time_period", "structure"]; // 양쪽 공통 칼럼
+const PV_EXTRA = ["customer_1", "customer_2"]; // Table 1 전용 칼럼
 function CombinePage({ selected, onRun }) {
   const pool = useMemo(() => Array.from({ length: 14 }, (_, i) => poolLabel(i)), []);
   const seed = selected && selected.length ? Array.from({ length: Math.min(selected.length, 2) }, (_, i) => i) : [];
@@ -2080,6 +2082,7 @@ function CombinePage({ selected, onRun }) {
   const [dragId, setDragId] = useState(null);
   const [over, setOver] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [method, setMethod] = useState("union"); // union(상하) | join(좌우)
   const [reviewOpen, setReviewOpen] = useState(true);
   const [autoOpen, setAutoOpen] = useState(true);
   const [autoSel, setAutoSel] = useState(AUTO_ROWS.map((r) => r[0]));
@@ -2098,20 +2101,34 @@ function CombinePage({ selected, onRun }) {
   const removeDrop = (i) => setDropped((d) => d.filter((x) => x !== i));
   const onDrop = (e) => { e.preventDefault(); setOver(false); if (dragId != null) addDrop(dragId); setDragId(null); };
 
-  const PreviewCard = ({ idx, tone }) => (
-    <div style={{ border: `1.5px solid ${tone.line}`, borderRadius: 12, overflow: "hidden", background: tone.bg }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "12px 14px", background: tone.head, borderBottom: `1px solid ${tone.line}` }}>
-        <span style={{ width: 28, height: 28, borderRadius: 7, background: "#fff", color: tone.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db width={15} height={15} /></span>
-        <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{poolLabel(idx)}</div><div style={{ fontSize: 11, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: tone.fg, background: "#fff", border: `1px solid ${tone.line}`, borderRadius: 5, padding: "1px 7px" }}>{tone.badge}</span>
-      </div>
-      {WF_BASE.map((c, i) => (
-        <div key={c[0]} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", fontSize: 12.5, borderBottom: i === WF_BASE.length - 1 ? "none" : `1px solid ${tone.line}55` }}>
-          <TypeIcon kind={c[1]} /><span style={{ flex: 1 }}>{c[0]}</span><span style={{ fontSize: 11, color: C.faint }}>{c[1] === "Integer" ? "int" : "string"}</span>
-        </div>
-      ))}
+  // 행 종류: match(매칭 배지) · null(매칭 칼럼 없음·null) · extra(전용 칼럼 강조) · plain(표시만)
+  const PvRow = ({ label, kind, last }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", fontSize: 12.5, background: kind === "extra" ? "#EAF7EE" : kind === "null" ? "#EEF3FF" : "transparent", borderBottom: last ? "none" : "1px solid #00000010" }}>
+      {kind === "null"
+        ? <span style={{ flex: 1, color: C.faint }}>매칭 칼럼 없음</span>
+        : <><span style={{ color: C.faint }}>#</span><span style={{ flex: 1, fontWeight: kind === "extra" ? 700 : 500 }}>{label} <span style={{ color: C.faint, fontWeight: 400 }}>String</span></span></>}
+      {kind === "null" ? <span style={{ fontSize: 10.5, fontWeight: 700, color: "#6B7280", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 5, padding: "1px 6px" }}>null</span>
+        : kind === "match" ? <span style={{ fontSize: 10.5, fontWeight: 600, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 999, padding: "2px 9px" }}>매칭</span>
+        : null}
     </div>
   );
+  const PvCard = ({ idx, toneKey, label, rows, w }) => {
+    const tone = toneKey === "green" ? TONE[1] : TONE[0];
+    return (
+      <div style={{ width: w || "auto", flexShrink: 0, border: `1.5px solid ${tone.line}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "12px 14px", background: tone.head, borderBottom: `1px solid ${tone.line}` }}>
+          <span style={{ width: 28, height: 28, borderRadius: 7, background: "#fff", color: tone.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db width={15} height={15} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{poolLabel(idx)}</div><div style={{ fontSize: 11, color: C.faint }}>58.2KB · 8컬럼 · 8,432행</div></div>
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: tone.fg, background: "#fff", border: `1px solid ${tone.line}`, borderRadius: 5, padding: "1px 7px", whiteSpace: "nowrap" }}>{label}</span>
+        </div>
+        {rows.map((r, i) => <PvRow key={i} label={r.label} kind={r.kind} last={i === rows.length - 1} />)}
+      </div>
+    );
+  };
+  const unionT1 = [...PV_EXTRA.map((l) => ({ label: l, kind: "extra" })), ...PV_SHARED.map((l) => ({ label: l, kind: "match" }))];
+  const unionT2 = [...PV_EXTRA.map(() => ({ kind: "null" })), ...PV_SHARED.map((l) => ({ label: l, kind: "match" }))];
+  const joinL = [...PV_EXTRA.map((l) => ({ label: l, kind: "plain" })), ...PV_SHARED.map((l) => ({ label: l, kind: "match" }))];
+  const joinR = PV_SHARED.map((l) => ({ label: l, kind: "match" }));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignSelf: "stretch", flex: 1, minHeight: 0 }}>
@@ -2168,12 +2185,32 @@ function CombinePage({ selected, onRun }) {
             </div>
           ) : (
             <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
-              {/* 프리뷰 — 상하 정렬(위 블루 / 아래 그린) */}
-              <div style={{ flex: 1.05, minWidth: 0, borderRight: `1px solid ${C.border}`, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 0 }}>
-                <div style={{ fontSize: 12.5, color: C.faint, fontWeight: 600, marginBottom: 10 }}>미리보기 · Union(위아래로 결합)</div>
-                <PreviewCard idx={dropped[0]} tone={TONE[0]} />
-                <div style={{ display: "flex", justifyContent: "center", padding: "6px 0", color: C.faint }}><Icon.union width={18} height={18} /></div>
-                <PreviewCard idx={dropped[1]} tone={TONE[1]} />
+              {/* 프리뷰 — Union(상하) / Join(좌우) */}
+              <div style={{ flex: 1.05, minWidth: 0, borderRight: `1px solid ${C.border}`, overflow: "auto", padding: 20, display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                  <span style={{ fontSize: 12.5, color: C.faint, fontWeight: 600 }}>미리보기 · {method === "join" ? "Join (옆으로 붙이기)" : "Union (위아래로 쌓기)"}</span>
+                  <div style={{ display: "flex", background: "#F1F2F4", borderRadius: 9, padding: 3 }}>
+                    {["union", "join"].map((m) => (
+                      <button key={m} onClick={() => setMethod(m)} style={{ padding: "5px 14px", borderRadius: 7, border: "none", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT, background: method === m ? "#fff" : "transparent", color: method === m ? C.text : C.faint, boxShadow: method === m ? "0 1px 3px rgba(0,0,0,0.12)" : "none" }}>{m === "join" ? "Join" : "Union"}</button>
+                    ))}
+                  </div>
+                </div>
+                {method === "join" ? (
+                  <div style={{ display: "flex", alignItems: "flex-start" }}>
+                    <PvCard idx={dropped[0]} toneKey="green" label="Table 1" w={244} rows={joinL} />
+                    <div style={{ alignSelf: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 5, padding: "0 10px", color: C.purple }}>
+                      <span style={{ width: 34, height: 34, borderRadius: "50%", background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.join width={18} height={18} /></span>
+                      <span style={{ fontSize: 10.5, color: C.faint, whiteSpace: "nowrap" }}>키 · customer_id</span>
+                    </div>
+                    <PvCard idx={dropped[1]} toneKey="blue" label="Table 2" w={244} rows={joinR} />
+                  </div>
+                ) : (
+                  <>
+                    <PvCard idx={dropped[0]} toneKey="green" label="Table 1" rows={unionT1} />
+                    <div style={{ display: "flex", justifyContent: "center", padding: "7px 0", color: C.faint }}><Icon.union width={18} height={18} /></div>
+                    <PvCard idx={dropped[1]} toneKey="blue" label="Table 2" rows={unionT2} />
+                  </>
+                )}
               </div>
               {/* 칼럼 매칭 */}
               <div style={{ width: 560, flexShrink: 0, overflowY: "auto", background: "#fff" }}>
