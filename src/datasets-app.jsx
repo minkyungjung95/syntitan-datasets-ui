@@ -2099,6 +2099,10 @@ function CombinePage({ selected, onRun }) {
   const [dragId, setDragId] = useState(null);   // 좌측에서 드래그 중인 데이터셋 idx
   const [cardOver, setCardOver] = useState(false); // 우측 드롭 카드 hover
 
+  // 2개 선택되면 완료 버튼 없이 자동 진행
+  useEffect(() => {
+    if (!done && picked.length >= MAX_MERGE) { const t = setTimeout(() => setDone(true), 350); return () => clearTimeout(t); }
+  }, [picked.length, done]);
   useEffect(() => {
     if (done) { setLoading(true); const t = setTimeout(() => setLoading(false), 1500); return () => clearTimeout(t); }
     setLoading(false);
@@ -2169,17 +2173,13 @@ function CombinePage({ selected, onRun }) {
                   const atMax = !checked && picked.length >= MAX_MERGE;
                   const order = picked.indexOf(i) + 1;
                   return (
-                    <label key={i} draggable onDragStart={() => setDragId(i)} onDragEnd={() => setDragId(null)} onClick={() => !atMax && togglePick(i)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 10px", borderRadius: 10, cursor: atMax ? "default" : "grab", background: checked ? "#EEF4FF" : "transparent", opacity: atMax ? 0.45 : 1 }}>
-                      <Checkbox checked={checked} onChange={() => !atMax && togglePick(i)} />
-                      <span style={{ width: 30, height: 30, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db /></span>
+                    <label key={i} draggable onDragStart={() => setDragId(i)} onDragEnd={() => setDragId(null)} onClick={() => !atMax && togglePick(i)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", borderRadius: 10, cursor: atMax ? "default" : "grab", background: checked ? "#EEF4FF" : "transparent", opacity: atMax ? 0.45 : 1 }}>
+                      <span style={{ width: 30, height: 30, borderRadius: 7, background: checked ? "#fff" : "#F3F4F6", color: checked ? C.blue : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db /></span>
                       <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{i === 0 ? "CUBIG Data_2024" : "CUBIG Data_2025"}</div><div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
                       {checked && <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", border: `1px solid ${C.blue}`, color: C.blue, fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{order}</span>}
                     </label>
                   );
                 })}
-              </div>
-              <div style={{ padding: 12, borderTop: `1px solid ${C.borderSoft}` }}>
-                <button onClick={() => picked.length === MAX_MERGE && setDone(true)} disabled={picked.length !== MAX_MERGE} style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: picked.length === MAX_MERGE ? C.dark : "#E5E7EB", color: picked.length === MAX_MERGE ? "#fff" : C.faint, fontSize: 14, fontWeight: 600, cursor: picked.length === MAX_MERGE ? "pointer" : "default", fontFamily: FONT }}>완료</button>
               </div>
             </>
           ) : (
