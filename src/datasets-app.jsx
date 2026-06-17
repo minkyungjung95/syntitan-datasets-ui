@@ -339,6 +339,16 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
   const [panelOpen, setPanelOpen] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
+  const [dragSrc, setDragSrc] = useState(null);     // 드래그 중인 데이터셋 id
+  const [dragOverId, setDragOverId] = useState(null); // 드롭 대상(유효) id
+  const [denyId, setDenyId] = useState(null);        // 잠긴(권한없음) 대상 id
+  const [mergeAnim, setMergeAnim] = useState(null);  // 합쳐지는 순간 { a, b }
+  const startMergeAnim = (aId, bId) => {
+    setDragSrc(null); setDragOverId(null); setDenyId(null);
+    setMergeAnim({ a: aId, b: bId });
+    setTimeout(() => { setSelected([aId, bId]); setMergeAnim(null); onMerge(); }, 1250);
+  };
+  const nameOf = (id) => (datasets.find((d) => d.id === id)?.name) || "CUBIG Data";
   const rows = useMemo(() => {
     let list = [...datasets].sort((a, b) => b.ts - a.ts); // 업데이트 최신순
     if (activeFolder !== null) list = list.filter((d) => d.folderId === activeFolder);
@@ -416,10 +426,16 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
           const showCb = !d.locked && (selecting || hover === d.id || checked);
           return (
             <div key={d.id} draggable={!d.locked}
-              onDragStart={(e) => { e.stopPropagation(); if (!checked) setSelected((s) => (s.includes(d.id) ? s : [d.id])); }}
-              onDragEnd={(e) => { e.stopPropagation(); onMerge(); }}
-              onClick={() => onOpen(d.id)} onMouseEnter={() => setHover(d.id)} onMouseLeave={() => setHover(null)}
-              style={{ display: "grid", gridTemplateColumns: grid, alignItems: "center", padding: "13px 20px", fontSize: 14, borderBottom: i === rows.length - 1 ? "none" : `1px solid ${C.borderSoft}`, cursor: "pointer", background: checked ? C.blueSoft : hover === d.id ? "#FAFAFB" : "transparent" }}>
+              onDragStart={(e) => { e.stopPropagation(); setDragSrc(d.id); }}
+              onDragEnd={() => { setDragSrc(null); setDragOverId(null); setDenyId(null); }}
+              onDragOver={(e) => { if (dragSrc == null || dragSrc === d.id) return; e.preventDefault(); if (d.locked) { setDenyId(d.id); setDragOverId(null); } else { setDragOverId(d.id); setDenyId(null); } }}
+              onDragLeave={() => { if (dragOverId === d.id) setDragOverId(null); if (denyId === d.id) setDenyId(null); }}
+              onDrop={(e) => { e.preventDefault(); if (dragSrc != null && dragSrc !== d.id && !d.locked) startMergeAnim(dragSrc, d.id); else { setDragOverId(null); setDenyId(null); } }}
+              onClick={() => { if (dragSrc == null) onOpen(d.id); }} onMouseEnter={() => setHover(d.id)} onMouseLeave={() => setHover(null)}
+              style={{ position: "relative", display: "grid", gridTemplateColumns: grid, alignItems: "center", padding: "13px 20px", fontSize: 14, borderBottom: i === rows.length - 1 ? "none" : `1px solid ${C.borderSoft}`, cursor: dragSrc != null ? "grabbing" : "pointer", background: dragOverId === d.id ? "#EAF1FF" : denyId === d.id ? "#FEF2F2" : checked ? C.blueSoft : hover === d.id ? "#FAFAFB" : "transparent", boxShadow: dragOverId === d.id ? `inset 0 0 0 2px ${C.blue}` : "none", opacity: dragSrc === d.id ? 0.4 : 1, transition: "background .12s" }}>
+              {denyId === d.id && (
+                <div style={{ position: "absolute", left: 44, top: "50%", transform: "translateY(-50%)", zIndex: 20, display: "flex", alignItems: "center", gap: 7, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: "0 10px 28px rgba(0,0,0,0.16)", padding: "9px 13px", fontSize: 13, color: C.text, pointerEvents: "none", whiteSpace: "nowrap" }}><span style={{ display: "flex", color: "#B45309" }}><Icon.warn width={15} height={15} /></span> 데이터셋의 편집 권한이 없습니다.</div>
+              )}
               <span onClick={(e) => e.stopPropagation()} title={d.locked ? "편집 권한이 없어 합치기에 선택할 수 없어요" : undefined} style={{ display: "flex", height: "100%", alignItems: "center" }}>{d.locked ? ((selecting || hover === d.id) && <span style={{ color: C.faint, display: "flex" }}><Icon.lock /></span>) : (showCb && <Checkbox checked={checked} onChange={(v) => toggle(d.id, v)} />)}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                 <div style={{ width: 34, height: 34, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub, flexShrink: 0 }}><Icon.db /></div>
@@ -487,6 +503,31 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
           onClose={() => setMergeModalOpen(false)}
           onApply={() => { setMergeModalOpen(false); onMergeDirect(); }}
         />
+      )}
+
+      {/* 합쳐지는 순간 — 머지 애니메이션 */}
+      {mergeAnim && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(17,24,39,0.55)", backdropFilter: "blur(2px)" }}>
+          <style>{`@keyframes mgL{0%{transform:translateX(-46px) rotate(-5deg);opacity:.85}55%{transform:translateX(14px) rotate(0)}100%{transform:translateX(14px)}}@keyframes mgR{0%{transform:translateX(46px) rotate(5deg);opacity:.85}55%{transform:translateX(-14px) rotate(0)}100%{transform:translateX(-14px)}}@keyframes mgPop{0%,60%{transform:scale(0);opacity:0}75%{transform:scale(1.18);opacity:1}100%{transform:scale(1);opacity:1}}@keyframes mgRing{0%{transform:scale(.6);opacity:.5}100%{transform:scale(1.7);opacity:0}}`}</style>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 320, height: 130 }}>
+              {/* 블루 카드 */}
+              <div style={{ position: "absolute", animation: "mgL .9s cubic-bezier(.6,0,.2,1) forwards", display: "flex", alignItems: "center", gap: 9, padding: "13px 16px", borderRadius: 13, background: "#fff", border: "1.5px solid #BFD7FF", boxShadow: "0 10px 30px rgba(0,0,0,0.18)" }}>
+                <span style={{ width: 30, height: 30, borderRadius: 8, background: "#EAF1FF", color: "#185FA5", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db width={16} height={16} /></span>
+                <span style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>{nameOf(mergeAnim.a)}</span>
+              </div>
+              {/* 그린 카드 */}
+              <div style={{ position: "absolute", animation: "mgR .9s cubic-bezier(.6,0,.2,1) forwards", display: "flex", alignItems: "center", gap: 9, padding: "13px 16px", borderRadius: 13, background: "#fff", border: "1.5px solid #BBF7D0", boxShadow: "0 10px 30px rgba(0,0,0,0.18)" }}>
+                <span style={{ width: 30, height: 30, borderRadius: 8, background: "#E6F8EC", color: "#15803D", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db width={16} height={16} /></span>
+                <span style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>{nameOf(mergeAnim.b)}</span>
+              </div>
+              {/* 합쳐지는 스파크 */}
+              <span style={{ position: "absolute", width: 56, height: 56, borderRadius: "50%", border: `2px solid #C9C2F2`, animation: "mgRing .7s ease-out .55s forwards", opacity: 0 }} />
+              <span style={{ position: "absolute", width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg,#7C6BF0,#9C8CF6)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(124,107,240,0.5)", animation: "mgPop .9s cubic-bezier(.5,1.6,.4,1) forwards" }}><Icon.spark width={22} height={22} /></span>
+            </div>
+            <div style={{ color: "#fff", fontSize: 15, fontWeight: 600, letterSpacing: 0.2 }}>두 데이터를 합치는 중…</div>
+          </div>
+        </div>
       )}
     </div>
   );
