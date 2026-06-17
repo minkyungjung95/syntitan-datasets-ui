@@ -2175,7 +2175,7 @@ function CombinePage({ selected, onRun }) {
                   return (
                     <div key={i} draggable onDragStart={(e) => { e.dataTransfer.setData("text/plain", String(i)); e.dataTransfer.effectAllowed = "copy"; setDragId(i); }} onDragEnd={() => setDragId(null)} onClick={() => !atMax && togglePick(i)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", borderRadius: 10, cursor: atMax ? "default" : "grab", background: checked ? "#EEF4FF" : "transparent", opacity: atMax ? 0.45 : 1, userSelect: "none" }}>
                       <span style={{ width: 30, height: 30, borderRadius: 7, background: checked ? "#fff" : "#F3F4F6", color: checked ? C.blue : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db /></span>
-                      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{i === 0 ? "CUBIG Data_2024" : "CUBIG Data_2025"}</div><div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
+                      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{poolLabel(i)}</div><div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
                       {checked && <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", border: `1px solid ${C.blue}`, color: C.blue, fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{order}</span>}
                     </div>
                   );
@@ -2323,6 +2323,7 @@ export default function DatasetsApp() {
   const [screen, setScreen] = useState("list"); // list | detail | merge | merging | result
   const [tab, setTab] = useState("AI Readiness");
   const [selected, setSelected] = useState([]);
+  const [combineNav, setCombineNav] = useState(0); // Combine 재진입 시 빈 화면 리셋용
   const [mergeJob, setMergeJob] = useState(null); // { names, done } – 백그라운드에서도 유지
   const [datasets, setDatasets] = useState(DATASETS);
   const [folders, setFolders] = useState([{ id: "f1", name: "마케팅 분석" }, { id: "f2", name: "영업 리드" }]);
@@ -2346,7 +2347,7 @@ export default function DatasetsApp() {
 
   const handleNav = (label) => {
     if (label === "Agent Analysis") setScreen("agent");
-    else if (label === "Combine") { setSelected([]); setScreen("combine"); }
+    else if (label === "Combine") { setSelected([]); setCombineNav((n) => n + 1); setScreen("combine"); }
     else if (label === "Home" || label === "Dataset") { setSelected([]); setScreen("list"); }
   };
 
@@ -2384,7 +2385,7 @@ export default function DatasetsApp() {
             <div style={scrollArea}>{tab === "AI Readiness" ? <AIReadinessTab /> : <DetailTab />}</div>
           </>
         )}
-        {screen === "combine" && <CombinePage key={`combine-${selected.join("-")}`} selected={selected} onRun={startMerge} />}
+        {screen === "combine" && <CombinePage key={`combine-${combineNav}-${selected.join("-")}`} selected={selected} onRun={startMerge} />}
         {screen === "merge" && <MergePage key={`merge-${selected.join("-")}`} selected={selected} onBack={() => { setSelected([]); setScreen("list"); }} onRun={startMerge} />}
         {screen === "merging" && <MergingPage names={mergeJob?.names || DEFAULT_NAMES} onLeave={() => setScreen("list")} />}
         {screen === "result" && <ResultPage names={resultNames} onClose={closeResult} />}
