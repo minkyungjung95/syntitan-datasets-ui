@@ -358,12 +358,10 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
 
   return (
     <div style={{ display: "flex", flex: 1, minHeight: 0, height: "100%" }}>
-      {panelOpen && <FolderTree folders={folders} setFolders={setFolders} activeFolder={activeFolder} setActiveFolder={setActiveFolder} datasets={datasets} setDatasets={setDatasets} onHide={() => setPanelOpen(false)} />}
       <div style={{ flex: 1, minWidth: 0, overflowY: "auto", padding: "34px 40px 60px", display: "flex", flexDirection: "column" }}>
       {/* title + summary cards */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-          {!panelOpen && <button onClick={() => setPanelOpen(true)} title="폴더 패널 펼치기" style={{ marginTop: 2, width: 34, height: 34, borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT }}><Icon.panel /></button>}
           <div>
             <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Datasets</h1>
             <p style={{ color: C.sub, fontSize: 14, margin: "8px 0 0" }}>Upload your dataset to diagnose AI Readiness and optimize data gaps.</p>
