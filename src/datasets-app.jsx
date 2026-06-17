@@ -575,7 +575,7 @@ const JOIN_KEYS = [
 const rateColor = (r) => (r >= 80 ? C.green : r >= 50 ? C.yellow : C.red);
 
 /* 클릭 가능한 매칭 드롭다운 (데이터 타입 표시) — 메뉴는 fixed 위치로 띄워 잘림 방지 */
-function MatchDropdown({ value, onChange, error }) {
+function MatchDropdown({ value, onChange, error, recommended }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
   const ref = useRef(null);
@@ -596,6 +596,11 @@ function MatchDropdown({ value, onChange, error }) {
         <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14, color: none ? C.faint : C.text }}>{!none && t && <TypeIcon kind={t} />}{value}</span>
         <span style={{ color: C.faint, display: "flex", transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}><Icon.chevD /></span>
       </div>
+      {recommended !== undefined && recommended !== value && (
+        <div onClick={() => onChange(recommended)} title="AI 추천값으로 되돌리기" style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 11.5, fontWeight: 600, color: C.purple, cursor: "pointer" }}>
+          <Icon.spark width={12} height={12} /> AI 추천 「{recommended}」 으로 되돌리기
+        </div>
+      )}
       {open && pos && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
@@ -603,7 +608,10 @@ function MatchDropdown({ value, onChange, error }) {
             {COL_OPTIONS.map((o) => (
               <div key={o.name} onClick={() => { onChange(o.name); setOpen(false); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 10px", fontSize: 14, borderRadius: 7, cursor: "pointer", background: o.name === value ? C.blueSoft : "transparent" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 7, color: o.name === NO_MATCH ? C.faint : C.text }}>{o.type && <TypeIcon kind={o.type} />}{o.name}</span>
-                {o.name === value && <Icon.checkCircle width={15} height={15} />}
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {o.name === recommended && <span style={{ fontSize: 10, fontWeight: 700, color: C.purple, background: "#EEF2FF", borderRadius: 4, padding: "1px 6px" }}>AI 추천</span>}
+                  {o.name === value && <Icon.checkCircle width={15} height={15} />}
+                </span>
               </div>
             ))}
           </div>
@@ -2099,10 +2107,6 @@ function CombinePage({ selected, onRun }) {
   const [dragId, setDragId] = useState(null);   // 좌측에서 드래그 중인 데이터셋 idx
   const [cardOver, setCardOver] = useState(false); // 우측 드롭 카드 hover
 
-  // 2개 선택되면 완료 버튼 없이 자동 진행
-  useEffect(() => {
-    if (!done && picked.length >= MAX_MERGE) { const t = setTimeout(() => setDone(true), 350); return () => clearTimeout(t); }
-  }, [picked.length, done]);
   useEffect(() => {
     if (done) { setLoading(true); const t = setTimeout(() => setLoading(false), 1500); return () => clearTimeout(t); }
     setLoading(false);
@@ -2209,7 +2213,7 @@ function CombinePage({ selected, onRun }) {
                 <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 32px 1fr", alignItems: "center", marginBottom: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, height: 42, padding: "0 12px", border: `1px solid ${C.border}`, borderRadius: 9, background: "#FAFAFB", fontSize: 13.5 }}><TypeIcon kind={r.lt} /> {r.left} <span style={{ color: C.faint, fontSize: 12 }}>String</span></div>
                   <span style={{ display: "flex", justifyContent: "center", color: C.faint }}>→</span>
-                  <MatchDropdown value={reviewSel[i]} onChange={(v) => editReview(i, v)} />
+                  <MatchDropdown value={reviewSel[i]} onChange={(v) => editReview(i, v)} recommended={REVIEW_ROWS[i].right} />
                 </div>
               ))}
               <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: C.faint, margin: "2px 0 22px", lineHeight: 1.5 }}><span style={{ display: "flex", flexShrink: 0, marginTop: 1 }}><Icon.infoCircle width={13} height={13} /></span> 매칭 칼럼이 없는 경우, 2번 테이블은 Null로 채워져요.</div>
@@ -2222,7 +2226,7 @@ function CombinePage({ selected, onRun }) {
                 <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 32px 1fr", alignItems: "center", marginBottom: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, height: 42, padding: "0 12px", border: `1px solid ${C.border}`, borderRadius: 9, background: "#FAFAFB", fontSize: 13.5 }}><TypeIcon kind={r[1]} /> {r[0]} <span style={{ color: C.faint, fontSize: 12 }}>String</span></div>
                   <span style={{ display: "flex", justifyContent: "center", color: C.faint }}>→</span>
-                  <MatchDropdown value={autoSel[i]} onChange={(v) => editAuto(i, v)} />
+                  <MatchDropdown value={autoSel[i]} onChange={(v) => editAuto(i, v)} recommended={AUTO_ROWS[i][0]} />
                 </div>
               ))}
             </div>
@@ -2265,17 +2269,27 @@ function CombinePage({ selected, onRun }) {
                     onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setCardOver(true); }}
                     onDragLeave={() => setCardOver(false)}
                     onDrop={(e) => { e.preventDefault(); setCardOver(false); const raw = e.dataTransfer.getData("text/plain"); const id = dragId != null ? dragId : (raw === "" ? null : parseInt(raw, 10)); if (id != null && !isNaN(id)) setPicked((p) => (p.includes(id) || p.length >= MAX_MERGE ? p : [...p, id])); setDragId(null); }}
-                    style={{ minHeight: 330, border: `1.5px dashed ${cardOver ? C.purple : C.border}`, borderRadius: 12, background: cardOver ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 13, textAlign: "center", transition: "all .12s" }}>
-                    {cardOver ? (
-                      <>
-                        <span style={{ display: "flex", color: C.purple }}><Icon.download width={26} height={26} /></span>
-                        <span style={{ fontSize: 14.5, fontWeight: 700, color: C.purple }}>Click or drag files to upload</span>
-                      </>
+                    style={{ minHeight: 330, border: picked.length ? `1px solid ${C.border}` : `1.5px dashed ${cardOver ? C.purple : C.border}`, borderRadius: 12, background: cardOver && !picked.length ? "#F5F3FF" : picked.length ? "#fff" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: picked.length ? "stretch" : "center", justifyContent: picked.length ? "flex-start" : "center", gap: 10, padding: picked.length ? 14 : 0, textAlign: "center", transition: "all .12s" }}>
+                    {picked.length === 0 ? (
+                      cardOver ? (
+                        <><span style={{ display: "flex", color: C.purple }}><Icon.download width={26} height={26} /></span><span style={{ fontSize: 14.5, fontWeight: 700, color: C.purple }}>Click or drag files to upload</span></>
+                      ) : (
+                        <><span style={{ width: 48, height: 48, borderRadius: 12, background: "#fff", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db width={22} height={22} /></span><div style={{ fontSize: 14.5, fontWeight: 700, color: C.text }}>drag and drop dataset to upload</div><div style={{ fontSize: 12.5, color: C.faint, lineHeight: 1.6 }}>데이터셋 총 {MAX_MERGE}개를 선택하세요.<br />처음 선택한 데이터가 기준이 됩니다.</div></>
+                      )
                     ) : (
                       <>
-                        <span style={{ width: 48, height: 48, borderRadius: 12, background: "#fff", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db width={22} height={22} /></span>
-                        <div style={{ fontSize: 14.5, fontWeight: 700, color: C.text }}>drag and drop dataset to upload</div>
-                        <div style={{ fontSize: 12.5, color: C.faint, lineHeight: 1.6 }}>데이터셋 총 {MAX_MERGE}개를 선택하세요.<br />처음 선택한 데이터가 기준이 됩니다.</div>
+                        {picked.map((idx, k) => (
+                          <div key={idx} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 13px", border: `1px solid ${C.border}`, borderRadius: 10, background: "#fff", textAlign: "left" }}>
+                            <span style={{ width: 30, height: 30, borderRadius: 7, background: k === 0 ? "#EEF2FF" : "#F3F4F6", color: k === 0 ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db width={15} height={15} /></span>
+                            <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>{poolLabel(idx)}{k === 0 && <span style={{ fontSize: 10, fontWeight: 700, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 4, padding: "0 5px" }}>기준</span>}</div><div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
+                            <span onClick={() => setPicked((p) => p.filter((x) => x !== idx))} title="제거" style={{ cursor: "pointer", color: C.faint, display: "flex", padding: 4 }}><Icon.x width={15} height={15} /></span>
+                          </div>
+                        ))}
+                        {picked.length < MAX_MERGE ? (
+                          <div style={{ flex: 1, minHeight: 90, border: `1.5px dashed ${cardOver ? C.purple : C.border}`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: cardOver ? C.purple : C.faint, fontSize: 12.5 }}>데이터셋 하나 더 끌어다 놓기</div>
+                        ) : (
+                          <button onClick={() => setDone(true)} style={{ marginTop: 6, width: "100%", padding: "13px 0", borderRadius: 10, border: "none", background: C.dark, color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>칼럼 매칭하기 →</button>
+                        )}
                       </>
                     )}
                   </div>
