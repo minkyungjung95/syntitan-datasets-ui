@@ -2106,6 +2106,7 @@ function CombinePage({ selected, onRun }) {
   const [tip, setTip] = useState(false);        // ↻ 호버 툴팁
   const [dragId, setDragId] = useState(null);   // 좌측에서 드래그 중인 데이터셋 idx
   const [cardOver, setCardOver] = useState(false); // 우측 드롭 카드 hover
+  const [infoOpen, setInfoOpen] = useState(false); // 방식 설명 툴팁
 
   useEffect(() => {
     if (done) { setLoading(true); const t = setTimeout(() => setLoading(false), 1500); return () => clearTimeout(t); }
@@ -2188,18 +2189,42 @@ function CombinePage({ selected, onRun }) {
             </>
           ) : (
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 28px" }}>
-              {/* 헤더 — 방식 설명 (초보자용) */}
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+              {/* 헤더 — 방식 + ⓘ 설명 툴팁 */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 15, fontWeight: 700 }}>
                   <span style={{ width: 26, height: 26, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>{method === "join" ? <Icon.join width={15} height={15} /> : <Icon.union width={15} height={15} />}</span>
                   {method === "join" ? "Join · 옆으로 붙이기" : "Union · 위아래로 이어붙이기"}
+                  <span style={{ position: "relative", display: "flex" }} onMouseEnter={() => setInfoOpen(true)} onMouseLeave={() => setInfoOpen(false)}>
+                    <span style={{ display: "flex", color: C.faint, cursor: "help" }}><Icon.infoCircle width={15} height={15} /></span>
+                    {infoOpen && (
+                      <div style={{ position: "absolute", top: "calc(100% + 10px)", left: -12, width: 286, background: "#18181B", color: "#fff", borderRadius: 12, padding: 12, zIndex: 50, boxShadow: "0 14px 34px rgba(0,0,0,0.32)", fontWeight: 400 }}>
+                        <div style={{ background: "#27272A", borderRadius: 8, height: 76, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 11 }}>
+                          {method === "join" ? (
+                            <svg width="210" height="60" viewBox="0 0 210 60" fill="none">
+                              <rect x="14" y="18" width="34" height="26" rx="3" fill="#5B9BFF" /><rect x="52" y="18" width="34" height="26" rx="3" fill="#34C77B" />
+                              <circle cx="50" cy="31" r="4" fill="#fff" />
+                              <path d="M100 30h22m-7-6 7 6-7 6" stroke="#A1A1AA" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                              <rect x="140" y="18" width="28" height="26" rx="3" fill="#5B9BFF" /><rect x="168" y="18" width="28" height="26" rx="3" fill="#34C77B" />
+                            </svg>
+                          ) : (
+                            <svg width="210" height="60" viewBox="0 0 210 60" fill="none">
+                              <rect x="20" y="9" width="58" height="18" rx="3" fill="#5B9BFF" /><rect x="20" y="33" width="58" height="18" rx="3" fill="#34C77B" />
+                              <path d="M100 30h22m-7-6 7 6-7 6" stroke="#A1A1AA" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                              <rect x="140" y="9" width="58" height="20" rx="3" fill="#5B9BFF" /><rect x="140" y="31" width="58" height="20" rx="3" fill="#34C77B" />
+                            </svg>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 5 }}>{method === "join" ? "Join · 옆으로 붙이기 (열 ↑)" : "Union · 위아래로 이어붙이기 (행 ↑)"}</div>
+                        <div style={{ fontSize: 12, color: "#D4D4D8", lineHeight: 1.65 }}>
+                          {method === "join"
+                            ? <>같은 키(예: 고객번호)를 가진 줄끼리 <b style={{ color: "#fff" }}>옆으로</b> 붙여 칸(열)이 늘어요. 키가 맞는 행만 연결되고, 짝이 없으면 빈값으로 둬요.</>
+                            : <>같은 뜻의 칼럼끼리 두 데이터를 <b style={{ color: "#fff" }}>위아래로</b> 쌓아 줄(행)이 늘어요. 한쪽에만 있는 칼럼은 반대쪽이 빈값(Null)으로 채워져요.</>}
+                        </div>
+                      </div>
+                    )}
+                  </span>
                 </span>
-                <span style={{ fontSize: 12, color: C.faint, whiteSpace: "nowrap", paddingTop: 5 }}>아래에서 짝을 연결해 주세요</span>
-              </div>
-              <div style={{ marginBottom: 18, fontSize: 12.5, color: C.sub, lineHeight: 1.7, background: "#F7F8FA", borderRadius: 10, padding: "12px 14px" }}>
-                {method === "join"
-                  ? <>두 데이터에서 <b>같은 값(예: 고객번호)을 가진 줄끼리</b> 찾아 <b>옆으로 나란히</b> 붙여요. → 칸(열)이 늘어나요.<br />아래 목록에서 <b>어떤 칸끼리 같은 뜻인지</b> 연결해 주세요. 짝이 없는 칸은 빈값으로 둬요.</>
-                  : <>두 데이터를 <b>위아래로 이어</b> 붙여요. → 줄(행)이 늘어나요 (예: 8,432 + 8,432 = 16,864줄).<br />단, <b>'이름·이메일'처럼 같은 뜻의 칸(칼럼)끼리 맞춰야</b> 해서, 아래 목록에서 짝을 연결해 주세요. <b>한쪽에만 있는 칸</b>은 반대쪽이 빈값(Null)으로 채워져요.</>}
+                <span style={{ fontSize: 12, color: C.faint, whiteSpace: "nowrap" }}>아래에서 짝을 연결해 주세요</span>
               </div>
               {/* 검토 필요 */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
