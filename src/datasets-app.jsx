@@ -2349,30 +2349,37 @@ function CombinePage({ selected, onRun }) {
                   <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10.5, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 5, padding: "2px 8px" }}>✦ AI</span>
                 </div>
                 <div style={{ padding: 16 }}>
-                  <div ref={zoneRef} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div ref={zoneRef} style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                     {Array.from({ length: MAX_MERGE }).map((_, k) => {
                       const idx = picked[k];
-                      if (idx != null) {
-                        const isBase = k === 0;
-                        return (
-                          <div key={k} style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: "#fff", padding: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11 }}>
-                              <span style={{ fontSize: 10.5, fontWeight: 700, color: isBase ? C.purple : C.sub, background: isBase ? "#EEE9FE" : "#F3F4F6", borderRadius: 6, padding: "3px 9px" }}>{isBase ? "기준" : "추가"}</span>
-                              <span onClick={() => setPicked((p) => p.filter((x) => x !== idx))} title="제거" style={{ cursor: "pointer", color: C.faint, display: "flex" }}><Icon.x width={16} height={16} /></span>
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                              <span style={{ width: 34, height: 34, borderRadius: 8, background: isBase ? "#EEF2FF" : "#F3F4F6", color: isBase ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db width={17} height={17} /></span>
-                              <div style={{ minWidth: 0 }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>{poolLabel(idx)}</div><div style={{ fontSize: 12, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
-                            </div>
+                      const isBase = k === 0;
+                      const isNext = idx == null && k === picked.length;
+                      const slot = idx != null ? (
+                        <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: "#fff", padding: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11 }}>
+                            <span style={{ fontSize: 10.5, fontWeight: 700, color: isBase ? C.purple : C.sub, background: isBase ? "#EEE9FE" : "#F3F4F6", borderRadius: 6, padding: "3px 9px" }}>{isBase ? "기준" : "추가"}</span>
+                            <span onClick={() => setPicked((p) => p.filter((x) => x !== idx))} title="제거" style={{ cursor: "pointer", color: C.faint, display: "flex" }}><Icon.x width={16} height={16} /></span>
                           </div>
-                        );
-                      }
-                      const isNext = k === picked.length;
-                      return (
-                        <div key={k} style={{ minHeight: 116, border: `1.5px dashed ${cardOver && isNext ? C.purple : C.border}`, borderRadius: 12, background: cardOver && isNext ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, color: cardOver && isNext ? C.purple : C.faint, transition: "all .12s" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                            <span style={{ width: 34, height: 34, borderRadius: 8, background: isBase ? "#EEF2FF" : "#F3F4F6", color: isBase ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db width={17} height={17} /></span>
+                            <div style={{ minWidth: 0 }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>{poolLabel(idx)}</div><div style={{ fontSize: 12, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ minHeight: 110, border: `1.5px dashed ${cardOver && isNext ? C.purple : C.border}`, borderRadius: 12, background: cardOver && isNext ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, color: cardOver && isNext ? C.purple : C.faint, transition: "all .12s" }}>
                           <span style={{ width: 36, height: 36, borderRadius: 9, background: "#fff", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db width={17} height={17} /></span>
                           <span style={{ fontSize: 13, fontWeight: 600 }}>Dataset</span>
                         </div>
+                      );
+                      return (
+                        <React.Fragment key={k}>
+                          {k > 0 && (
+                            <div style={{ display: "flex", justifyContent: "center", margin: "-1px 0" }} title="두 데이터를 합쳐요 (방식은 다음 단계에서)">
+                              <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#fff", border: `1px solid ${C.border}`, color: C.sub, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 500, lineHeight: 1, boxShadow: "0 1px 2px rgba(0,0,0,0.06)" }}>+</span>
+                            </div>
+                          )}
+                          {slot}
+                        </React.Fragment>
                       );
                     })}
                   </div>
