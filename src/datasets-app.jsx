@@ -2107,6 +2107,8 @@ function CombinePage({ selected, onRun }) {
   const [dragId, setDragId] = useState(null);   // 좌측에서 드래그 중인 데이터셋 idx
   const [cardOver, setCardOver] = useState(false); // 우측 드롭 카드 hover
   const [infoOpen, setInfoOpen] = useState(false); // 방식 설명 툴팁
+  const [infoPos, setInfoPos] = useState(null);
+  const infoRef = useRef(null);
 
   useEffect(() => {
     if (done) { setLoading(true); const t = setTimeout(() => setLoading(false), 1500); return () => clearTimeout(t); }
@@ -2194,10 +2196,10 @@ function CombinePage({ selected, onRun }) {
                 <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 15, fontWeight: 700 }}>
                   <span style={{ width: 26, height: 26, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>{method === "join" ? <Icon.join width={15} height={15} /> : <Icon.union width={15} height={15} />}</span>
                   {method === "join" ? "Join · 옆으로 붙이기" : "Union · 위아래로 이어붙이기"}
-                  <span style={{ position: "relative", display: "flex" }} onMouseEnter={() => setInfoOpen(true)} onMouseLeave={() => setInfoOpen(false)}>
-                    <span style={{ display: "flex", color: C.faint, cursor: "help" }}><Icon.infoCircle width={15} height={15} /></span>
-                    {infoOpen && (
-                      <div style={{ position: "absolute", top: "calc(100% + 10px)", left: -12, width: 286, background: "#18181B", color: "#fff", borderRadius: 12, padding: 12, zIndex: 50, boxShadow: "0 14px 34px rgba(0,0,0,0.32)", fontWeight: 400 }}>
+                  <span ref={infoRef} style={{ display: "flex", color: C.faint, cursor: "help" }} onMouseEnter={() => { const r = infoRef.current.getBoundingClientRect(); setInfoPos({ top: r.bottom + 10, left: Math.max(12, Math.min(r.left - 12, window.innerWidth - 298)) }); setInfoOpen(true); }} onMouseLeave={() => setInfoOpen(false)}>
+                    <Icon.infoCircle width={15} height={15} />
+                    {infoOpen && infoPos && (
+                      <div style={{ position: "fixed", top: infoPos.top, left: infoPos.left, width: 286, background: "#18181B", color: "#fff", borderRadius: 12, padding: 12, zIndex: 60, boxShadow: "0 14px 34px rgba(0,0,0,0.32)", fontWeight: 400 }}>
                         <div style={{ background: "#27272A", borderRadius: 8, height: 76, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 11 }}>
                           {method === "join" ? (
                             <svg width="210" height="60" viewBox="0 0 210 60" fill="none">
