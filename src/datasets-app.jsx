@@ -2072,8 +2072,10 @@ const TONE = [
   { key: "blue", line: "#BFD7FF", bg: "#F4F8FF", head: "#E8F1FF", fg: "#185FA5", badge: "기준" },
   { key: "green", line: "#BBF7D0", bg: "#F4FCF6", head: "#E6F8EC", fg: "#15803D", badge: "추가" },
 ];
-const PV_SHARED = ["customer_id", "name", "email", "signup_data", "date", "time", "time_period", "structure"]; // 양쪽 공통 칼럼
-const PV_EXTRA = ["customer_1", "customer_2"]; // Table 1 전용 칼럼
+const PV_UNION = ["customer_id", "name", "email", "signup_date"]; // 유니온: 양쪽 동일 스키마(행을 쌓음)
+const PV_KEY = "customer_id";                  // 조인 키(양쪽 공통)
+const PV_T1_REST = ["name", "email", "signup_date"]; // 조인: Table1 고유 칼럼
+const PV_T2_REST = ["region", "age", "plan"];        // 조인: Table2 고유 칼럼(오른쪽에 붙음)
 function CombinePage({ selected, onRun }) {
   const pool = useMemo(() => Array.from({ length: 14 }, (_, i) => poolLabel(i)), []);
   const seed = selected && selected.length ? Array.from({ length: Math.min(selected.length, 2) }, (_, i) => i) : [];
@@ -2103,11 +2105,13 @@ function CombinePage({ selected, onRun }) {
 
   // 행 종류: match(매칭 배지) · null(매칭 칼럼 없음·null) · extra(전용 칼럼 강조) · plain(표시만)
   const PvRow = ({ label, kind, last }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", fontSize: 12.5, background: kind === "extra" ? "#EAF7EE" : kind === "null" ? "#EEF3FF" : "transparent", borderBottom: last ? "none" : "1px solid #00000010" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", fontSize: 12.5, background: kind === "extra" ? "#EAF7EE" : kind === "null" ? "#EEF3FF" : kind === "key" ? "#F2EEFE" : "transparent", borderBottom: last ? "none" : "1px solid #00000010" }}>
       {kind === "null"
         ? <span style={{ flex: 1, color: C.faint }}>매칭 칼럼 없음</span>
-        : <><span style={{ color: C.faint }}>#</span><span style={{ flex: 1, fontWeight: kind === "extra" ? 700 : 500 }}>{label} <span style={{ color: C.faint, fontWeight: 400 }}>String</span></span></>}
+        : <><span style={{ color: kind === "key" ? C.purple : C.faint }}>#</span><span style={{ flex: 1, fontWeight: kind === "extra" || kind === "key" ? 700 : 500 }}>{label} <span style={{ color: C.faint, fontWeight: 400 }}>String</span></span></>}
       {kind === "null" ? <span style={{ fontSize: 10.5, fontWeight: 700, color: "#6B7280", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 5, padding: "1px 6px" }}>null</span>
+        : kind === "key" ? <span style={{ fontSize: 10.5, fontWeight: 700, color: C.purple, background: "#EEF2FF", borderRadius: 5, padding: "2px 8px" }}>키</span>
+        : kind === "add" ? <span style={{ fontSize: 10.5, fontWeight: 700, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "2px 8px" }}>추가</span>
         : kind === "match" ? <span style={{ fontSize: 10.5, fontWeight: 600, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 999, padding: "2px 9px" }}>매칭</span>
         : null}
     </div>
@@ -2125,10 +2129,12 @@ function CombinePage({ selected, onRun }) {
       </div>
     );
   };
-  const unionT1 = [...PV_EXTRA.map((l) => ({ label: l, kind: "extra" })), ...PV_SHARED.map((l) => ({ label: l, kind: "match" }))];
-  const unionT2 = [...PV_EXTRA.map(() => ({ kind: "null" })), ...PV_SHARED.map((l) => ({ label: l, kind: "match" }))];
-  const joinL = [...PV_EXTRA.map((l) => ({ label: l, kind: "plain" })), ...PV_SHARED.map((l) => ({ label: l, kind: "match" }))];
-  const joinR = PV_SHARED.map((l) => ({ label: l, kind: "match" }));
+  // 유니온: 같은 스키마 → 행을 위아래로 쌓음
+  const unionT1 = PV_UNION.map((l) => ({ label: l, kind: "match" }));
+  const unionT2 = PV_UNION.map((l) => ({ label: l, kind: "match" }));
+  // 조인: 공통 키(customer_id) + 서로 다른 칼럼 → 키로 매칭해 Table2 칼럼을 옆에 붙임
+  const joinL = [{ label: PV_KEY, kind: "key" }, ...PV_T1_REST.map((l) => ({ label: l, kind: "plain" }))];
+  const joinR = [{ label: PV_KEY, kind: "key" }, ...PV_T2_REST.map((l) => ({ label: l, kind: "add" }))];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignSelf: "stretch", flex: 1, minHeight: 0 }}>
@@ -2196,19 +2202,23 @@ function CombinePage({ selected, onRun }) {
                   </div>
                 </div>
                 {method === "join" ? (
-                  <div style={{ display: "flex", alignItems: "flex-start" }}>
-                    <PvCard idx={dropped[0]} toneKey="green" label="Table 1" w={244} rows={joinL} />
-                    <div style={{ alignSelf: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 5, padding: "0 10px", color: C.purple }}>
-                      <span style={{ width: 34, height: 34, borderRadius: "50%", background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.join width={18} height={18} /></span>
-                      <span style={{ fontSize: 10.5, color: C.faint, whiteSpace: "nowrap" }}>키 · customer_id</span>
+                  <>
+                    <div style={{ display: "flex", alignItems: "flex-start" }}>
+                      <PvCard idx={dropped[0]} toneKey="green" label="Table 1" w={230} rows={joinL} />
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, padding: "54px 8px 0", color: C.purple }}>
+                        <span style={{ width: 34, height: 34, borderRadius: "50%", background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.join width={18} height={18} /></span>
+                        <span style={{ fontSize: 10, color: C.faint, whiteSpace: "nowrap" }}>키 일치</span>
+                      </div>
+                      <PvCard idx={dropped[1]} toneKey="blue" label="Table 2" w={230} rows={joinR} />
                     </div>
-                    <PvCard idx={dropped[1]} toneKey="blue" label="Table 2" w={244} rows={joinR} />
-                  </div>
+                    <div style={{ marginTop: 14, fontSize: 12, color: C.sub, lineHeight: 1.6, background: "#F7F8FA", borderRadius: 10, padding: "11px 13px" }}><b>customer_id</b>가 같은 행끼리 연결하고, Table 2의 칼럼(region·age·plan)을 <b>오른쪽에 붙여요</b>. → 행은 8,432 유지, <b>열 4 → 7</b></div>
+                  </>
                 ) : (
                   <>
                     <PvCard idx={dropped[0]} toneKey="green" label="Table 1" rows={unionT1} />
                     <div style={{ display: "flex", justifyContent: "center", padding: "7px 0", color: C.faint }}><Icon.union width={18} height={18} /></div>
                     <PvCard idx={dropped[1]} toneKey="blue" label="Table 2" rows={unionT2} />
+                    <div style={{ marginTop: 14, fontSize: 12, color: C.sub, lineHeight: 1.6, background: "#F7F8FA", borderRadius: 10, padding: "11px 13px" }}>같은 칼럼끼리 <b>위아래로 쌓아요</b>. → 열 4 유지, <b>행 8,432 + 8,432 = 16,864</b></div>
                   </>
                 )}
               </div>
