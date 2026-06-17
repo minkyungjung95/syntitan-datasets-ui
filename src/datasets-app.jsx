@@ -2094,6 +2094,8 @@ function CombinePage({ selected, onRun }) {
   const [reviewSel, setReviewSel] = useState(REVIEW_ROWS.map((r) => r.right));
   const [stale, setStale] = useState(false);   // 매칭 변경됨 → 반영 필요
   const [tip, setTip] = useState(false);        // ↻ 호버 툴팁
+  const [dragId, setDragId] = useState(null);   // 좌측에서 드래그 중인 데이터셋 idx
+  const [cardOver, setCardOver] = useState(false); // 우측 드롭 카드 hover
 
   useEffect(() => {
     if (done) { setLoading(true); const t = setTimeout(() => setLoading(false), 1500); return () => clearTimeout(t); }
@@ -2142,6 +2144,11 @@ function CombinePage({ selected, onRun }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignSelf: "stretch", flex: 1, minHeight: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 28px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
+        <span style={{ fontSize: 14, color: C.sub }}>Dataset</span>
+        <span style={{ color: C.faint, display: "flex" }}><Icon.chevR width={16} height={16} /></span>
+        <span style={{ fontSize: 14, fontWeight: 700 }}>Combine</span>
+      </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         {/* LEFT — 선택 / 칼럼 매칭 */}
         <aside style={{ width: 380, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -2160,7 +2167,7 @@ function CombinePage({ selected, onRun }) {
                   const atMax = !checked && picked.length >= MAX_MERGE;
                   const order = picked.indexOf(i) + 1;
                   return (
-                    <label key={i} onClick={() => !atMax && togglePick(i)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 10px", borderRadius: 10, cursor: atMax ? "default" : "pointer", background: checked ? "#EEF4FF" : "transparent", opacity: atMax ? 0.45 : 1 }}>
+                    <label key={i} draggable onDragStart={() => setDragId(i)} onDragEnd={() => setDragId(null)} onClick={() => !atMax && togglePick(i)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 10px", borderRadius: 10, cursor: atMax ? "default" : "grab", background: checked ? "#EEF4FF" : "transparent", opacity: atMax ? 0.45 : 1 }}>
                       <Checkbox checked={checked} onChange={() => !atMax && togglePick(i)} />
                       <span style={{ width: 30, height: 30, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db /></span>
                       <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{i === 0 ? "CUBIG Data_2024" : "CUBIG Data_2025"}</div><div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
@@ -2233,15 +2240,31 @@ function CombinePage({ selected, onRun }) {
 
           {!done ? (
             <div style={{ minHeight: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
-              <div style={{ width: 360, border: `1px solid ${C.border}`, borderRadius: 16, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+              <div style={{ width: 400, border: `1px solid ${C.border}`, borderRadius: 16, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "14px 16px", borderBottom: `1px solid ${C.borderSoft}` }}>
-                  <span style={{ width: 28, height: 28, borderRadius: 7, background: "#E6F8EC", color: "#15803D", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db width={15} height={15} /></span>
-                  <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>데이터셋</div><div style={{ fontSize: 11, color: C.faint }}>0KB · 0컬럼 · 0행</div></div>
-                  <span style={{ fontSize: 10.5, fontWeight: 700, color: C.sub, background: "#F3F4F6", borderRadius: 5, padding: "2px 7px" }}>Table 1</span>
+                  <span style={{ width: 28, height: 28, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db width={15} height={15} /></span>
+                  <div style={{ flex: 1, fontSize: 13.5, fontWeight: 700 }}>합칠 데이터셋 선택</div>
+                  <span style={{ fontSize: 10.5, fontWeight: 700, color: C.sub, background: "#F3F4F6", borderRadius: 5, padding: "2px 8px" }}>기준</span>
                 </div>
-                <div style={{ padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 14 }}>
-                  <span style={{ width: 56, height: 56, borderRadius: 14, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db width={24} height={24} /></span>
-                  <div><div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>데이터 선택을 완료해 주세요</div><div style={{ fontSize: 13, color: C.faint, marginTop: 6, lineHeight: 1.6 }}>2개 선택 후 완료를 누르면<br />병합 방식과 칼럼 매칭 결과를 확인할 수 있어요.</div></div>
+                <div style={{ padding: 16 }}>
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setCardOver(true); }}
+                    onDragLeave={() => setCardOver(false)}
+                    onDrop={(e) => { e.preventDefault(); setCardOver(false); if (dragId != null) setPicked((p) => (p.includes(dragId) || p.length >= MAX_MERGE ? p : [...p, dragId])); setDragId(null); }}
+                    style={{ minHeight: 330, border: `1.5px dashed ${cardOver ? C.purple : C.border}`, borderRadius: 12, background: cardOver ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 13, textAlign: "center", transition: "all .12s" }}>
+                    {cardOver ? (
+                      <>
+                        <span style={{ display: "flex", color: C.purple }}><Icon.download width={26} height={26} /></span>
+                        <span style={{ fontSize: 14.5, fontWeight: 700, color: C.purple }}>Click or drag files to upload</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ width: 48, height: 48, borderRadius: 12, background: "#fff", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db width={22} height={22} /></span>
+                        <div style={{ fontSize: 14.5, fontWeight: 700, color: C.text }}>drag and drop dataset to upload</div>
+                        <div style={{ fontSize: 12.5, color: C.faint, lineHeight: 1.6 }}>데이터셋 총 {MAX_MERGE}개를 선택하세요.<br />처음 선택한 데이터가 기준이 됩니다.</div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
