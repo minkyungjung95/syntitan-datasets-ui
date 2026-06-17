@@ -344,7 +344,7 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
   const [createOpen, setCreateOpen] = useState(false);
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
   const [dragSrc, setDragSrc] = useState(null);     // 드래그 중인 데이터셋 id(단일)
-  const [dragMode, setDragMode] = useState(null);   // "single" | "multi"
+  const dragRef = useRef({ mode: null, src: null }); // stale-state 방지용
   const [dragOverId, setDragOverId] = useState(null); // 드롭 대상(유효) id
   const [denyId, setDenyId] = useState(null);        // 잠긴(권한없음) 대상 id
   const [mergeAnim, setMergeAnim] = useState(null);  // 합쳐지는 순간 { a, b }
@@ -432,11 +432,11 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
           const showCb = !d.locked && (selecting || hover === d.id || checked);
           return (
             <div key={d.id} draggable={!d.locked}
-              onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.setData("text/plain", String(d.id)); e.dataTransfer.effectAllowed = "move"; if (selected.length >= 2 && selected.includes(d.id)) { setDragMode("multi"); } else { setDragMode("single"); setDragSrc(d.id); } }}
-              onDragEnd={() => { if (dragMode === "multi" && selected.length >= 2) startMergeAnim(selected[0], selected[1]); setDragMode(null); setDragSrc(null); setDragOverId(null); setDenyId(null); }}
-              onDragOver={(e) => { if (dragSrc == null || dragSrc === d.id) return; e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (d.locked) { setDenyId(d.id); setDragOverId(null); } else { setDragOverId(d.id); setDenyId(null); } }}
+              onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.setData("text/plain", String(d.id)); e.dataTransfer.effectAllowed = "move"; const multi = selected.length >= 2 && selected.includes(d.id); dragRef.current = { mode: multi ? "multi" : "single", src: d.id }; if (!multi) setDragSrc(d.id); }}
+              onDragEnd={() => { const { mode } = dragRef.current; if (mode === "multi" && selected.length >= 2) startMergeAnim(selected[0], selected[1]); dragRef.current = { mode: null, src: null }; setDragSrc(null); setDragOverId(null); setDenyId(null); }}
+              onDragOver={(e) => { const s = dragRef.current.src; if (dragRef.current.mode !== "single" || s == null || s === d.id) return; e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (d.locked) { setDenyId(d.id); setDragOverId(null); } else { setDragOverId(d.id); setDenyId(null); } }}
               onDragLeave={() => { if (dragOverId === d.id) setDragOverId(null); if (denyId === d.id) setDenyId(null); }}
-              onDrop={(e) => { e.preventDefault(); if (dragMode === "single" && dragSrc != null && dragSrc !== d.id && !d.locked) startMergeAnim(dragSrc, d.id); else { setDragOverId(null); setDenyId(null); } }}
+              onDrop={(e) => { e.preventDefault(); const { mode, src } = dragRef.current; if (mode === "single" && src != null && src !== d.id && !d.locked) startMergeAnim(src, d.id); setDragOverId(null); setDenyId(null); }}
               onClick={() => { if (dragSrc == null) onOpen(d.id); }} onMouseEnter={() => setHover(d.id)} onMouseLeave={() => setHover(null)}
               style={{ position: "relative", display: "grid", gridTemplateColumns: grid, alignItems: "center", padding: "13px 20px", fontSize: 14, borderBottom: i === rows.length - 1 ? "none" : `1px solid ${C.borderSoft}`, cursor: dragSrc != null ? "grabbing" : "pointer", background: dragOverId === d.id ? "#EAF1FF" : denyId === d.id ? "#FEF2F2" : checked ? C.blueSoft : hover === d.id ? "#FAFAFB" : "transparent", boxShadow: dragOverId === d.id ? `inset 0 0 0 2px ${C.blue}` : "none", opacity: dragSrc === d.id ? 0.4 : 1, transition: "background .12s" }}>
               {denyId === d.id && (
