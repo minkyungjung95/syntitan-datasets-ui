@@ -155,13 +155,11 @@ function Sidebar({ active = "Home", onNav = () => {} }) {
         <span onClick={() => setCollapsed(false)} title="사이드바 펼치기" style={{ color: C.sub, cursor: "pointer", display: "flex", padding: 6, borderRadius: 8, marginBottom: 14 }}><Icon.panel /></span>
         <NavItem icon={<Icon.home />} label="Home" active={active === "Home"} onClick={() => onNav("Home")} collapsed />
         <div style={{ height: 14 }} />
-        <NavItem icon={<Icon.db />} label="Dataset" active={active === "Dataset"} onClick={() => onNav("Dataset")} collapsed />
-        <NavItem icon={<Icon.union />} label="Combine" active={active === "Combine"} onClick={() => onNav("Combine")} collapsed />
-        <div style={{ height: 14 }} />
+        <NavItem icon={<Icon.db />} label="Edit Dataset" active={active === "Edit Dataset"} onClick={() => onNav("Edit Dataset")} collapsed />
         <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} collapsed />
-        <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} collapsed />
-        <div style={{ height: 14 }} />
         <NavItem icon={<Icon.users />} label="Discussion Room" onClick={() => onNav("Discussion Room")} collapsed />
+        <div style={{ height: 14 }} />
+        <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} collapsed />
         <div style={{ flex: 1 }} />
         <div title="Basic plan" style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#5B9BFF 0%,#7FB6FF 100%)", color: "#fff", fontWeight: 700, fontSize: 12, fontStyle: "italic", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>Basic</div>
         <Avatar size={30} />
@@ -175,14 +173,12 @@ function Sidebar({ active = "Home", onNav = () => {} }) {
         <span onClick={() => setCollapsed(true)} title="사이드바 접기" style={{ color: C.faint, cursor: "pointer", display: "flex", padding: 2 }}><Icon.panel /></span>
       </div>
       <NavItem icon={<Icon.home />} label="Home" active={active === "Home"} onClick={() => onNav("Home")} />
-      <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Edit dataset</div>
-      <NavItem icon={<Icon.db />} label="Dataset" active={active === "Dataset"} onClick={() => onNav("Dataset")} />
-      <NavItem icon={<Icon.union />} label="Combine" active={active === "Combine"} onClick={() => onNav("Combine")} />
-      <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Analyze</div>
-      <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} />
-      <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} />
       <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Workspace</div>
+      <NavItem icon={<Icon.db />} label="Edit Dataset" active={active === "Edit Dataset"} onClick={() => onNav("Edit Dataset")} />
+      <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} />
       <NavItem icon={<Icon.users />} label="Discussion Room" onClick={() => onNav("Discussion Room")} />
+      <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Analyze</div>
+      <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} />
       <div style={{ flex: 1 }} />
       <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -390,22 +386,12 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
             <span style={{ color: C.faint, display: "flex" }}><Icon.search /></span>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" style={{ border: "none", outline: "none", flex: 1, fontSize: 14, fontFamily: FONT, background: "transparent" }} />
           </div>
-          <div style={{ position: "relative" }}>
-            <button onClick={() => setCreateOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px", background: C.dark, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
-              <Icon.plus /> Create <Icon.chevD width={15} height={15} />
-            </button>
-            {createOpen && (
-              <>
-                <div onClick={() => setCreateOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
-                <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 244, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: "0 12px 32px rgba(0,0,0,0.14)", zIndex: 31, padding: 6 }}>
-                  <div onClick={() => setCreateOpen(false)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", fontSize: 13.5, borderRadius: 8, cursor: "pointer", color: C.text }}><span style={{ color: C.blue, display: "flex" }}><Icon.download width={17} height={17} /></span> 데이터 업로드</div>
-                  <div onClick={() => { setCreateOpen(false); setMergeModalOpen(true); }} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", fontSize: 13.5, borderRadius: 8, cursor: "pointer", color: C.text }}><span style={{ color: C.purple, display: "flex" }}><Icon.union width={17} height={17} /></span> 데이터 합치기</div>
-                  <div style={{ height: 1, background: C.borderSoft, margin: "5px 8px" }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", fontSize: 13.5, borderRadius: 8, color: C.faint, cursor: "default" }}><span style={{ display: "flex" }}><Icon.link width={17} height={17} /></span> 소스 연동 <span style={{ marginLeft: "auto", fontSize: 11, color: C.faint, border: `1px solid ${C.border}`, borderRadius: 5, padding: "1px 6px" }}>예정</span></div>
-                </div>
-              </>
-            )}
-          </div>
+          <button onClick={() => onMerge()} style={{ display: "flex", alignItems: "center", gap: 7, height: 44, padding: "0 18px", background: "#fff", color: C.text, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
+            <Icon.plus /> Combine
+          </button>
+          <button style={{ display: "flex", alignItems: "center", gap: 7, height: 44, padding: "0 18px", background: C.dark, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
+            <Icon.plus /> Upload Data
+          </button>
         </div>
       ) : (
         <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#F1F4F9", borderRadius: 12, padding: "0 16px", height: "100%" }}>
@@ -413,13 +399,7 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
           <span style={{ fontSize: 14, fontWeight: 600 }}>{selected.length}개 선택됨</span>
           <div style={{ flex: 1 }} />
           {overLimit && <span style={{ fontSize: 12.5, color: C.red }}>최대 {MAX_MERGE}개</span>}
-          <button
-            onClick={() => canMerge && onMerge()}
-            disabled={!canMerge}
-            style={{ display: "flex", alignItems: "center", gap: 7, height: 40, padding: "0 16px", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 600, fontFamily: FONT, cursor: canMerge ? "pointer" : "default", background: canMerge ? "#E4E9FF" : "#EEF0F3", color: canMerge ? C.purple : C.faint }}
-          >
-            <Icon.spark /> 데이터 합치기 ({selected.length}/{MAX_MERGE})
-          </button>
+          {canMerge && <span style={{ fontSize: 12.5, color: C.faint, display: "flex", alignItems: "center", gap: 5 }}><Icon.union width={14} height={14} /> 드래그해서 합치기</span>}
           <button onClick={() => { setMoveTarget(undefined); setMoveOpen(true); }} style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", color: C.text, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.folder width={15} height={15} /> 폴더로 이동</button>
           <button title="다운로드" style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", color: C.text, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Icon.download /> 다운로드</button>
           <button title="삭제" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", color: C.sub, cursor: "pointer", fontFamily: FONT }}><Icon.trash /></button>
@@ -437,7 +417,10 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
           const checked = selected.includes(d.id);
           const showCb = !d.locked && (selecting || hover === d.id || checked);
           return (
-            <div key={d.id} onClick={() => onOpen(d.id)} onMouseEnter={() => setHover(d.id)} onMouseLeave={() => setHover(null)}
+            <div key={d.id} draggable={!d.locked}
+              onDragStart={(e) => { e.stopPropagation(); if (!checked) setSelected((s) => (s.includes(d.id) ? s : [d.id])); }}
+              onDragEnd={(e) => { e.stopPropagation(); onMerge(); }}
+              onClick={() => onOpen(d.id)} onMouseEnter={() => setHover(d.id)} onMouseLeave={() => setHover(null)}
               style={{ display: "grid", gridTemplateColumns: grid, alignItems: "center", padding: "13px 20px", fontSize: 14, borderBottom: i === rows.length - 1 ? "none" : `1px solid ${C.borderSoft}`, cursor: "pointer", background: checked ? C.blueSoft : hover === d.id ? "#FAFAFB" : "transparent" }}>
               <span onClick={(e) => e.stopPropagation()} title={d.locked ? "편집 권한이 없어 합치기에 선택할 수 없어요" : undefined} style={{ display: "flex", height: "100%", alignItems: "center" }}>{d.locked ? ((selecting || hover === d.id) && <span style={{ color: C.faint, display: "flex" }}><Icon.lock /></span>) : (showCb && <Checkbox checked={checked} onChange={(v) => toggle(d.id, v)} />)}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
@@ -2052,9 +2035,9 @@ const TONE = [
 ];
 function CombinePage({ selected, onRun }) {
   const pool = useMemo(() => Array.from({ length: 14 }, (_, i) => poolLabel(i)), []);
-  const cameWith = selected && selected.length >= 2;
+  const seed = selected && selected.length ? Array.from({ length: Math.min(selected.length, 2) }, (_, i) => i) : [];
   const [q, setQ] = useState("");
-  const [dropped, setDropped] = useState(cameWith ? [0, 1] : []);
+  const [dropped, setDropped] = useState(seed);
   const [dragId, setDragId] = useState(null);
   const [over, setOver] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -2234,14 +2217,11 @@ export default function DatasetsApp() {
     if (screen === "merging" && mergeJob?.done) setScreen("result");
   }, [screen, mergeJob?.done]);
 
-  const sidebarActive = screen === "agent" ? "Agent Analysis"
-    : (screen === "combine" || screen === "merge" || screen === "merging" || screen === "result") ? "Combine"
-    : "Dataset";
+  const sidebarActive = screen === "agent" ? "Agent Analysis" : "Edit Dataset";
 
   const handleNav = (label) => {
     if (label === "Agent Analysis") setScreen("agent");
-    else if (label === "Combine") { setSelected([]); setScreen("combine"); }
-    else if (label === "Home" || label === "Dataset") { setSelected([]); setScreen("list"); }
+    else if (label === "Home" || label === "Edit Dataset") { setSelected([]); setScreen("list"); }
   };
 
   const startMerge = (names) => { setMergeJob({ names, done: false }); setSelected([]); setScreen("merging"); };
