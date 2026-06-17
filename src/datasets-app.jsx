@@ -2147,39 +2147,48 @@ function CombinePage({ selected, onRun }) {
   const editAuto = (idx, v) => { setAutoSel((s) => s.map((x, i) => (i === idx ? v : x))); setStale(true); };
   const editReview = (idx, v) => { setReviewSel((s) => s.map((x, i) => (i === idx ? v : x))); setStale(true); };
 
-  // 행 종류: match / null / extra / plain / key / add
-  const PvRow = ({ label, kind, last }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", fontSize: 12.5, background: kind === "extra" ? "#EAF7EE" : kind === "null" ? "#EEF3FF" : kind === "key" ? "#F2EEFE" : "transparent", borderBottom: last ? "none" : "1px solid #00000010" }}>
-      {kind === "null"
-        ? <span style={{ flex: 1, color: C.faint }}>매칭 칼럼 없음</span>
-        : <><span style={{ color: kind === "key" ? C.purple : C.faint }}>#</span><span style={{ flex: 1, fontWeight: kind === "extra" || kind === "key" ? 700 : 500 }}>{label} <span style={{ color: C.faint, fontWeight: 400 }}>String</span></span></>}
-      {kind === "null" ? <span style={{ fontSize: 10.5, fontWeight: 700, color: "#6B7280", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 5, padding: "1px 6px" }}>null</span>
-        : kind === "key" ? <span style={{ fontSize: 10.5, fontWeight: 700, color: C.purple, background: "#EEF2FF", borderRadius: 5, padding: "2px 8px" }}>키</span>
-        : kind === "add" ? <span style={{ fontSize: 10.5, fontWeight: 700, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "2px 8px" }}>추가</span>
-        : kind === "extra" ? <span style={{ fontSize: 10.5, fontWeight: 700, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "2px 8px" }}>값 유지</span>
-        : kind === "match" ? <span style={{ fontSize: 10.5, fontWeight: 600, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 999, padding: "2px 9px" }}>매칭</span>
-        : null}
+  // ── ERD 프리뷰 ─────────────────────────────────────────────
+  const ERD_H = 44, ERD_ROW = 32;        // 헤더/행 높이 (관계선 좌표 계산용)
+  const ERD_TONE = { blue: TONE[0], green: TONE[1], purple: { line: "#DDD3F7", head: "#F5F1FE", fg: "#6D4AC4" } };
+  const KeyGlyph = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="8.5" cy="8.5" r="4.5" stroke="currentColor" strokeWidth="2" /><path d="M11.5 11.5L20 20m-3.2.2l3.2-3.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>;
+  const DownArrow = ({ text }) => (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, color: C.faint }}>
+      <svg width="16" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 4v15m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      {text && <span style={{ fontSize: 11.5, fontWeight: 600, color: C.sub }}>{text}</span>}
     </div>
   );
-  const PvCard = ({ idx, toneKey, label, rows, w }) => {
-    const tone = toneKey === "green" ? TONE[1] : TONE[0];
+  const ErdEntity = ({ idx, name, sub, label, toneKey, cols, w }) => {
+    const tone = ERD_TONE[toneKey] || TONE[0];
     return (
-      <div style={{ width: w || "auto", flexShrink: 0, border: `1.5px solid ${tone.line}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "12px 14px", background: tone.head, borderBottom: `1px solid ${tone.line}` }}>
-          <span style={{ width: 28, height: 28, borderRadius: 7, background: "#fff", color: tone.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db width={15} height={15} /></span>
-          <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{poolLabel(idx)}</div><div style={{ fontSize: 11, color: C.faint }}>58.2KB · 8컬럼 · 8,432행</div></div>
-          <span style={{ fontSize: 10.5, fontWeight: 700, color: tone.fg, background: "#fff", border: `1px solid ${tone.line}`, borderRadius: 5, padding: "1px 7px", whiteSpace: "nowrap" }}>{label}</span>
+      <div style={{ width: w, flexShrink: 0, border: `1.5px solid ${tone.line}`, borderRadius: 12, overflow: "hidden", background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, height: ERD_H, padding: "0 12px", background: tone.head, borderBottom: `1px solid ${tone.line}` }}>
+          <span style={{ width: 26, height: 26, borderRadius: 7, background: "#fff", color: tone.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db width={14} height={14} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name || poolLabel(idx)}</div>
+            <div style={{ fontSize: 10.5, color: C.faint }}>{sub || "58.2KB · 8,432행"}</div>
+          </div>
+          <span style={{ fontSize: 10, fontWeight: 700, color: tone.fg, background: "#fff", border: `1px solid ${tone.line}`, borderRadius: 5, padding: "2px 7px", whiteSpace: "nowrap" }}>{label}</span>
         </div>
-        {rows.map((r, i) => <PvRow key={i} label={r.label} kind={r.kind} last={i === rows.length - 1} />)}
+        {cols.map((c, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, height: ERD_ROW, padding: "0 12px", fontSize: 12, borderBottom: i < cols.length - 1 ? "1px solid #00000010" : "none", background: c.tag === "add" ? "#EAF7EE" : c.tag === "null" ? "#EEF3FF" : c.key ? "#F6F3FE" : "transparent" }}>
+            {c.tag === "null"
+              ? <span style={{ flex: 1, color: C.faint, fontStyle: "italic" }}>{c.name}</span>
+              : <>
+                  <span style={{ color: c.key ? C.purple : C.faint, display: "flex", flexShrink: 0, fontWeight: 700 }}>{c.key ? <KeyGlyph /> : "#"}</span>
+                  <span style={{ flex: 1, fontWeight: c.key ? 700 : 500, color: c.muted ? C.faint : C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}{!c.muted && <span style={{ color: C.faint, fontWeight: 400 }}> {c.type || "String"}</span>}</span>
+                </>}
+            {c.key && <span style={{ fontSize: 9.5, fontWeight: 800, color: C.purple, background: "#EEE9FE", borderRadius: 4, padding: "2px 6px", letterSpacing: 0.3 }}>{c.key}</span>}
+            {c.tag === "add" && <span style={{ fontSize: 9.5, fontWeight: 700, color: "#15803D", background: "#E6F8EC", borderRadius: 4, padding: "2px 6px" }}>추가</span>}
+            {c.tag === "null" && <span style={{ fontSize: 9.5, fontWeight: 700, color: "#6B7280", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 4, padding: "1px 6px" }}>null</span>}
+          </div>
+        ))}
       </div>
     );
   };
-  const U_SHARED = ["customer_id", "name", "email", "signup_data", "date", "time", "time_period", "structure"];
-  const U_EXTRA = ["customer_1", "customer_2"];
-  const unionT1 = [...U_EXTRA.map((l) => ({ label: l, kind: "extra" })), ...U_SHARED.map((l) => ({ label: l, kind: "match" }))];
-  const unionT2 = [...U_EXTRA.map(() => ({ kind: "null" })), ...U_SHARED.map((l) => ({ label: l, kind: "match" }))];
-  const joinL = [{ label: PV_KEY, kind: "key" }, ...PV_T1_REST.map((l) => ({ label: l, kind: "plain" }))];
-  const joinR = [{ label: PV_KEY, kind: "key" }, ...PV_T2_REST.map((l) => ({ label: l, kind: "add" }))];
+  const joinBaseCols = [{ name: PV_KEY, key: "PK" }, ...PV_T1_REST.map((l) => ({ name: l }))];
+  const joinAddCols = [{ name: PV_KEY, key: "FK" }, ...PV_T2_REST.map((l) => ({ name: l, tag: "add" }))];
+  const joinResultCols = [{ name: PV_KEY, key: "PK" }, ...PV_T1_REST.map((l) => ({ name: l })), ...PV_T2_REST.map((l) => ({ name: l, tag: "add" }))];
+  const unionSrcCols = [{ name: "customer_id", key: "PK" }, { name: "name" }, { name: "email" }, { name: "signup_date" }, { name: "+ 그 외 매칭 칼럼", muted: true, type: "" }];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignSelf: "stretch", flex: 1, minHeight: 0 }}>
@@ -2372,25 +2381,33 @@ function CombinePage({ selected, onRun }) {
               <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>칼럼을 매칭하고 있어요…</div>
             </div>
           ) : (
-            <div style={{ padding: "70px 28px 28px", display: "flex", justifyContent: "center" }}>
+            <div style={{ padding: "104px 28px 32px", display: "flex", justifyContent: "center" }}>
               {method === "join" ? (
-                <div>
-                  <div style={{ display: "flex", alignItems: "flex-start" }}>
-                    <PvCard idx={picked[0]} toneKey="green" label="Table 1" w={236} rows={joinL} />
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, padding: "54px 10px 0", color: C.purple }}>
-                      <span style={{ width: 34, height: 34, borderRadius: "50%", background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.join width={18} height={18} /></span>
-                      <span style={{ fontSize: 10, color: C.faint, whiteSpace: "nowrap" }}>키 일치</span>
-                    </div>
-                    <PvCard idx={picked[1]} toneKey="blue" label="Table 2" w={236} rows={joinR} />
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+                  {/* 관계: 기준 —(customer_id)— 추가 */}
+                  <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 90 }}>
+                    <ErdEntity idx={picked[0]} label="기준" toneKey="blue" w={208} cols={joinBaseCols} />
+                    <ErdEntity idx={picked[1]} label="추가" toneKey="green" w={208} cols={joinAddCols} />
+                    <svg width={90} height={ERD_H + joinBaseCols.length * ERD_ROW} style={{ position: "absolute", left: 208, top: 0, overflow: "visible", pointerEvents: "none" }}>
+                      <line x1={0} y1={ERD_H + ERD_ROW / 2} x2={90} y2={ERD_H + ERD_ROW / 2} stroke={C.purple} strokeWidth={2} />
+                      <circle cx={3} cy={ERD_H + ERD_ROW / 2} r={4} fill={C.purple} />
+                      <circle cx={87} cy={ERD_H + ERD_ROW / 2} r={4} fill="#fff" stroke={C.purple} strokeWidth={2} />
+                      <rect x={28} y={ERD_H + ERD_ROW / 2 - 24} width={34} height={17} rx={5} fill={C.purple} />
+                      <text x={45} y={ERD_H + ERD_ROW / 2 - 11.5} textAnchor="middle" fill="#fff" fontSize={10} fontWeight={700} fontFamily={FONT}>1 : 1</text>
+                    </svg>
                   </div>
-                  <div style={{ marginTop: 14, maxWidth: 520, fontSize: 12, color: C.sub, lineHeight: 1.6, background: "#F7F8FA", borderRadius: 10, padding: "11px 13px" }}><b>customer_id</b>가 같은 행끼리 연결하고, Table 2 칼럼을 <b>오른쪽에 붙여요</b>. → 행 8,432 유지, <b>열 4 → 7</b></div>
+                  <DownArrow text="customer_id가 같은 행끼리 연결 · 추가 칼럼을 오른쪽에 붙여요" />
+                  <ErdEntity name="병합 결과" sub="customer_id 기준 Join · 8,432행 · 7컬럼" label="결과" toneKey="purple" w={250} cols={joinResultCols} />
                 </div>
               ) : (
-                <div style={{ width: 360, maxWidth: "100%" }}>
-                  <PvCard idx={picked[0]} toneKey="green" label="Table 1" rows={unionT1} />
-                  <div style={{ display: "flex", justifyContent: "center", padding: "7px 0", color: C.faint }}><Icon.union width={18} height={18} /></div>
-                  <PvCard idx={picked[1]} toneKey="blue" label="Table 2" rows={unionT2} />
-                  <div style={{ marginTop: 14, fontSize: 12, color: C.sub, lineHeight: 1.6, background: "#F7F8FA", borderRadius: 10, padding: "11px 13px" }}>같은 칼럼끼리 <b>위아래로 쌓아요</b>. → 열 유지, <b>행 8,432 + 8,432 = 16,864</b></div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 11 }}>
+                  <ErdEntity idx={picked[0]} label="기준" toneKey="blue" w={252} cols={unionSrcCols} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 700, color: C.purple, background: "#F5F1FE", border: `1px solid ${ERD_TONE.purple.line}`, borderRadius: 999, padding: "5px 13px" }}>
+                    <span style={{ fontSize: 15, lineHeight: 1 }}>∪</span> UNION · 행을 이어붙여요
+                  </div>
+                  <ErdEntity idx={picked[1]} label="추가" toneKey="green" w={252} cols={unionSrcCols} />
+                  <DownArrow text="같은 칼럼은 위아래로 쌓고, 한쪽에만 있는 칼럼은 null로 채워요" />
+                  <ErdEntity name="병합 결과" sub="칼럼 동일 · 8,432 + 8,432 = 16,864행" label="결과" toneKey="purple" w={252} cols={unionSrcCols} />
                 </div>
               )}
             </div>
