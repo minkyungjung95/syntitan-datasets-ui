@@ -432,9 +432,9 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
           const showCb = !d.locked && (selecting || hover === d.id || checked);
           return (
             <div key={d.id} draggable={!d.locked}
-              onDragStart={(e) => { e.stopPropagation(); if (selected.length >= 2 && selected.includes(d.id)) { setDragMode("multi"); } else { setDragMode("single"); setDragSrc(d.id); } }}
+              onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.setData("text/plain", String(d.id)); e.dataTransfer.effectAllowed = "move"; if (selected.length >= 2 && selected.includes(d.id)) { setDragMode("multi"); } else { setDragMode("single"); setDragSrc(d.id); } }}
               onDragEnd={() => { if (dragMode === "multi" && selected.length >= 2) startMergeAnim(selected[0], selected[1]); setDragMode(null); setDragSrc(null); setDragOverId(null); setDenyId(null); }}
-              onDragOver={(e) => { if (dragSrc == null || dragSrc === d.id) return; e.preventDefault(); if (d.locked) { setDenyId(d.id); setDragOverId(null); } else { setDragOverId(d.id); setDenyId(null); } }}
+              onDragOver={(e) => { if (dragSrc == null || dragSrc === d.id) return; e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (d.locked) { setDenyId(d.id); setDragOverId(null); } else { setDragOverId(d.id); setDenyId(null); } }}
               onDragLeave={() => { if (dragOverId === d.id) setDragOverId(null); if (denyId === d.id) setDenyId(null); }}
               onDrop={(e) => { e.preventDefault(); if (dragMode === "single" && dragSrc != null && dragSrc !== d.id && !d.locked) startMergeAnim(dragSrc, d.id); else { setDragOverId(null); setDenyId(null); } }}
               onClick={() => { if (dragSrc == null) onOpen(d.id); }} onMouseEnter={() => setHover(d.id)} onMouseLeave={() => setHover(null)}
@@ -2173,11 +2173,11 @@ function CombinePage({ selected, onRun }) {
                   const atMax = !checked && picked.length >= MAX_MERGE;
                   const order = picked.indexOf(i) + 1;
                   return (
-                    <label key={i} draggable onDragStart={() => setDragId(i)} onDragEnd={() => setDragId(null)} onClick={() => !atMax && togglePick(i)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", borderRadius: 10, cursor: atMax ? "default" : "grab", background: checked ? "#EEF4FF" : "transparent", opacity: atMax ? 0.45 : 1 }}>
+                    <div key={i} draggable onDragStart={(e) => { e.dataTransfer.setData("text/plain", String(i)); e.dataTransfer.effectAllowed = "copy"; setDragId(i); }} onDragEnd={() => setDragId(null)} onClick={() => !atMax && togglePick(i)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", borderRadius: 10, cursor: atMax ? "default" : "grab", background: checked ? "#EEF4FF" : "transparent", opacity: atMax ? 0.45 : 1, userSelect: "none" }}>
                       <span style={{ width: 30, height: 30, borderRadius: 7, background: checked ? "#fff" : "#F3F4F6", color: checked ? C.blue : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db /></span>
                       <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{i === 0 ? "CUBIG Data_2024" : "CUBIG Data_2025"}</div><div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
                       {checked && <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", border: `1px solid ${C.blue}`, color: C.blue, fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{order}</span>}
-                    </label>
+                    </div>
                   );
                 })}
               </div>
@@ -2250,9 +2250,9 @@ function CombinePage({ selected, onRun }) {
                 </div>
                 <div style={{ padding: 16 }}>
                   <div
-                    onDragOver={(e) => { e.preventDefault(); setCardOver(true); }}
+                    onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setCardOver(true); }}
                     onDragLeave={() => setCardOver(false)}
-                    onDrop={(e) => { e.preventDefault(); setCardOver(false); if (dragId != null) setPicked((p) => (p.includes(dragId) || p.length >= MAX_MERGE ? p : [...p, dragId])); setDragId(null); }}
+                    onDrop={(e) => { e.preventDefault(); setCardOver(false); const raw = e.dataTransfer.getData("text/plain"); const id = dragId != null ? dragId : (raw === "" ? null : parseInt(raw, 10)); if (id != null && !isNaN(id)) setPicked((p) => (p.includes(id) || p.length >= MAX_MERGE ? p : [...p, id])); setDragId(null); }}
                     style={{ minHeight: 330, border: `1.5px dashed ${cardOver ? C.purple : C.border}`, borderRadius: 12, background: cardOver ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 13, textAlign: "center", transition: "all .12s" }}>
                     {cardOver ? (
                       <>
