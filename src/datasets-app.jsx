@@ -2232,6 +2232,9 @@ function CombinePage({ selected, onRun }) {
                   );
                 })}
               </div>
+              <div style={{ padding: 12, borderTop: `1px solid ${C.border}`, background: "#fff" }}>
+                <button disabled={picked.length !== MAX_MERGE} onClick={() => picked.length === MAX_MERGE && setDone(true)} style={{ width: "100%", padding: "14px 0", borderRadius: 11, border: "none", background: picked.length === MAX_MERGE ? C.dark : "#E5E7EB", color: picked.length === MAX_MERGE ? "#fff" : C.faint, fontSize: 14.5, fontWeight: 700, cursor: picked.length === MAX_MERGE ? "pointer" : "default", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>병합 방식 추천받기 ({picked.length}/{MAX_MERGE}){picked.length === MAX_MERGE ? " →" : ""}</button>
+              </div>
             </>
           ) : (
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 28px" }}>
@@ -2343,34 +2346,38 @@ function CombinePage({ selected, onRun }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "14px 16px", borderBottom: `1px solid ${C.borderSoft}` }}>
                   <span style={{ width: 28, height: 28, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db width={15} height={15} /></span>
                   <div style={{ flex: 1, fontSize: 13.5, fontWeight: 700 }}>합칠 데이터셋 선택</div>
-                  <span style={{ fontSize: 10.5, fontWeight: 700, color: C.sub, background: "#F3F4F6", borderRadius: 5, padding: "2px 8px" }}>기준</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10.5, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 5, padding: "2px 8px" }}>✦ AI</span>
                 </div>
                 <div style={{ padding: 16 }}>
-                  <div
-                    ref={zoneRef}
-                    style={{ minHeight: 330, border: picked.length ? `1px solid ${C.border}` : `1.5px dashed ${cardOver ? C.purple : C.border}`, borderRadius: 12, background: cardOver && !picked.length ? "#F5F3FF" : picked.length ? "#fff" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: picked.length ? "stretch" : "center", justifyContent: picked.length ? "flex-start" : "center", gap: 10, padding: picked.length ? 14 : 0, textAlign: "center", transition: "all .12s" }}>
-                    {picked.length === 0 ? (
-                      cardOver ? (
-                        <><span style={{ display: "flex", color: C.purple }}><Icon.download width={26} height={26} /></span><span style={{ fontSize: 14.5, fontWeight: 700, color: C.purple }}>Click or drag files to upload</span></>
-                      ) : (
-                        <><span style={{ width: 48, height: 48, borderRadius: 12, background: "#fff", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db width={22} height={22} /></span><div style={{ fontSize: 14.5, fontWeight: 700, color: C.text }}>drag and drop dataset to upload</div><div style={{ fontSize: 12.5, color: C.faint, lineHeight: 1.6 }}>데이터셋 총 {MAX_MERGE}개를 선택하세요.<br />처음 선택한 데이터가 기준이 됩니다.</div></>
-                      )
-                    ) : (
-                      <>
-                        {picked.map((idx, k) => (
-                          <div key={idx} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 13px", border: `1px solid ${C.border}`, borderRadius: 10, background: "#fff", textAlign: "left" }}>
-                            <span style={{ width: 30, height: 30, borderRadius: 7, background: k === 0 ? "#EEF2FF" : "#F3F4F6", color: k === 0 ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db width={15} height={15} /></span>
-                            <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>{poolLabel(idx)}{k === 0 && <span style={{ fontSize: 10, fontWeight: 700, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 4, padding: "0 5px" }}>기준</span>}</div><div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
-                            <span onClick={() => setPicked((p) => p.filter((x) => x !== idx))} title="제거" style={{ cursor: "pointer", color: C.faint, display: "flex", padding: 4 }}><Icon.x width={15} height={15} /></span>
+                  <div ref={zoneRef} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {Array.from({ length: MAX_MERGE }).map((_, k) => {
+                      const idx = picked[k];
+                      if (idx != null) {
+                        const isBase = k === 0;
+                        return (
+                          <div key={k} style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: "#fff", padding: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11 }}>
+                              <span style={{ fontSize: 10.5, fontWeight: 700, color: isBase ? C.purple : C.sub, background: isBase ? "#EEE9FE" : "#F3F4F6", borderRadius: 6, padding: "3px 9px" }}>{isBase ? "기준" : "추가"}</span>
+                              <span onClick={() => setPicked((p) => p.filter((x) => x !== idx))} title="제거" style={{ cursor: "pointer", color: C.faint, display: "flex" }}><Icon.x width={16} height={16} /></span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                              <span style={{ width: 34, height: 34, borderRadius: 8, background: isBase ? "#EEF2FF" : "#F3F4F6", color: isBase ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db width={17} height={17} /></span>
+                              <div style={{ minWidth: 0 }}><div style={{ fontSize: 14.5, fontWeight: 700 }}>{poolLabel(idx)}</div><div style={{ fontSize: 12, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
+                            </div>
                           </div>
-                        ))}
-                        {picked.length < MAX_MERGE ? (
-                          <div style={{ flex: 1, minHeight: 90, border: `1.5px dashed ${cardOver ? C.purple : C.border}`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: cardOver ? C.purple : C.faint, fontSize: 12.5 }}>데이터셋 하나 더 끌어다 놓기</div>
-                        ) : (
-                          <button onClick={() => setDone(true)} style={{ marginTop: 6, width: "100%", padding: "13px 0", borderRadius: 10, border: "none", background: C.dark, color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>병합 방식 추천받기 →</button>
-                        )}
-                      </>
-                    )}
+                        );
+                      }
+                      const isNext = k === picked.length;
+                      return (
+                        <div key={k} style={{ minHeight: 116, border: `1.5px dashed ${cardOver && isNext ? C.purple : C.border}`, borderRadius: 12, background: cardOver && isNext ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, color: cardOver && isNext ? C.purple : C.faint, transition: "all .12s" }}>
+                          <span style={{ width: 36, height: 36, borderRadius: 9, background: "#fff", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db width={17} height={17} /></span>
+                          <span style={{ fontSize: 13, fontWeight: 600 }}>Dataset</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ marginTop: 13, fontSize: 12.5, color: C.faint, lineHeight: 1.6, textAlign: "center" }}>
+                    {picked.length === 0 ? <>왼쪽에서 데이터셋을 <b style={{ color: C.sub }}>클릭</b>하거나 <b style={{ color: C.sub }}>끌어다 놓으세요</b>.<br />처음 선택한 데이터가 <b style={{ color: C.sub }}>기준</b>이 됩니다.</> : picked.length < MAX_MERGE ? "데이터셋 하나만 더 선택하면 돼요." : "왼쪽 아래 「병합 방식 추천받기」를 눌러 진행하세요."}
                   </div>
                 </div>
               </div>
