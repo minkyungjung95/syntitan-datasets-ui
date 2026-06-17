@@ -2097,6 +2097,7 @@ function CombinePage({ selected, onRun }) {
   const [done, setDone] = useState(came);
   const [q, setQ] = useState("");
   const [method, setMethod] = useState("union");
+  const REC_METHOD = "union";   // AI 추천 병합 방식 (칼럼 구성이 같아 Union 권장)
   const [loading, setLoading] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(true);
   const [autoOpen, setAutoOpen] = useState(true);
@@ -2296,12 +2297,22 @@ function CombinePage({ selected, onRun }) {
 
         {/* RIGHT — 캔버스(빈 상태 / 시각화) */}
         <div style={{ flex: 1, minWidth: 0, position: "relative", overflow: "auto", backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)", backgroundSize: "18px 18px" }}>
-          {/* 방식 칩 (단일 · 클릭해서 Union/Join 전환) */}
-          <div style={{ position: "absolute", top: 18, left: 18, zIndex: 4 }}>
-            <button onClick={() => setMethod(method === "union" ? "join" : "union")} title="클릭해서 Union / Join 전환" style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: "#fff", cursor: "pointer", fontFamily: FONT, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-              <span style={{ width: 26, height: 26, borderRadius: 7, background: "#F3F4F6", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>{method === "join" ? <Icon.join width={15} height={15} /> : <Icon.union width={15} height={15} />}</span>
+          {/* 방식 칩 (단일 · 클릭해서 Union/Join 전환) + AI 추천 표시 */}
+          <div style={{ position: "absolute", top: 18, left: 18, zIndex: 4, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7 }}>
+            {(() => { const isRec = method === REC_METHOD; return (
+            <button onClick={() => setMethod(method === "union" ? "join" : "union")} title="클릭해서 Union / Join 전환" style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px 9px 14px", borderRadius: 10, border: `1px solid ${isRec ? C.purple : C.border}`, background: isRec ? "#FAF8FF" : "#fff", cursor: "pointer", fontFamily: FONT, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+              <span style={{ width: 26, height: 26, borderRadius: 7, background: isRec ? "#fff" : "#F3F4F6", color: isRec ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>{method === "join" ? <Icon.join width={15} height={15} /> : <Icon.union width={15} height={15} />}</span>
               <span style={{ fontSize: 14, fontWeight: 700 }}>{method === "join" ? "Join" : "Union"}</span>
+              {isRec
+                ? <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "3px 7px" }}>✦ AI 추천</span>
+                : <span style={{ fontSize: 11, fontWeight: 600, color: C.faint, background: "#F3F4F6", borderRadius: 6, padding: "3px 7px" }}>직접 선택</span>}
             </button>
+            ); })()}
+            {method !== REC_METHOD && (
+              <button onClick={() => setMethod(REC_METHOD)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: C.purple, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, padding: "0 2px" }}>
+                ✦ AI 추천 「{REC_METHOD === "join" ? "Join" : "Union"}」으로 되돌리기
+              </button>
+            )}
           </div>
           {/* ⤢ / ↻ */}
           <div style={{ position: "absolute", top: 18, right: 18, zIndex: 4, display: "flex", flexDirection: "column", gap: 8 }}>

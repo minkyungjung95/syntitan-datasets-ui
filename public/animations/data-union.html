@@ -93,47 +93,29 @@
       /* ---- Top table (Dataset A) ---- */
       .tbl-a { border-radius: 6px 6px 0 0; border-bottom: none; }
 
-      /* ---- Bottom table (Dataset B) — slides up and docks ---- */
-      .tbl-b-wrap {
-        position: relative;
-        animation: dockUp 5s ease-in-out infinite;
-      }
+      /* ---- Bottom table (Dataset B) — stretches down out of the seam ---- */
+      .tbl-b-wrap { position: relative; }
       .tbl-b {
         border-radius: 0 0 6px 6px;
-        background: var(--union-bg);
+        border-top: none;
       }
+      /* Rows start collapsed (0 height) and quickly stretch open, green at
+         first, then settle into the unified neutral table. */
       .tbl-b tbody td {
-        color: var(--union-text);
-        border-color: rgba(52,199,123,0.35);
-      }
-      /* the seam between A and B fades once docked */
-      .tbl-b {
-        border-top: 1px dashed var(--union-line);
-        animation: seamMerge 5s ease-in-out infinite;
+        padding-top: 0;
+        padding-bottom: 0;
+        line-height: 0;
+        overflow: hidden;
+        animation: growIn 5s cubic-bezier(0.34, 1.4, 0.64, 1) infinite;
       }
 
-      /* B starts detached lower with a gap, then slides up flush against A. */
-      @keyframes dockUp {
-        0%, 12%  { transform: translateY(14px); opacity: 0; }
-        24%      { transform: translateY(14px); opacity: 1; } /* appears below, gap visible */
-        44%      { transform: translateY(0);    opacity: 1; } /* slides up, docks */
-        88%      { transform: translateY(0);    opacity: 1; }
-        100%     { transform: translateY(14px); opacity: 0; }
+      @keyframes growIn {
+        0%, 14%  { padding-top: 0;   padding-bottom: 0;   line-height: 0;    background: var(--union-bg); color: var(--union-text); border-color: rgba(52,199,123,0.4); }
+        30%      { padding-top: 3px; padding-bottom: 3px; line-height: 1.35; background: var(--union-bg); color: var(--union-text); border-color: rgba(52,199,123,0.4); } /* stretched open, green */
+        44%      { padding-top: 3px; padding-bottom: 3px; line-height: 1.35; background: var(--bg);       color: var(--text);       border-color: var(--grid); }            /* settled into one table */
+        90%      { padding-top: 3px; padding-bottom: 3px; line-height: 1.35; background: var(--bg);       color: var(--text);       border-color: var(--grid); }
+        100%     { padding-top: 0;   padding-bottom: 0;   line-height: 0;    background: var(--union-bg); color: var(--union-text); border-color: rgba(52,199,123,0.4); }
       }
-
-      /* Once docked, the dashed seam + green tint settle into the unified table. */
-      @keyframes seamMerge {
-        0%, 44%  { border-top-color: var(--union-line); background: var(--union-bg); }
-        58%      { border-top-color: var(--grid);       background: var(--bg); }
-        88%      { border-top-color: var(--grid);       background: var(--bg); }
-        100%     { border-top-color: var(--union-line); background: var(--union-bg); }
-      }
-      @keyframes seamMergeText {
-        0%, 44%  { color: var(--union-text); }
-        58%, 88% { color: var(--text); }
-        100%     { color: var(--union-text); }
-      }
-      .tbl-b tbody td { animation: seamMergeText 5s ease-in-out infinite; }
 
       @keyframes loopFade {
         0%, 90%  { opacity: 1; }
