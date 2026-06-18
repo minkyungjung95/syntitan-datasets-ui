@@ -2271,7 +2271,8 @@ function CombinePage({ selected, onRun }) {
         <span style={{ fontSize: 14, fontWeight: 700 }}>Combine</span>
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        {/* LEFT — 선택 / 칼럼 매칭 */}
+        {/* LEFT — 데이터셋 트리 (선택 단계에서만) */}
+        {!done && (
         <aside style={{ width: 280, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 16px 10px", padding: "0 12px", height: 38, border: `1px solid ${C.border}`, borderRadius: 9, background: "#fff" }}>
             <span style={{ color: C.faint, display: "flex" }}><Icon.search width={15} height={15} /></span>
@@ -2382,6 +2383,7 @@ function CombinePage({ selected, onRun }) {
             </div>
           )}
         </aside>
+        )}
 
         {/* RIGHT — 캔버스(빈 상태 / 시각화) */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0, background: "#fff" }}>
