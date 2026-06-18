@@ -2220,13 +2220,25 @@ function CombinePage({ selected, onRun }) {
       </div>
     </div>
   );
-  const MethodSlot = ({ slotRef, dir, active, w }) => {
+  const MethodSlot = ({ slotRef, dir, active, w, dragName }) => {
     const isU = dir === "union";
     return (
-      <div ref={slotRef} style={{ width: w, minHeight: 108, border: `1.5px dashed ${active ? C.purple : C.border}`, borderRadius: 12, background: active ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 7, color: active ? C.purple : C.sub, transition: "all .12s", padding: "16px 10px", textAlign: "center" }}>
-        <span style={{ width: 34, height: 34, borderRadius: 9, background: "#fff", border: `1.5px dashed ${active ? C.purple : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: active ? C.purple : C.faint }}>{isU ? <Icon.union width={16} height={16} /> : <Icon.join width={16} height={16} />}</span>
-        <span style={{ fontSize: 13.5, fontWeight: 700 }}>{active ? "여기에 놓기" : (isU ? "↓ 아래에 쌓기 · Union" : "→ 옆에 붙이기 · Join")}</span>
-        <span style={{ fontSize: 11.5, color: active ? C.purple : C.faint, fontWeight: 600 }}>여기로 끌어다 놓기 · {isU ? "행 추가" : "열 추가"}</span>
+      <div ref={slotRef} style={{ width: w, minHeight: 108, border: `1.5px dashed ${active ? C.purple : C.border}`, borderRadius: 12, background: active ? "#F4F0FE" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 9, color: active ? C.purple : C.sub, transition: "all .12s", padding: "16px 12px", textAlign: "center" }}>
+        {active ? (
+          <>
+            <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, background: "#fff", border: `1px solid ${C.border}`, boxShadow: "0 2px 8px rgba(80,60,160,0.12)", textAlign: "left" }}>
+              <span style={{ width: 30, height: 30, borderRadius: 7, background: "#EEF2FF", color: C.purple, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db width={15} height={15} /></span>
+              <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{dragName || "데이터셋"}</div><div style={{ fontSize: 11, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
+            </div>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: C.purple }}><Icon.download width={15} height={15} /> 여기에 놓아 {isU ? "Union" : "Join"}</span>
+          </>
+        ) : (
+          <>
+            <span style={{ width: 34, height: 34, borderRadius: 9, background: "#fff", border: `1.5px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.faint }}>{isU ? <Icon.union width={16} height={16} /> : <Icon.join width={16} height={16} />}</span>
+            <span style={{ fontSize: 13.5, fontWeight: 700 }}>{isU ? "↓ 아래에 쌓기 · Union" : "→ 옆에 붙이기 · Join"}</span>
+            <span style={{ fontSize: 11.5, color: C.faint, fontWeight: 600 }}>여기로 끌어다 놓기 · {isU ? "행 추가" : "열 추가"}</span>
+          </>
+        )}
       </div>
     );
   };
@@ -2238,7 +2250,7 @@ function CombinePage({ selected, onRun }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignSelf: "stretch", flex: 1, minHeight: 0 }}>
-      {drag && (
+      {drag && !overZone && (
         <div style={{ position: "fixed", top: drag.y + 14, left: drag.x + 14, zIndex: 200, pointerEvents: "none", display: "flex", alignItems: "center", gap: 9, padding: "9px 13px", borderRadius: 10, background: "#fff", border: `1px solid ${C.border}`, boxShadow: "0 8px 24px rgba(0,0,0,0.18)", opacity: 0.96 }}>
           <span style={{ width: 26, height: 26, borderRadius: 6, background: "#EEF4FF", color: C.blue, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.db width={14} height={14} /></span>
           <span style={{ fontSize: 13, fontWeight: 700 }}>{poolLabel(drag.idx)}</span>
@@ -2415,11 +2427,11 @@ function CombinePage({ selected, onRun }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <DsCard idx={picked[0]} isBase w={246} />
                         <span style={{ flex: 1, display: "flex", justifyContent: "center", color: C.faint }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 12h15m0 0l-6-6m6 6l-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                        <MethodSlot slotRef={joinZoneRef} dir="join" active={overZone === "join"} w={246} />
+                        <MethodSlot slotRef={joinZoneRef} dir="join" active={overZone === "join"} w={246} dragName={drag ? poolLabel(drag.idx) : ""} />
                       </div>
                       <div style={{ width: 246, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                         <span style={{ display: "flex", color: C.faint }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 4v15m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                        <MethodSlot slotRef={unionZoneRef} dir="union" active={overZone === "union"} w={246} />
+                        <MethodSlot slotRef={unionZoneRef} dir="union" active={overZone === "union"} w={246} dragName={drag ? poolLabel(drag.idx) : ""} />
                       </div>
                     </div>
                   ) : methodSrc !== "user" ? (
