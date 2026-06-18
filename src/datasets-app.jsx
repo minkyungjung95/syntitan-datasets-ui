@@ -2224,9 +2224,9 @@ function CombinePage({ selected, onRun }) {
     const isU = dir === "union";
     return (
       <div ref={slotRef} style={{ width: w, minHeight: 108, border: `1.5px dashed ${active ? C.purple : C.border}`, borderRadius: 12, background: active ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 7, color: active ? C.purple : C.sub, transition: "all .12s", padding: "16px 10px", textAlign: "center" }}>
-        <span style={{ width: 32, height: 32, borderRadius: 9, background: "#fff", border: `1.5px dashed ${active ? C.purple : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: active ? C.purple : C.faint }}><Icon.db width={16} height={16} /></span>
-        <span style={{ fontSize: 13.5, fontWeight: 700 }}>{active ? "여기에 놓기" : (isU ? "여기 놓으면 ↓ Union" : "여기 놓으면 → Join")}</span>
-        <span style={{ fontSize: 11.5, color: active ? C.purple : C.faint, fontWeight: 600 }}>{isU ? "아래로 쌓기 · 행 추가" : "옆으로 붙이기 · 열 추가"}</span>
+        <span style={{ width: 34, height: 34, borderRadius: 9, background: "#fff", border: `1.5px dashed ${active ? C.purple : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: active ? C.purple : C.faint }}>{isU ? <Icon.union width={16} height={16} /> : <Icon.join width={16} height={16} />}</span>
+        <span style={{ fontSize: 13.5, fontWeight: 700 }}>{active ? "여기에 놓기" : (isU ? "↓ 아래에 쌓기 · Union" : "→ 옆에 붙이기 · Join")}</span>
+        <span style={{ fontSize: 11.5, color: active ? C.purple : C.faint, fontWeight: 600 }}>여기로 끌어다 놓기 · {isU ? "행 추가" : "열 추가"}</span>
       </div>
     );
   };
@@ -2396,62 +2396,67 @@ function CombinePage({ selected, onRun }) {
           )}
 
           {!done ? (
-            <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, gap: 22 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: C.sub }}>
-                <span style={{ display: "flex", color: C.purple }}><Icon.db width={16} height={16} /></span> 합칠 데이터셋 선택
-                <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10.5, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 5, padding: "2px 8px" }}>✦ AI</span>
-              </div>
-              {picked.length === 0 ? (
-                <div ref={baseZoneRef} style={{ width: 300, minHeight: 150, border: `1.5px dashed ${overZone === "base" ? C.purple : C.border}`, borderRadius: 14, background: overZone === "base" ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 9, color: overZone === "base" ? C.purple : C.faint, textAlign: "center", transition: "all .12s" }}>
-                  <span style={{ width: 46, height: 46, borderRadius: 12, background: "#fff", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db width={22} height={22} /></span>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>기준 데이터셋 놓기</div>
-                  <div style={{ fontSize: 12, color: C.faint }}>왼쪽에서 클릭하거나 끌어다 놓으세요</div>
+            <div style={{ minHeight: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+              <div style={{ width: 600, maxWidth: "100%", border: `1px solid ${C.border}`, borderRadius: 16, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "15px 20px", borderBottom: `1px solid ${C.borderSoft}` }}>
+                  <span style={{ display: "flex", color: C.sub }}><Icon.db width={17} height={17} /></span>
+                  <div style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>합칠 데이터셋을 선택해주세요.</div>
+                  <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "3px 9px" }}>✦ AI</span>
                 </div>
-              ) : picked.length === 1 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <DsCard idx={picked[0]} isBase w={248} />
-                    <span style={{ display: "flex", color: C.faint }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 12h15m0 0l-6-6m6 6l-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                    <MethodSlot slotRef={joinZoneRef} dir="join" active={overZone === "join"} w={188} />
+                <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+                  {picked.length === 0 ? (
+                    <div ref={baseZoneRef} style={{ width: "100%", minHeight: 200, border: `1.5px dashed ${overZone === "base" ? C.purple : C.border}`, borderRadius: 14, background: overZone === "base" ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: overZone === "base" ? C.purple : C.faint, textAlign: "center", transition: "all .12s" }}>
+                      <span style={{ width: 46, height: 46, borderRadius: 12, background: "#fff", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db width={22} height={22} /></span>
+                      <div style={{ fontSize: 14.5, fontWeight: 700, color: C.text }}>기준 데이터셋 선택</div>
+                      <div style={{ fontSize: 12.5, color: C.faint }}>왼쪽에서 클릭하거나 끌어다 놓으세요</div>
+                    </div>
+                  ) : picked.length === 1 ? (
+                    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 14 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <DsCard idx={picked[0]} isBase w={246} />
+                        <span style={{ flex: 1, display: "flex", justifyContent: "center", color: C.faint }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 12h15m0 0l-6-6m6 6l-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                        <MethodSlot slotRef={joinZoneRef} dir="join" active={overZone === "join"} w={246} />
+                      </div>
+                      <div style={{ width: 246, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                        <span style={{ display: "flex", color: C.faint }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 4v15m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                        <MethodSlot slotRef={unionZoneRef} dir="union" active={overZone === "union"} w={246} />
+                      </div>
+                    </div>
+                  ) : methodSrc !== "user" ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, border: `1.5px dashed ${ERD_TONE.purple.line}`, borderRadius: 16, background: "#FAF8FF" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: C.purple }}><Icon.spark width={14} height={14} /> AI가 방식을 정해드려요 <span style={{ fontSize: 11, fontWeight: 600, color: C.faint }}>· Union/Join 미정</span></div>
+                      <DsCard idx={picked[0]} isBase w={252} />
+                      <DsCard idx={picked[1]} w={252} />
+                    </div>
+                  ) : method === "join" ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <DsCard idx={picked[0]} isBase w={224} />
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, color: C.faint }}>
+                        <span style={{ display: "flex" }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 12h15m0 0l-6-6m6 6l-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                        {methodChip("join")}
+                      </div>
+                      <DsCard idx={picked[1]} w={224} />
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 9 }}>
+                      <DsCard idx={picked[0]} isBase w={256} />
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.faint }}>
+                        <span style={{ display: "flex" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 4v15m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                        {methodChip("union")}
+                      </div>
+                      <DsCard idx={picked[1]} w={256} />
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12.5, color: C.faint, lineHeight: 1.6, textAlign: "center" }}>
+                    {picked.length === 0
+                      ? "먼저 기준이 될 데이터셋을 선택하세요."
+                      : picked.length === 1
+                        ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.purple, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px" }}><Icon.spark width={14} height={14} /> 모르겠으면 그냥 클릭 → AI가 방식 추천</span>
+                        : methodSrc === "user"
+                          ? <>방식을 <b style={{ color: C.sub }}>{method === "join" ? "Join(옆으로)" : "Union(위아래)"}</b>으로 직접 골랐어요. 다음 단계에서 바꿀 수 있어요.</>
+                          : <>방식 미정 — <b style={{ color: C.sub }}>「데이터 매칭 추천받기」</b>를 누르면 AI가 추천해줘요.</>}
                   </div>
-                  <div style={{ width: 248, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                    <span style={{ display: "flex", color: C.faint }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 4v15m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                    <MethodSlot slotRef={unionZoneRef} dir="union" active={overZone === "union"} w={248} />
-                  </div>
                 </div>
-              ) : methodSrc !== "user" ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, border: `1.5px dashed ${ERD_TONE.purple.line}`, borderRadius: 16, background: "#FAF8FF" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: C.purple }}><Icon.spark width={14} height={14} /> AI가 방식을 정해드려요 <span style={{ fontSize: 11, fontWeight: 600, color: C.faint }}>· Union/Join 미정</span></div>
-                  <DsCard idx={picked[0]} isBase w={252} />
-                  <DsCard idx={picked[1]} w={252} />
-                </div>
-              ) : method === "join" ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <DsCard idx={picked[0]} isBase w={224} />
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, color: C.faint }}>
-                    <span style={{ display: "flex" }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 12h15m0 0l-6-6m6 6l-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                    {methodChip("join")}
-                  </div>
-                  <DsCard idx={picked[1]} w={224} />
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 9 }}>
-                  <DsCard idx={picked[0]} isBase w={256} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.faint }}>
-                    <span style={{ display: "flex" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 4v15m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                    {methodChip("union")}
-                  </div>
-                  <DsCard idx={picked[1]} w={256} />
-                </div>
-              )}
-              <div style={{ maxWidth: 460, fontSize: 12.5, color: C.faint, lineHeight: 1.6, textAlign: "center" }}>
-                {picked.length === 0
-                  ? "먼저 기준이 될 데이터셋을 선택하세요."
-                  : picked.length === 1
-                    ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.purple, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px" }}><Icon.spark width={14} height={14} /> 모르겠으면 그냥 클릭 → AI가 방식 추천</span>
-                    : methodSrc === "user"
-                      ? <>방식을 <b style={{ color: C.sub }}>{method === "join" ? "Join(옆으로)" : "Union(위아래)"}</b>으로 직접 골랐어요. 다음 단계에서 바꿀 수 있어요.</>
-                      : <>방식 미정 — <b style={{ color: C.sub }}>「데이터 매칭 추천받기」</b>를 누르면 AI가 Union/Join을 추천해줘요.</>}
               </div>
             </div>
           ) : loading ? (
