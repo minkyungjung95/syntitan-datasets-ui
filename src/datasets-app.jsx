@@ -2223,9 +2223,10 @@ function CombinePage({ selected, onRun }) {
   const MethodSlot = ({ slotRef, dir, active, w }) => {
     const isU = dir === "union";
     return (
-      <div ref={slotRef} style={{ width: w, minHeight: 96, border: `1.5px dashed ${active ? C.purple : C.border}`, borderRadius: 12, background: active ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, color: active ? C.purple : C.sub, transition: "all .12s", padding: "14px 10px", textAlign: "center" }}>
-        <span style={{ fontSize: 14, fontWeight: 700 }}>{isU ? "↓ 아래에 쌓기" : "→ 옆에 붙이기"}</span>
-        <span style={{ fontSize: 12, color: active ? C.purple : C.faint, fontWeight: 600 }}>{isU ? "Union · 행 추가" : "Join · 열 추가"}</span>
+      <div ref={slotRef} style={{ width: w, minHeight: 108, border: `1.5px dashed ${active ? C.purple : C.border}`, borderRadius: 12, background: active ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 7, color: active ? C.purple : C.sub, transition: "all .12s", padding: "16px 10px", textAlign: "center" }}>
+        <span style={{ width: 32, height: 32, borderRadius: 9, background: "#fff", border: `1.5px dashed ${active ? C.purple : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: active ? C.purple : C.faint }}><Icon.db width={16} height={16} /></span>
+        <span style={{ fontSize: 13.5, fontWeight: 700 }}>{active ? "여기에 놓기" : (isU ? "여기 놓으면 ↓ Union" : "여기 놓으면 → Join")}</span>
+        <span style={{ fontSize: 11.5, color: active ? C.purple : C.faint, fontWeight: 600 }}>{isU ? "아래로 쌓기 · 행 추가" : "옆으로 붙이기 · 열 추가"}</span>
       </div>
     );
   };
@@ -2273,7 +2274,8 @@ function CombinePage({ selected, onRun }) {
                     <div key={i}
                       onMouseDown={(e) => { if (atMax) return; e.preventDefault(); dragStart.current = { idx: i, sx: e.clientX, sy: e.clientY, started: false }; }}
                       onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } if (!atMax) togglePick(i); }}
-                      style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", borderRadius: 10, cursor: atMax ? "default" : (drag && drag.idx === i ? "grabbing" : "grab"), background: checked ? "#EEF4FF" : (drag && drag.idx === i ? "#F3F4F6" : "transparent"), opacity: atMax ? 0.45 : 1, userSelect: "none" }}>
+                      style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 10px", borderRadius: 10, cursor: atMax ? "default" : (drag && drag.idx === i ? "grabbing" : "grab"), background: checked ? "#EEF4FF" : (drag && drag.idx === i ? "#F3F4F6" : "transparent"), opacity: atMax ? 0.45 : 1, userSelect: "none" }}>
+                      <span style={{ display: "flex", flexShrink: 0, color: C.border }} title="끌어서 슬롯에 놓기"><svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2.5" cy="3" r="1.3" /><circle cx="7.5" cy="3" r="1.3" /><circle cx="2.5" cy="8" r="1.3" /><circle cx="7.5" cy="8" r="1.3" /><circle cx="2.5" cy="13" r="1.3" /><circle cx="7.5" cy="13" r="1.3" /></svg></span>
                       <span style={{ width: 30, height: 30, borderRadius: 7, background: checked ? "#fff" : "#F3F4F6", color: checked ? C.blue : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db /></span>
                       <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{poolLabel(i)}</div><div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
                       {checked && <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", border: `1px solid ${C.blue}`, color: C.blue, fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{order}</span>}
