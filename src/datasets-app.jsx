@@ -2118,7 +2118,7 @@ function CombinePage({ selected, onRun }) {
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
   const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
   const [matchRows, setMatchRows] = useState([    // [기준칼럼, 매칭된 추가칼럼|null]
-    ["region", null], ["age", null], ["phone", null], ["address", null],
+    ["region", null], ["age", null],
     ["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_date", "client_id"],
     ["gender", "customer_key"], ["country", "account_number"], ["plan", "user_account"], ["device", "customer_tag"],
   ]);
@@ -2223,24 +2223,14 @@ function CombinePage({ selected, onRun }) {
   const dsName = (i) => ALL_DS[i] || `Dataset ${i + 1}`;
   const MATCH_PAIRS = [["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_data", "client_id"], ["date", "customer_key"], ["time", "account_number"], ["time_period", "user_account"], ["structure", "customer_tag"], ["structure", "customer_tag"]];
   const T2_OPTIONS = ["user_identifier", "client_reference", "client_code", "client_id", "customer_key", "account_number", "user_account", "customer_tag", "매칭 안 함"];
-  const GRID_COLS2 = [{ n: "customer_name", t: "key" }, { n: "time_zone", t: "#" }, { n: "company size", t: "#" }, { n: "Devices", t: "#" }, { n: "signup_date", t: "A" }, { n: "avg_session_minutes", t: "A" }, { n: "avg_session_minutes", t: "A" }];
-  // 칼럼 소유: common(둘 다) · base(기준 전용) · add(추가 전용)
-  const GRID_OWN = ["common", "common", "common", "common", "add", "base", "add"];
-  // 데이터셋(seed)별 실제 값 생성 (교체 시 값 변경)
-  const genGrid = (seed, n) => Array.from({ length: n }).map((_, r) => {
-    const k = (seed + 1) * 7 + r;
-    return [
-      "user_" + (1000 + seed * 137 + r),
-      ["UTC+09:00", "UTC+00:00", "UTC-05:00", "UTC+01:00"][k % 4],
-      ["0-100", "100-500", "500-1,000", "1,000+"][k % 4],
-      ["iOS", "Android", "Web"][k % 3],
-      "2024-" + String((k % 12) + 1).padStart(2, "0") + "-1" + (k % 9),
-      String(8 + (k % 52)),
-      String(3 + (k % 20)),
-    ];
-  });
-  // 유니온 결과: side('base'|'add')가 안 가진 전용 칼럼은 null
-  const unionCell = (vals, i, side) => ((side === "base" && GRID_OWN[i] === "add") || (side === "add" && GRID_OWN[i] === "base")) ? "null" : vals[i];
+  // 유니온 결과는 "기준 데이터의 컬럼 구조를 따름" → 데이터셋(seed)별 스키마, 교체하면 컬럼명·값이 기준 것으로 바뀜
+  const _NAMES = ["김민수", "이지은", "박서준", "최유진", "정도윤", "강하늘", "윤서연", "임지호"];
+  const _pad = (n) => String(n).padStart(2, "0");
+  const SCHEMA = (idx) => ((idx || 0) % 2 === 0)
+    ? { cols: [{ n: "customer_name", t: "key" }, { n: "time_zone", t: "A" }, { n: "company_size", t: "#" }, { n: "devices", t: "A" }, { n: "signup_date", t: "A" }, { n: "plan", t: "A" }],
+        row: (k) => [_NAMES[k % _NAMES.length], ["UTC+09:00", "UTC+00:00", "UTC-05:00"][k % 3], ["0-100", "100-500", "1,000+"][k % 3], ["iOS", "Android", "Web"][k % 3], "2024-" + _pad((k % 12) + 1) + "-1" + (k % 9), ["Free", "Pro", "Team"][k % 3]] }
+    : { cols: [{ n: "user_id", t: "key" }, { n: "region", t: "A" }, { n: "age", t: "#" }, { n: "channel", t: "A" }, { n: "created_at", t: "A" }, { n: "loyalty_tier", t: "A" }],
+        row: (k) => ["U" + (1000 + k), ["서울", "부산", "대구", "인천"][k % 4], String(20 + (k % 40)), ["organic", "ads", "referral"][k % 3], "2023-" + _pad((k % 12) + 1) + "-0" + ((k % 8) + 1), ["Bronze", "Silver", "Gold"][k % 3]] };
   // ── 선택 화면 카드/슬롯 ──────────────────────────────
   const DsCard = ({ idx, isBase, w }) => (
     <div style={{ width: w, flexShrink: 0, border: `1px solid ${C.border}`, borderRadius: 12, background: "#fff", padding: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
@@ -2423,11 +2413,6 @@ function CombinePage({ selected, onRun }) {
                 </div>
                 <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
                   {picked[0] != null && <DsCard idx={picked[0]} isBase w="100%" />}
-                  {picked.length === 2 && (
-                    <button onClick={() => setPicked((p) => [p[1], p[0]])} title="기준 ↔ 추가 교체" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: C.purple, background: "#F4F0FE", border: `1px solid ${ERD_TONE.purple.line}`, borderRadius: 999, padding: "5px 12px", cursor: "pointer", fontFamily: FONT }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg> 기준 ↔ 추가 바꾸기
-                    </button>
-                  )}
                   {picked[1] != null && <DsCard idx={picked[1]} w="100%" />}
                   {picked.length < 2 && (
                     <div ref={dropRef} style={{ width: "100%", minHeight: picked.length === 1 ? 130 : 200, border: `1.5px dashed ${overZone === "drop" ? C.purple : C.border}`, borderRadius: 14, background: overZone === "drop" ? "#F4F0FE" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: overZone === "drop" ? C.purple : C.faint, textAlign: "center", transition: "all .12s" }}>
@@ -2457,6 +2442,13 @@ function CombinePage({ selected, onRun }) {
                 </div>
               </div>
               <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex", gap: 10, padding: "14px 28px", borderBottom: `1px solid ${C.borderSoft}`, background: "#FCFCFD" }}>
+                  {[["예상 행", <>500 <span style={{ color: C.faint }}>→</span> <b style={{ color: C.text }}>1,000</b></>], ["예상 열", <><b style={{ color: C.text }}>{SCHEMA(picked[0]).cols.length}</b> <span style={{ fontSize: 11.5, color: C.faint }}>(기준 유지)</span></>], ["완전중복 행", <b style={{ color: "#B45309" }}>12건</b>]].map((s, i) => (
+                    <div key={i} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 14px", border: `1px solid ${C.border}`, borderRadius: 10, background: "#fff", fontSize: 13 }}>
+                      <span style={{ color: C.sub, fontWeight: 600 }}>{s[0]}</span><span style={{ fontSize: 14.5, fontWeight: 700 }}>{s[1]}</span>
+                    </div>
+                  ))}
+                </div>
                 <div style={{ flex: 1, overflow: "auto", minHeight: 0, padding: "18px 28px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                     <span style={{ fontSize: 14.5, fontWeight: 700 }}>AI 자동 칼럼 매칭</span>
@@ -2496,23 +2488,27 @@ function CombinePage({ selected, onRun }) {
                   <span style={{ width: 44, height: 4, borderRadius: 2, background: C.border }} />
                 </div>
                 <div style={{ height: tableH, flexShrink: 0, overflow: "auto", borderTop: `1px solid ${C.border}`, background: "#fff" }}>
-                  <div style={{ minWidth: "fit-content" }}>
-                    <div style={{ display: "flex", background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0 }}>
-                      {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "12px 16px", fontSize: 12.5, fontWeight: 600, color: C.sub, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint, fontSize: 11 }}>{c.t === "key" ? "🔑" : c.t}</span>{c.n}</div>)}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EFF4FF", fontSize: 12.5, fontWeight: 700, color: C.blue }}>{dsName(picked[0])} <span style={{ fontWeight: 500, color: C.faint }}>· 기존(기준)</span></div>
-                    {genGrid(picked[0], 20).map((vals, r) => (
-                      <div key={"b" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>
-                        {GRID_COLS2.map((c, i) => { const v = unionCell(vals, i, "base"); return <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: v === "null" ? C.faint : C.text, whiteSpace: "nowrap" }}>{v}</div>; })}
+                  {(() => {
+                    const SCH = SCHEMA(picked[0]);
+                    const cols = SCH.cols;
+                    const lastOnly = cols.length - 1; // 기준 전용(추가엔 없음) → 추가 행에서 빈칸
+                    const cell = (v, i, isNull) => <div key={i} style={{ width: i === 0 ? 180 : 150, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: isNull ? C.faint : C.text, fontStyle: isNull ? "italic" : "normal", background: isNull ? "#F4F4F6" : "transparent", whiteSpace: "nowrap" }}>{isNull ? "null" : v}</div>;
+                    return (
+                      <div style={{ minWidth: "fit-content" }}>
+                        <div style={{ display: "flex", background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0 }}>
+                          {cols.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 150, flexShrink: 0, padding: "12px 16px", fontSize: 12.5, fontWeight: 600, color: i === lastOnly ? C.faint : C.sub, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint, fontSize: 11 }}>{c.t === "key" ? "🔑" : c.t}</span>{c.n}</div>)}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EFF4FF", fontSize: 12.5, fontWeight: 700, color: C.blue }}>{dsName(picked[0])} <span style={{ fontWeight: 500, color: C.faint }}>· 기존(기준)</span></div>
+                        {Array.from({ length: 20 }).map((_, r) => { const vals = SCH.row(((picked[0] || 0) + 1) * 7 + r); return (
+                          <div key={"b" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>{cols.map((c, i) => cell(vals[i], i, false))}</div>
+                        ); })}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EAF7EE", fontSize: 12.5, fontWeight: 700, color: "#15803D" }}>＋ {dsName(picked[1])} <span style={{ fontWeight: 500, color: C.faint }}>· 신규(이어붙임) · 오른쪽 {cols[lastOnly].n} 빈칸</span></div>
+                        {Array.from({ length: 20 }).map((_, r) => { const vals = SCH.row(((picked[1] || 0) + 1) * 7 + r); return (
+                          <div key={"a" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>{cols.map((c, i) => cell(vals[i], i, i === lastOnly))}</div>
+                        ); })}
                       </div>
-                    ))}
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EAF7EE", fontSize: 12.5, fontWeight: 700, color: "#15803D" }}>＋ {dsName(picked[1])} <span style={{ fontWeight: 500, color: C.faint }}>· 신규(이어붙임)</span></div>
-                    {genGrid(picked[1], 20).map((vals, r) => (
-                      <div key={"a" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>
-                        {GRID_COLS2.map((c, i) => { const v = unionCell(vals, i, "add"); return <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: v === "null" ? C.faint : C.text, whiteSpace: "nowrap" }}>{v}</div>; })}
-                      </div>
-                    ))}
-                  </div>
+                    );
+                  })()}
                 </div>
               </div>
             </>
