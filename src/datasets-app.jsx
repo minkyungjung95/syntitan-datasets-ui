@@ -2219,7 +2219,9 @@ function CombinePage({ selected, onRun }) {
   const MATCH_PAIRS = [["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_data", "client_id"], ["date", "customer_key"], ["time", "account_number"], ["time_period", "user_account"], ["structure", "customer_tag"], ["structure", "customer_tag"]];
   const T2_OPTIONS = ["user_identifier", "client_reference", "client_code", "client_id", "customer_key", "account_number", "user_account", "customer_tag", "매칭 안 함"];
   const GRID_COLS2 = [{ n: "customer_name", t: "key" }, { n: "time_zone", t: "#" }, { n: "company size", t: "#" }, { n: "Devices", t: "#" }, { n: "signup_date", t: "A" }, { n: "avg_session_minutes", t: "A" }, { n: "avg_session_minutes", t: "A" }];
-  // 데이터셋(seed)별로 다른 실제 값 생성 — 교체하면 하단 테이블 값이 바뀜
+  // 칼럼 소유: common(둘 다) · base(기준 전용) · add(추가 전용)
+  const GRID_OWN = ["common", "common", "common", "common", "add", "base", "add"];
+  // 데이터셋(seed)별 실제 값 생성 (교체 시 값 변경)
   const genGrid = (seed, n) => Array.from({ length: n }).map((_, r) => {
     const k = (seed + 1) * 7 + r;
     return [
@@ -2227,11 +2229,13 @@ function CombinePage({ selected, onRun }) {
       ["UTC+09:00", "UTC+00:00", "UTC-05:00", "UTC+01:00"][k % 4],
       ["0-100", "100-500", "500-1,000", "1,000+"][k % 4],
       ["iOS", "Android", "Web"][k % 3],
-      k % 6 === 0 ? "null" : "2024-" + String((k % 12) + 1).padStart(2, "0") + "-1" + (k % 9),
-      ["iOS", "Android", "Web"][(k + 1) % 3],
-      k % 4 === 0 ? "null" : String(8 + (k % 52)),
+      "2024-" + String((k % 12) + 1).padStart(2, "0") + "-1" + (k % 9),
+      String(8 + (k % 52)),
+      String(3 + (k % 20)),
     ];
   });
+  // 유니온 결과: side('base'|'add')가 안 가진 전용 칼럼은 null
+  const unionCell = (vals, i, side) => ((side === "base" && GRID_OWN[i] === "add") || (side === "add" && GRID_OWN[i] === "base")) ? "null" : vals[i];
   // 칼럼 매칭 테이블 (기준 칼럼 → 추가 칼럼; r=null이면 매칭 없음)
   const MATCH_ROWS2 = [
     ["region", null], ["age", null], ["phone", null], ["address", null],
@@ -2494,16 +2498,16 @@ function CombinePage({ selected, onRun }) {
                     <div style={{ display: "flex", background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0 }}>
                       {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "12px 16px", fontSize: 12.5, fontWeight: 600, color: C.sub, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint, fontSize: 11 }}>{c.t === "key" ? "🔑" : c.t}</span>{c.n}</div>)}
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EFF4FF", fontSize: 12.5, fontWeight: 700, color: C.blue }}>{dsName(picked[0])} <span style={{ fontWeight: 500, color: C.faint }}>· 기준</span></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EFF4FF", fontSize: 12.5, fontWeight: 700, color: C.blue }}>{dsName(picked[0])} <span style={{ fontWeight: 500, color: C.faint }}>· 기존(기준)</span></div>
                     {genGrid(picked[0], 20).map((vals, r) => (
                       <div key={"b" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>
-                        {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: vals[i] === "null" ? C.faint : C.text, whiteSpace: "nowrap" }}>{vals[i]}</div>)}
+                        {GRID_COLS2.map((c, i) => { const v = unionCell(vals, i, "base"); return <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: v === "null" ? C.faint : C.text, whiteSpace: "nowrap" }}>{v}</div>; })}
                       </div>
                     ))}
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EAF7EE", fontSize: 12.5, fontWeight: 700, color: "#15803D" }}>＋ {dsName(picked[1])} <span style={{ fontWeight: 500, color: C.faint }}>· 행 이어붙임</span></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EAF7EE", fontSize: 12.5, fontWeight: 700, color: "#15803D" }}>＋ {dsName(picked[1])} <span style={{ fontWeight: 500, color: C.faint }}>· 신규(이어붙임)</span></div>
                     {genGrid(picked[1], 20).map((vals, r) => (
                       <div key={"a" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>
-                        {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: vals[i] === "null" ? C.faint : C.text, whiteSpace: "nowrap" }}>{vals[i]}</div>)}
+                        {GRID_COLS2.map((c, i) => { const v = unionCell(vals, i, "add"); return <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: v === "null" ? C.faint : C.text, whiteSpace: "nowrap" }}>{v}</div>; })}
                       </div>
                     ))}
                   </div>
