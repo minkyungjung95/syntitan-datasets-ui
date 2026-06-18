@@ -2122,6 +2122,8 @@ function CombinePage({ selected, onRun }) {
     ["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_date", "client_id"],
     ["gender", "customer_key"], ["country", "account_number"], ["plan", "user_account"], ["device", "customer_tag"],
   ]);
+  const [appliedRows, setAppliedRows] = useState(() => [["region", null], ["age", null], ["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_date", "client_id"], ["gender", "customer_key"], ["country", "account_number"], ["plan", "user_account"], ["device", "customer_tag"]]);
+  const matchDirty = JSON.stringify(matchRows) !== JSON.stringify(appliedRows);
   const [tableH, setTableH] = useState(340);      // 하단 데이터 테이블 높이(리사이즈)
   const resizeRef = useRef(null);
 
@@ -2454,6 +2456,11 @@ function CombinePage({ selected, onRun }) {
                   <button onClick={() => { setMethod(method === "union" ? "join" : "union"); setMethodSrc("user"); }} title="클릭해서 Union / Join 전환" style={{ fontSize: 17, fontWeight: 700, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, color: C.text, padding: 0 }}>{method === "join" ? "Join" : "Union"}</button>
                   <span style={{ fontSize: 13.5, color: C.sub }}>{method === "join" ? "두 데이터는 키로 잇는 조인(열 병합)에 더 적합합니다." : "두 데이터는 유니온(행 병합)에 더 적합합니다."}</span>
                   <div style={{ flex: 1 }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginRight: 6 }}>
+                    {[["행", "1,000"], ["열", String(appliedRows.length)], ["용량", "3,000MB"]].map((s, i) => (
+                      <span key={i} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: C.sub }}>{s[0]} <span style={{ minWidth: 26, textAlign: "center", padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13, fontWeight: 700, color: C.text }}>{s[1]}</span></span>
+                    ))}
+                  </div>
                   <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>Start Combine</button>
                 </div>
               </div>
@@ -2505,13 +2512,13 @@ function CombinePage({ selected, onRun }) {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px 11px" }}>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>테이블 결과 <span style={{ fontSize: 11.5, fontWeight: 500, color: C.faint }}>· 미리보기</span></span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: C.sub, cursor: "pointer" }}>수정 업데이트 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                    <button onClick={() => matchDirty && setAppliedRows(matchRows.map((r) => [...r]))} disabled={!matchDirty} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, fontFamily: FONT, borderRadius: 8, padding: "6px 12px", cursor: matchDirty ? "pointer" : "default", border: matchDirty ? "none" : `1px solid ${C.border}`, background: matchDirty ? C.purple : "#fff", color: matchDirty ? "#fff" : C.faint }}>수정 업데이트 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
                   </div>
                 </div>
                 <div style={{ height: tableH, flexShrink: 0, overflow: "auto", background: "#fff" }}>
                   {(() => {
-                    const cols = matchRows.map(([l]) => l);          // 기준 칼럼 = 매칭 테이블과 동일
-                    const matched = matchRows.map(([, rcol]) => !!rcol); // 추가에 매칭이 있나
+                    const cols = appliedRows.map(([l]) => l);          // 적용된 매칭 기준 칼럼
+                    const matched = appliedRows.map(([, rcol]) => !!rcol); // 추가에 매칭이 있나
                     const cell = (name, i, k, isNull) => <div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: isNull ? C.faint : C.text, fontStyle: isNull ? "italic" : "normal", background: isNull ? "#F4F4F6" : "transparent", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isNull ? "null" : colVal(name, k)}</div>;
                     return (
                       <div style={{ minWidth: "fit-content" }}>
