@@ -2117,6 +2117,11 @@ function CombinePage({ selected, onRun }) {
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
   const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
+  const [matchRows, setMatchRows] = useState([    // [기준칼럼, 매칭된 추가칼럼|null]
+    ["region", null], ["age", null], ["phone", null], ["address", null],
+    ["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_date", "client_id"],
+    ["gender", "customer_key"], ["country", "account_number"], ["plan", "user_account"], ["device", "customer_tag"],
+  ]);
   const [tableH, setTableH] = useState(340);      // 하단 데이터 테이블 높이(리사이즈)
   const resizeRef = useRef(null);
 
@@ -2236,13 +2241,6 @@ function CombinePage({ selected, onRun }) {
   });
   // 유니온 결과: side('base'|'add')가 안 가진 전용 칼럼은 null
   const unionCell = (vals, i, side) => ((side === "base" && GRID_OWN[i] === "add") || (side === "add" && GRID_OWN[i] === "base")) ? "null" : vals[i];
-  // 칼럼 매칭 테이블 (기준 칼럼 → 추가 칼럼; r=null이면 매칭 없음)
-  const MATCH_ROWS2 = [
-    ["region", null], ["age", null], ["phone", null], ["address", null],
-    ["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_date", "client_id"],
-    ["gender", "customer_key"], ["country", "account_number"], ["plan", "user_account"], ["device", "customer_tag"],
-  ];
-
   // ── 선택 화면 카드/슬롯 ──────────────────────────────
   const DsCard = ({ idx, isBase, w }) => (
     <div style={{ width: w, flexShrink: 0, border: `1px solid ${C.border}`, borderRadius: 12, background: "#fff", padding: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
@@ -2470,16 +2468,20 @@ function CombinePage({ selected, onRun }) {
                       <button onClick={() => setPicked((p) => [p[1], p[0]])} title="기준 ↔ 추가 교체" style={{ width: 44, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: C.sub }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
                       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[1])}</div>
                     </div>
-                    {MATCH_ROWS2.map(([l, rr], i) => (
-                      <div key={i} onMouseEnter={() => setHoverRow(i)} onMouseLeave={() => setHoverRow(-1)} style={{ display: "flex", alignItems: "center", height: 52, borderTop: `1px solid ${C.borderSoft}`, background: hoverRow === i ? "#FAFAFB" : "#fff" }}>
+                    {matchRows.map(([l, rr], i) => (
+                      <div key={i} onMouseEnter={() => setHoverRow(i)} onMouseLeave={() => setHoverRow(-1)} style={{ display: "flex", alignItems: "center", height: 52, borderTop: `1px solid ${C.borderSoft}`, background: editRow === i ? "#FAF8FF" : hoverRow === i ? "#FAFAFB" : "#fff" }}>
                         <div style={{ flex: 1, padding: "0 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint }}>#</span>{l} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></div>
                         <span style={{ width: 44, display: "flex", justifyContent: "center", color: rr ? C.purple : C.border }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
                         <div style={{ flex: 1, padding: "0 16px", display: "flex", alignItems: "center", gap: 10 }}>
                           {editRow === i
-                            ? <div style={{ flex: 1, display: "flex", alignItems: "center", height: 38, padding: "0 12px", border: `1.5px solid ${C.purple}`, borderRadius: 9, background: "#fff", fontSize: 14, boxShadow: "0 2px 8px rgba(80,60,160,0.12)" }}><span style={{ flex: 1 }}>{rr || l} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></span><span style={{ display: "flex", transform: "rotate(180deg)", color: C.sub }}><Icon.chevR width={15} height={15} style={{ transform: "rotate(90deg)" }} /></span></div>
+                            ? <select autoFocus value={rr || "__none"} onChange={(e) => { const v = e.target.value === "__none" ? null : e.target.value; setMatchRows((rows) => rows.map((row, idx) => idx === i ? [row[0], v] : row)); }} style={{ flex: 1, height: 40, padding: "0 12px", border: `1.5px solid ${C.purple}`, borderRadius: 9, background: "#fff", fontSize: 14, fontFamily: FONT, color: C.text, cursor: "pointer", outline: "none", boxShadow: "0 2px 8px rgba(80,60,160,0.12)" }}>
+                                <option value="__none">매칭 안 함 (제거)</option>
+                                {T2_OPTIONS.filter((o) => o !== "매칭 안 함").map((o) => <option key={o} value={o}>{o}</option>)}
+                                {rr && !T2_OPTIONS.includes(rr) && <option value={rr}>{rr}</option>}
+                              </select>
                             : <span style={{ flex: 1, fontSize: 14, color: rr ? C.text : C.faint }}>{rr || "-"}</span>}
                           {editRow === i
-                            ? <button onClick={() => setEditRow(-1)} style={{ fontSize: 12.5, fontWeight: 700, color: C.text, background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>완료</button>
+                            ? <button onClick={() => setEditRow(-1)} style={{ fontSize: 12.5, fontWeight: 700, color: C.purple, background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>완료</button>
                             : hoverRow === i
                               ? <span onClick={() => setEditRow(i)} title="매칭 수정" style={{ display: "flex", color: C.sub, cursor: "pointer" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5l-4-4L4 16v4zM13.5 6.5l4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
                               : rr
