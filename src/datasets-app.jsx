@@ -2206,6 +2206,11 @@ function CombinePage({ selected, onRun }) {
   const joinAddCols = [{ name: PV_KEY, key: "FK" }, ...PV_T2_REST.map((l) => ({ name: l, tag: "add" }))];
   const joinResultCols = [{ name: PV_KEY, key: "PK" }, ...PV_T1_REST.map((l) => ({ name: l })), ...PV_T2_REST.map((l) => ({ name: l, tag: "add" }))];
   const unionSrcCols = [{ name: "customer_id", key: "PK" }, { name: "name" }, { name: "email" }, { name: "signup_date" }, { name: "+ 그 외 매칭 칼럼", muted: true, type: "" }];
+  // 실제 데이터 값 미리보기용 샘플
+  const GRID_BASE = [["C001", "김민준", "minjun@acme.io", "2024-01-03"], ["C002", "이서연", "seoyeon@acme.io", "2024-01-07"], ["C003", "박도윤", "doyoon@acme.io", "2024-02-01"]];
+  const GRID_ADD = [["C104", "최지우", "jiwoo@beta.io", "2024-03-10"], ["C105", "정하준", "hajun@beta.io", "2024-03-12"], ["C106", "강시아", "sia@beta.io", "2024-03-15"]];
+  const GRID_JOIN_EXTRA = [["서울", "29", "Pro"], ["부산", "34", "Basic"], ["대구", "41", "Pro"]];
+  const GRID_W = { customer_id: 118, name: 96, email: 188, signup_date: 118, region: 88, age: 60, plan: 80 };
 
   // ── 선택 화면 카드/슬롯 ──────────────────────────────
   const DsCard = ({ idx, isBase, w }) => (
@@ -2477,35 +2482,50 @@ function CombinePage({ selected, onRun }) {
               <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>칼럼을 매칭하고 있어요…</div>
             </div>
           ) : (
-            <div style={{ padding: "104px 28px 32px", display: "flex", justifyContent: "center" }}>
-              {method === "join" ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
-                  {/* 관계: 기준 —(customer_id)— 추가 */}
-                  <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 90 }}>
-                    <ErdEntity idx={picked[0]} label="기준" toneKey="blue" w={208} cols={joinBaseCols} />
-                    <ErdEntity idx={picked[1]} label="추가" toneKey="green" w={208} cols={joinAddCols} />
-                    <svg width={90} height={ERD_H + joinBaseCols.length * ERD_ROW} style={{ position: "absolute", left: 208, top: 0, overflow: "visible", pointerEvents: "none" }}>
-                      <line x1={0} y1={ERD_H + ERD_ROW / 2} x2={90} y2={ERD_H + ERD_ROW / 2} stroke={C.purple} strokeWidth={2} />
-                      <circle cx={3} cy={ERD_H + ERD_ROW / 2} r={4} fill={C.purple} />
-                      <circle cx={87} cy={ERD_H + ERD_ROW / 2} r={4} fill="#fff" stroke={C.purple} strokeWidth={2} />
-                      <rect x={28} y={ERD_H + ERD_ROW / 2 - 24} width={34} height={17} rx={5} fill={C.purple} />
-                      <text x={45} y={ERD_H + ERD_ROW / 2 - 11.5} textAnchor="middle" fill="#fff" fontSize={10} fontWeight={700} fontFamily={FONT}>1 : 1</text>
-                    </svg>
+            <div style={{ position: "relative", zIndex: 1, padding: "88px 28px 28px", display: "flex", justifyContent: "center" }}>
+              {(() => {
+                const isJoin = method === "join";
+                const cols = isJoin ? ["customer_id", "name", "email", "signup_date", "region", "age", "plan"] : ["customer_id", "name", "email", "signup_date"];
+                const isExtra = (c) => isJoin && ["region", "age", "plan"].includes(c);
+                const head = (
+                  <div style={{ display: "flex", background: "#FAFAFB", borderBottom: `1px solid ${C.border}` }}>
+                    <div style={{ width: 34, flexShrink: 0 }} />
+                    {cols.map((c) => <div key={c} style={{ width: GRID_W[c], flexShrink: 0, padding: "9px 12px", fontSize: 11.5, fontWeight: 700, color: isExtra(c) ? "#15803D" : C.sub, whiteSpace: "nowrap" }}>{c}{isExtra(c) ? " ＋" : ""}</div>)}
                   </div>
-                  <DownArrow text="customer_id가 같은 행끼리 연결 · 추가 칼럼을 오른쪽에 붙여요" />
-                  <ErdEntity name="병합 결과" sub="customer_id 기준 Join · 8,432행 · 7컬럼" label="결과" toneKey="purple" w={250} cols={joinResultCols} />
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 11 }}>
-                  <ErdEntity idx={picked[0]} label="기준" toneKey="blue" w={252} cols={unionSrcCols} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 700, color: C.purple, background: "#F5F1FE", border: `1px solid ${ERD_TONE.purple.line}`, borderRadius: 999, padding: "5px 13px" }}>
-                    <span style={{ fontSize: 15, lineHeight: 1 }}>∪</span> UNION · 행을 이어붙여요
+                );
+                const row = (vals, dot, key) => (
+                  <div key={key} style={{ display: "flex", borderBottom: "1px solid #00000008", background: dot === "green" && !isJoin ? "#FAFEFB" : "#fff" }}>
+                    <div style={{ width: 34, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: dot === "green" ? "#34C77B" : "#5B9BFF" }} /></div>
+                    {cols.map((c, ci) => <div key={c} style={{ width: GRID_W[c], flexShrink: 0, padding: "9px 12px", fontSize: 12.5, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", background: isExtra(c) ? "#EAF7EE" : "transparent" }}>{vals[ci]}</div>)}
                   </div>
-                  <ErdEntity idx={picked[1]} label="추가" toneKey="green" w={252} cols={unionSrcCols} />
-                  <DownArrow text="같은 칼럼은 위아래로 쌓고, 한쪽에만 있는 칼럼은 null로 채워요" />
-                  <ErdEntity name="병합 결과" sub="칼럼 동일 · 8,432 + 8,432 = 16,864행" label="결과" toneKey="purple" w={252} cols={unionSrcCols} />
-                </div>
-              )}
+                );
+                return (
+                  <div style={{ width: "100%", maxWidth: 760, border: `1px solid ${C.border}`, borderRadius: 14, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 16px", borderBottom: `1px solid ${C.borderSoft}` }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 700 }}>실제 데이터 미리보기</span>
+                      <div style={{ flex: 1 }} />
+                      <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: C.sub }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#5B9BFF" }} />{poolLabel(picked[0])}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: C.sub }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34C77B" }} />{poolLabel(picked[1])}</span>
+                    </div>
+                    <div style={{ overflowX: "auto" }}>
+                      <div style={{ minWidth: "fit-content" }}>
+                        {head}
+                        {isJoin
+                          ? GRID_BASE.map((b, i) => row([...b, ...GRID_JOIN_EXTRA[i]], "blue", "j" + i))
+                          : <>
+                              {GRID_BASE.map((b, i) => row(b, "blue", "b" + i))}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px 7px 34px", background: "#EAF7EE", fontSize: 11.5, fontWeight: 700, color: "#15803D", borderBottom: "1px solid #00000008" }}><Icon.union width={13} height={13} /> ＋ 추가 데이터셋 · {poolLabel(picked[1])} 행 이어붙임</div>
+                              {GRID_ADD.map((b, i) => row(b, "green", "a" + i))}
+                            </>}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, padding: "11px 16px", borderTop: `1px solid ${C.borderSoft}`, background: "#FCFCFD", fontSize: 12, color: C.sub, lineHeight: 1.5 }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: "#15803D", fontWeight: 700 }}>✓</span> {isJoin ? "customer_id로 연결 — 8,432행 유지 · 4 → 7컬럼" : "칼럼 구조 자동 매핑 — 8,432 + 8,432 = 16,864행 결합"}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6, color: C.faint }}><span style={{ color: "#B45309", fontWeight: 700 }}>⚠</span> {isJoin ? "키가 맞지 않는 행은 결과에서 제외돼요." : "한쪽에만 있는 칼럼은 기본 제거 (검토 필요에서 유지 선택 시 null)."}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
