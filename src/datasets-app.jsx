@@ -2109,9 +2109,7 @@ function CombinePage({ selected, onRun }) {
   const [drag, setDrag] = useState(null);       // {idx,x,y} 마우스 드래그 중인 데이터셋
   const dragStart = useRef(null);               // {idx,sx,sy,started}
   const suppressClick = useRef(false);          // 드래그 직후 클릭 무시
-  const baseZoneRef = useRef(null);             // 기준 데이터셋 드롭 슬롯
-  const unionZoneRef = useRef(null);            // 아래(Union) 드롭 슬롯
-  const joinZoneRef = useRef(null);             // 오른쪽(Join) 드롭 슬롯
+  const dropRef = useRef(null);                 // 데이터셋 드롭존 (위치 무관)
   const pickedRef = useRef(picked);
   pickedRef.current = picked;                   // 핸들러에서 최신값 읽기 (stale 방지)
   const [overZone, setOverZone] = useState(null); // 'base'|'union'|'join'|null
@@ -2119,33 +2117,27 @@ function CombinePage({ selected, onRun }) {
   const [infoPos, setInfoPos] = useState(null);
   const infoRef = useRef(null);
 
+  useEffect(() => { setLoading(false); }, [done]);
+  // 데이터 2개 채워지면 AI가 방식 자동 결정 → 즉시 매칭+미리보기 (별도 단계 없음)
   useEffect(() => {
-    if (done) { setLoading(true); const t = setTimeout(() => setLoading(false), 1500); return () => clearTimeout(t); }
-    setLoading(false);
-  }, [done]);
+    if (picked.length >= MAX_MERGE) { setMethod(REC_METHOD); setMethodSrc("ai"); setDone(true); }
+    else { setDone(false); setMethodSrc("none"); }
+  }, [picked.length]);
 
-  // 좌측 행 → 우측 슬롯 마우스 드래그앤드랍 (드롭 위치가 방식을 결정)
+  // 좌측 행 → 우측 드롭존 마우스 드래그앤드랍 (위치 무관, 담기만 함 — 방식은 AI 자동)
   useEffect(() => {
     const hit = (ref, x, y) => { const el = ref.current; if (!el) return false; const r = el.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; };
-    const zoneAt = (x, y) => {
-      const n = pickedRef.current.length;
-      if (n === 0) return hit(baseZoneRef, x, y) ? "base" : null;
-      if (n === 1) { if (hit(joinZoneRef, x, y)) return "join"; if (hit(unionZoneRef, x, y)) return "union"; }
-      return null;
-    };
     const move = (e) => {
       const s = dragStart.current; if (!s) return;
       if (!s.started) { if (Math.abs(e.clientX - s.sx) + Math.abs(e.clientY - s.sy) < 5) return; s.started = true; }
       setDrag({ idx: s.idx, x: e.clientX, y: e.clientY });
-      setOverZone(zoneAt(e.clientX, e.clientY));
+      setOverZone(pickedRef.current.length < MAX_MERGE && hit(dropRef, e.clientX, e.clientY) ? "drop" : null);
     };
     const up = (e) => {
       const s = dragStart.current; dragStart.current = null;
       if (s && s.started) {
         suppressClick.current = true;
-        const z = zoneAt(e.clientX, e.clientY);
-        if (z === "base") setPicked((p) => (p.length ? p : [s.idx]));
-        else if (z === "union" || z === "join") { setMethod(z); setMethodSrc("user"); setPicked((p) => (p.includes(s.idx) || p.length >= MAX_MERGE ? p : [...p, s.idx])); }
+        if (pickedRef.current.length < MAX_MERGE && hit(dropRef, e.clientX, e.clientY)) setPicked((p) => (p.includes(s.idx) || p.length >= MAX_MERGE ? p : [...p, s.idx]));
       }
       setDrag(null); setOverZone(null);
     };
@@ -2154,12 +2146,8 @@ function CombinePage({ selected, onRun }) {
     return () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
   }, []);
 
-  // 2개 미만이면 방식 미정으로 리셋 (제거 시)
-  useEffect(() => { if (picked.length < 2) setMethodSrc("none"); }, [picked.length]);
-
   const ready = done && !loading;
   const names = picked.map(poolLabel);
-  // 클릭 추가: 방식을 정하지 않음 (미정 → 다음 단계에서 AI 추천)
   const togglePick = (i) => setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : p.length >= MAX_MERGE ? p : [...p, i]));
   const editAuto = (idx, v) => { setAutoSel((s) => s.map((x, i) => (i === idx ? v : x))); setStale(true); };
   const editReview = (idx, v) => { setReviewSel((s) => s.map((x, i) => (i === idx ? v : x))); setStale(true); };
@@ -2300,11 +2288,6 @@ function CombinePage({ selected, onRun }) {
                   );
                 })}
               </div>
-              <div style={{ padding: 12, borderTop: `1px solid ${C.border}`, background: "#fff" }}>
-                <button disabled={picked.length !== MAX_MERGE} onClick={() => { if (picked.length !== MAX_MERGE) return; if (methodSrc === "none") { setMethod(REC_METHOD); setMethodSrc("ai"); } setDone(true); }} style={{ width: "100%", padding: "14px 0", borderRadius: 11, border: "none", background: picked.length === MAX_MERGE ? C.dark : "#E5E7EB", color: picked.length === MAX_MERGE ? "#fff" : C.faint, fontSize: 14.5, fontWeight: 700, cursor: picked.length === MAX_MERGE ? "pointer" : "default", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-                  {methodSrc === "user" ? `${method === "join" ? "Join" : "Union"} 방식으로 매칭하기 →` : "데이터 매칭 추천받기 →"}
-                </button>
-              </div>
             </>
           ) : (
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 28px" }}>
@@ -2420,58 +2403,15 @@ function CombinePage({ selected, onRun }) {
                   <div style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>합칠 데이터셋을 선택해주세요.</div>
                   <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "3px 9px" }}>✦ AI</span>
                 </div>
-                <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-                  {picked.length === 0 ? (
-                    <div ref={baseZoneRef} style={{ width: "100%", minHeight: 200, border: `1.5px dashed ${overZone === "base" ? C.purple : C.border}`, borderRadius: 14, background: overZone === "base" ? "#F5F3FF" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: overZone === "base" ? C.purple : C.faint, textAlign: "center", transition: "all .12s" }}>
-                      <span style={{ width: 46, height: 46, borderRadius: 12, background: "#fff", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><Icon.db width={22} height={22} /></span>
-                      <div style={{ fontSize: 14.5, fontWeight: 700, color: C.text }}>기준 데이터셋 선택</div>
-                      <div style={{ fontSize: 12.5, color: C.faint }}>왼쪽에서 클릭하거나 끌어다 놓으세요</div>
-                    </div>
-                  ) : picked.length === 1 ? (
-                    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 14 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <DsCard idx={picked[0]} isBase w={246} />
-                        <span style={{ flex: 1, display: "flex", justifyContent: "center", color: C.faint }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 12h15m0 0l-6-6m6 6l-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                        <MethodSlot slotRef={joinZoneRef} dir="join" active={overZone === "join"} w={246} dragName={drag ? poolLabel(drag.idx) : ""} />
-                      </div>
-                      <div style={{ width: 246, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                        <span style={{ display: "flex", color: C.faint }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 4v15m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                        <MethodSlot slotRef={unionZoneRef} dir="union" active={overZone === "union"} w={246} dragName={drag ? poolLabel(drag.idx) : ""} />
-                      </div>
-                    </div>
-                  ) : methodSrc !== "user" ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, border: `1.5px dashed ${ERD_TONE.purple.line}`, borderRadius: 16, background: "#FAF8FF" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: C.purple }}><Icon.spark width={14} height={14} /> AI가 방식을 정해드려요 <span style={{ fontSize: 11, fontWeight: 600, color: C.faint }}>· Union/Join 미정</span></div>
-                      <DsCard idx={picked[0]} isBase w={252} />
-                      <DsCard idx={picked[1]} w={252} />
-                    </div>
-                  ) : method === "join" ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <DsCard idx={picked[0]} isBase w={224} />
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, color: C.faint }}>
-                        <span style={{ display: "flex" }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 12h15m0 0l-6-6m6 6l-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                        {methodChip("join")}
-                      </div>
-                      <DsCard idx={picked[1]} w={224} />
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 9 }}>
-                      <DsCard idx={picked[0]} isBase w={256} />
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.faint }}>
-                        <span style={{ display: "flex" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 4v15m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                        {methodChip("union")}
-                      </div>
-                      <DsCard idx={picked[1]} w={256} />
-                    </div>
-                  )}
-                  <div style={{ fontSize: 12.5, color: C.faint, lineHeight: 1.6, textAlign: "center" }}>
-                    {picked.length === 0
-                      ? "먼저 기준이 될 데이터셋을 선택하세요."
-                      : picked.length === 1
-                        ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.purple, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px" }}><Icon.spark width={14} height={14} /> 모르겠으면 그냥 클릭 → AI가 방식 추천</span>
-                        : methodSrc === "user"
-                          ? <>방식을 <b style={{ color: C.sub }}>{method === "join" ? "Join(옆으로)" : "Union(위아래)"}</b>으로 직접 골랐어요. 다음 단계에서 바꿀 수 있어요.</>
-                          : <>방식 미정 — <b style={{ color: C.sub }}>「데이터 매칭 추천받기」</b>를 누르면 AI가 추천해줘요.</>}
+                <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  {picked.length === 1 && <DsCard idx={picked[0]} isBase w="100%" />}
+                  <div ref={dropRef} style={{ width: "100%", minHeight: picked.length === 1 ? 130 : 200, border: `1.5px dashed ${overZone === "drop" ? C.purple : C.border}`, borderRadius: 14, background: overZone === "drop" ? "#F4F0FE" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: overZone === "drop" ? C.purple : C.faint, textAlign: "center", transition: "all .12s" }}>
+                    <span style={{ width: 44, height: 44, borderRadius: 12, background: "#fff", border: `1px solid ${overZone === "drop" ? C.purple : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: overZone === "drop" ? C.purple : C.sub }}><Icon.db width={21} height={21} /></span>
+                    <div style={{ fontSize: 14.5, fontWeight: 700, color: overZone === "drop" ? C.purple : C.text }}>{picked.length === 0 ? "기준 데이터셋 선택" : "추가 데이터셋 선택"}</div>
+                    <div style={{ fontSize: 12.5, color: C.faint }}>왼쪽에서 클릭하거나 끌어다 놓으세요</div>
+                  </div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px" }}>
+                    <Icon.spark width={14} height={14} /> 2개를 고르면 AI가 합치는 방식을 자동으로 추천해요
                   </div>
                 </div>
               </div>
