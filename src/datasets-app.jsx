@@ -2223,14 +2223,23 @@ function CombinePage({ selected, onRun }) {
   const dsName = (i) => ALL_DS[i] || `Dataset ${i + 1}`;
   const MATCH_PAIRS = [["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_data", "client_id"], ["date", "customer_key"], ["time", "account_number"], ["time_period", "user_account"], ["structure", "customer_tag"], ["structure", "customer_tag"]];
   const T2_OPTIONS = ["user_identifier", "client_reference", "client_code", "client_id", "customer_key", "account_number", "user_account", "customer_tag", "매칭 안 함"];
-  // 유니온 결과는 "기준 데이터의 컬럼 구조를 따름" → 데이터셋(seed)별 스키마, 교체하면 컬럼명·값이 기준 것으로 바뀜
+  // 유니온 결과는 "기준 데이터의 컬럼 구조를 따름" → 하단 테이블 컬럼 = 매칭 테이블의 기준 칼럼(matchRows)과 동일
   const _NAMES = ["김민수", "이지은", "박서준", "최유진", "정도윤", "강하늘", "윤서연", "임지호"];
   const _pad = (n) => String(n).padStart(2, "0");
-  const SCHEMA = (idx) => ((idx || 0) % 2 === 0)
-    ? { cols: [{ n: "customer_name", t: "key" }, { n: "time_zone", t: "A" }, { n: "company_size", t: "#" }, { n: "devices", t: "A" }, { n: "signup_date", t: "A" }, { n: "plan", t: "A" }],
-        row: (k) => [_NAMES[k % _NAMES.length], ["UTC+09:00", "UTC+00:00", "UTC-05:00"][k % 3], ["0-100", "100-500", "1,000+"][k % 3], ["iOS", "Android", "Web"][k % 3], "2024-" + _pad((k % 12) + 1) + "-1" + (k % 9), ["Free", "Pro", "Team"][k % 3]] }
-    : { cols: [{ n: "user_id", t: "key" }, { n: "region", t: "A" }, { n: "age", t: "#" }, { n: "channel", t: "A" }, { n: "created_at", t: "A" }, { n: "loyalty_tier", t: "A" }],
-        row: (k) => ["U" + (1000 + k), ["서울", "부산", "대구", "인천"][k % 4], String(20 + (k % 40)), ["organic", "ads", "referral"][k % 3], "2023-" + _pad((k % 12) + 1) + "-0" + ((k % 8) + 1), ["Bronze", "Silver", "Gold"][k % 3]] };
+  const colType = (name) => name === "customer_id" ? "key" : /age|size|count|amount|num/.test(name) ? "#" : "A";
+  const colVal = (name, k) => {
+    if (name === "customer_id") return "C" + (1000 + k);
+    if (name === "name") return _NAMES[k % _NAMES.length];
+    if (name === "email") return ["minsu", "jieun", "seojun", "yujin", "doyun", "haneul"][k % 6] + "@mail.com";
+    if (name === "signup_date") return "2024-" + _pad((k % 12) + 1) + "-" + _pad((k % 27) + 1);
+    if (name === "region") return ["서울", "부산", "대구", "인천"][k % 4];
+    if (name === "age") return String(20 + (k % 45));
+    if (name === "gender") return ["남", "여"][k % 2];
+    if (name === "country") return ["KR", "US", "JP", "VN"][k % 4];
+    if (name === "plan") return ["Free", "Pro", "Team"][k % 3];
+    if (name === "device") return ["iOS", "Android", "Web"][k % 3];
+    return "val_" + k;
+  };
   // ── 선택 화면 카드/슬롯 ──────────────────────────────
   const DsCard = ({ idx, isBase, w }) => (
     <div style={{ width: w, flexShrink: 0, border: `1px solid ${C.border}`, borderRadius: 12, background: "#fff", padding: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
@@ -2443,7 +2452,7 @@ function CombinePage({ selected, onRun }) {
               </div>
               <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
                 <div style={{ display: "flex", gap: 10, padding: "14px 28px", borderBottom: `1px solid ${C.borderSoft}`, background: "#FCFCFD" }}>
-                  {[["예상 행", <>500 <span style={{ color: C.faint }}>→</span> <b style={{ color: C.text }}>1,000</b></>], ["예상 열", <><b style={{ color: C.text }}>{SCHEMA(picked[0]).cols.length}</b> <span style={{ fontSize: 11.5, color: C.faint }}>(기준 유지)</span></>], ["완전중복 행", <b style={{ color: "#B45309" }}>12건</b>]].map((s, i) => (
+                  {[["예상 행", <>500 <span style={{ color: C.faint }}>→</span> <b style={{ color: C.text }}>1,000</b></>], ["예상 열", <><b style={{ color: C.text }}>{matchRows.length}</b> <span style={{ fontSize: 11.5, color: C.faint }}>(기준 유지)</span></>], ["완전중복 행", <b style={{ color: "#B45309" }}>12건</b>]].map((s, i) => (
                     <div key={i} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 14px", border: `1px solid ${C.border}`, borderRadius: 10, background: "#fff", fontSize: 13 }}>
                       <span style={{ color: C.sub, fontWeight: 600 }}>{s[0]}</span><span style={{ fontSize: 14.5, fontWeight: 700 }}>{s[1]}</span>
                     </div>
@@ -2467,7 +2476,7 @@ function CombinePage({ selected, onRun }) {
                         <div style={{ flex: 1, padding: "0 16px", display: "flex", alignItems: "center", gap: 10 }}>
                           {editRow === i ? (
                             <>
-                              <select autoFocus value={rr || "__none"} onChange={(e) => { const v = e.target.value === "__none" ? null : e.target.value; setMatchRows((rows) => rows.map((row, idx) => idx === i ? [row[0], v] : row)); }} style={{ flex: 1, height: 40, padding: "0 12px", border: `1.5px solid ${C.purple}`, borderRadius: 9, background: "#fff", fontSize: 14, fontFamily: FONT, color: C.text, cursor: "pointer", outline: "none", boxShadow: "0 2px 8px rgba(80,60,160,0.12)" }}>
+                              <select autoFocus onBlur={() => setEditRow(-1)} value={rr || "__none"} onChange={(e) => { const v = e.target.value === "__none" ? null : e.target.value; setMatchRows((rows) => rows.map((row, idx) => idx === i ? [row[0], v] : row)); }} style={{ flex: 1, height: 40, padding: "0 12px", border: `1.5px solid ${C.purple}`, borderRadius: 9, background: "#fff", fontSize: 14, fontFamily: FONT, color: C.text, cursor: "pointer", outline: "none", boxShadow: "0 2px 8px rgba(80,60,160,0.12)" }}>
                                 <option value="__none">매칭 안 함 (제거)</option>
                                 {T2_OPTIONS.filter((o) => o !== "매칭 안 함").map((o) => <option key={o} value={o}>{o}</option>)}
                                 {rr && !T2_OPTIONS.includes(rr) && <option value={rr}>{rr}</option>}
@@ -2495,22 +2504,21 @@ function CombinePage({ selected, onRun }) {
                 </div>
                 <div style={{ height: tableH, flexShrink: 0, overflow: "auto", borderTop: `1px solid ${C.border}`, background: "#fff" }}>
                   {(() => {
-                    const SCH = SCHEMA(picked[0]);
-                    const cols = SCH.cols;
-                    const lastOnly = cols.length - 1; // 기준 전용(추가엔 없음) → 추가 행에서 빈칸
-                    const cell = (v, i, isNull) => <div key={i} style={{ width: i === 0 ? 180 : 150, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: isNull ? C.faint : C.text, fontStyle: isNull ? "italic" : "normal", background: isNull ? "#F4F4F6" : "transparent", whiteSpace: "nowrap" }}>{isNull ? "null" : v}</div>;
+                    const cols = matchRows.map(([l]) => l);          // 기준 칼럼 = 매칭 테이블과 동일
+                    const matched = matchRows.map(([, rcol]) => !!rcol); // 추가에 매칭이 있나
+                    const cell = (name, i, k, isNull) => <div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: isNull ? C.faint : C.text, fontStyle: isNull ? "italic" : "normal", background: isNull ? "#F4F4F6" : "transparent", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isNull ? "null" : colVal(name, k)}</div>;
                     return (
                       <div style={{ minWidth: "fit-content" }}>
                         <div style={{ display: "flex", background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0 }}>
-                          {cols.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 150, flexShrink: 0, padding: "12px 16px", fontSize: 12.5, fontWeight: 600, color: i === lastOnly ? C.faint : C.sub, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint, fontSize: 11 }}>{c.t === "key" ? "🔑" : c.t}</span>{c.n}</div>)}
+                          {cols.map((name, i) => <div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "12px 16px", fontSize: 12.5, fontWeight: 600, color: matched[i] ? C.sub : C.faint, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint, fontSize: 11 }}>{colType(name) === "key" ? "🔑" : colType(name)}</span>{name}</div>)}
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EFF4FF", fontSize: 12.5, fontWeight: 700, color: C.blue }}>{dsName(picked[0])} <span style={{ fontWeight: 500, color: C.faint }}>· 기존(기준)</span></div>
-                        {Array.from({ length: 20 }).map((_, r) => { const vals = SCH.row(((picked[0] || 0) + 1) * 7 + r); return (
-                          <div key={"b" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>{cols.map((c, i) => cell(vals[i], i, false))}</div>
+                        {Array.from({ length: 20 }).map((_, r) => { const k = ((picked[0] || 0) + 1) * 7 + r; return (
+                          <div key={"b" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>{cols.map((name, i) => cell(name, i, k, false))}</div>
                         ); })}
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EAF7EE", fontSize: 12.5, fontWeight: 700, color: "#15803D" }}>＋ {dsName(picked[1])} <span style={{ fontWeight: 500, color: C.faint }}>· 신규(이어붙임) · 오른쪽 {cols[lastOnly].n} 빈칸</span></div>
-                        {Array.from({ length: 20 }).map((_, r) => { const vals = SCH.row(((picked[1] || 0) + 1) * 7 + r); return (
-                          <div key={"a" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>{cols.map((c, i) => cell(vals[i], i, i === lastOnly))}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EAF7EE", fontSize: 12.5, fontWeight: 700, color: "#15803D" }}>＋ {dsName(picked[1])} <span style={{ fontWeight: 500, color: C.faint }}>· 신규(이어붙임) · 매칭 없는 칼럼은 빈칸</span></div>
+                        {Array.from({ length: 20 }).map((_, r) => { const k = ((picked[1] || 0) + 1) * 7 + r; return (
+                          <div key={"a" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>{cols.map((name, i) => cell(name, i, k, !matched[i]))}</div>
                         ); })}
                       </div>
                     );
