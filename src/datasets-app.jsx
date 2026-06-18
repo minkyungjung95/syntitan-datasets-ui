@@ -2135,6 +2135,7 @@ function CombinePage({ selected, onRun }) {
   useEffect(() => { setLoading(false); }, [done]);
   // 데이터 2개 채워지면 AI가 방식 자동 결정 → 즉시 매칭+미리보기 (별도 단계 없음)
   useEffect(() => { if (picked.length < MAX_MERGE) { setDone(false); setMethodSrc("none"); } }, [picked.length]);
+  useEffect(() => { if (done) { setLoading(true); const t = setTimeout(() => setLoading(false), 850); return () => clearTimeout(t); } }, [done]);
 
   // 좌측 행 → 우측 드롭존 마우스 드래그앤드랍 (위치 무관, 담기만 함 — 방식은 AI 자동)
   useEffect(() => {
@@ -2436,6 +2437,12 @@ function CombinePage({ selected, onRun }) {
                 </div>
               </div>
             </div>
+          ) : loading ? (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, color: C.faint }}>
+              <span style={{ width: 38, height: 38, border: "3px solid #E5E7EB", borderTopColor: C.purple, borderRadius: "50%", animation: "spin .8s linear infinite" }} />
+              <div style={{ fontSize: 14.5, fontWeight: 600, color: C.text }}>AI가 칼럼을 매칭하고 있어요…</div>
+              <div style={{ fontSize: 12.5, color: C.faint }}>{dsName(picked[0])} + {dsName(picked[1])}</div>
+            </div>
           ) : (
             <>
               <div style={{ padding: "16px 28px 14px", borderBottom: `1px solid ${C.border}` }}>
@@ -2451,13 +2458,6 @@ function CombinePage({ selected, onRun }) {
                 </div>
               </div>
               <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-                <div style={{ display: "flex", gap: 10, padding: "14px 28px", borderBottom: `1px solid ${C.borderSoft}`, background: "#FCFCFD" }}>
-                  {[["예상 행", <>500 <span style={{ color: C.faint }}>→</span> <b style={{ color: C.text }}>1,000</b></>], ["예상 열", <><b style={{ color: C.text }}>{matchRows.length}</b> <span style={{ fontSize: 11.5, color: C.faint }}>(기준 유지)</span></>], ["완전중복 행", <b style={{ color: "#B45309" }}>12건</b>]].map((s, i) => (
-                    <div key={i} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 14px", border: `1px solid ${C.border}`, borderRadius: 10, background: "#fff", fontSize: 13 }}>
-                      <span style={{ color: C.sub, fontWeight: 600 }}>{s[0]}</span><span style={{ fontSize: 14.5, fontWeight: 700 }}>{s[1]}</span>
-                    </div>
-                  ))}
-                </div>
                 <div style={{ flex: 1, overflow: "auto", minHeight: 0, padding: "18px 28px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                     <span style={{ fontSize: 14.5, fontWeight: 700 }}>AI 자동 칼럼 매칭</span>
@@ -2499,10 +2499,16 @@ function CombinePage({ selected, onRun }) {
                     ))}
                   </div>
                 </div>
-                <div onMouseDown={(e) => { resizeRef.current = { startY: e.clientY, startH: tableH }; document.body.style.userSelect = "none"; }} style={{ height: 12, flexShrink: 0, cursor: "ns-resize", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", borderTop: `1px solid ${C.border}` }}>
-                  <span style={{ width: 44, height: 4, borderRadius: 2, background: C.border }} />
+                <div style={{ flexShrink: 0, background: "#F6F7F9", borderTop: `1px solid ${C.border}`, boxShadow: "0 -8px 16px -10px rgba(0,0,0,0.16)" }}>
+                  <div onMouseDown={(e) => { resizeRef.current = { startY: e.clientY, startH: tableH }; document.body.style.userSelect = "none"; }} title="드래그해서 높이 조절" style={{ height: 14, cursor: "ns-resize", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ width: 44, height: 4, borderRadius: 2, background: "#C7CBD1" }} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px 11px" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>테이블 결과 <span style={{ fontSize: 11.5, fontWeight: 500, color: C.faint }}>· 미리보기</span></span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: C.sub, cursor: "pointer" }}>수정 업데이트 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                  </div>
                 </div>
-                <div style={{ height: tableH, flexShrink: 0, overflow: "auto", borderTop: `1px solid ${C.border}`, background: "#fff" }}>
+                <div style={{ height: tableH, flexShrink: 0, overflow: "auto", background: "#fff" }}>
                   {(() => {
                     const cols = matchRows.map(([l]) => l);          // 기준 칼럼 = 매칭 테이블과 동일
                     const matched = matchRows.map(([, rcol]) => !!rcol); // 추가에 매칭이 있나
