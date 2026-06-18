@@ -2088,6 +2088,13 @@ const PV_UNION = ["customer_id", "name", "email", "signup_date"]; // 유니온: 
 const PV_KEY = "customer_id";                  // 조인 키(양쪽 공통)
 const PV_T1_REST = ["name", "email", "signup_date"]; // 조인: Table1 고유 칼럼
 const PV_T2_REST = ["region", "age", "plan"];        // 조인: Table2 고유 칼럼(오른쪽에 붙음)
+// 두 데이터셋의 칼럼 세트 + 매칭 (⇄ 교체 시 좌우 칼럼이 뒤집힘)
+const CMB_MATCHED = [["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_date", "account_number"], ["gender", "user_account"], ["country", "customer_tag"], ["plan", "client_id"], ["device", "customer_key"]];
+const CMB_A_ONLY = ["region", "age"];          // A(기준) 전용
+const CMB_B_ONLY = ["channel", "loyalty_tier"]; // B 전용
+const buildMatchRows = (swapped) => swapped
+  ? [...CMB_B_ONLY.map((c) => [c, null]), ...CMB_MATCHED.map(([a, b]) => [b, a])]
+  : [...CMB_A_ONLY.map((c) => [c, null]), ...CMB_MATCHED.map(([a, b]) => [a, b])];
 function CombinePage({ selected, onRun }) {
   const pool = useMemo(() => Array.from({ length: 14 }, (_, i) => poolLabel(i)), []);
   const came = selected && selected.length >= 2;
@@ -2117,13 +2124,13 @@ function CombinePage({ selected, onRun }) {
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
   const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
-  const [matchRows, setMatchRows] = useState([    // [기준칼럼, 매칭된 추가칼럼|null]
-    ["region", null], ["age", null],
-    ["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_date", "client_id"],
-    ["gender", "customer_key"], ["country", "account_number"], ["plan", "user_account"], ["device", "customer_tag"],
-  ]);
-  const [appliedRows, setAppliedRows] = useState(() => [["region", null], ["age", null], ["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_date", "client_id"], ["gender", "customer_key"], ["country", "account_number"], ["plan", "user_account"], ["device", "customer_tag"]]);
+  const [swapped, setSwapped] = useState(false);   // ⇄ 기준/추가 교체
+  const [matchRows, setMatchRows] = useState(() => buildMatchRows(false)); // [기준칼럼, 매칭된 추가칼럼|null]
+  const [appliedRows, setAppliedRows] = useState(() => buildMatchRows(false)); // 하단 테이블에 적용된 스냅샷
+  const [tableLoading, setTableLoading] = useState(false); // 하단 테이블 스켈레톤
   const matchDirty = JSON.stringify(matchRows) !== JSON.stringify(appliedRows);
+  const doSwap = () => { const ns = !swapped; setSwapped(ns); const nr = buildMatchRows(ns); setMatchRows(nr); setAppliedRows(nr); setPicked((p) => [p[1], p[0]]); setTableLoading(true); setTimeout(() => setTableLoading(false), 2000); };
+  const applyMatch = () => { setTableLoading(true); setAppliedRows(matchRows.map((r) => [...r])); setTimeout(() => setTableLoading(false), 1200); };
   const [tableH, setTableH] = useState(340);      // 하단 데이터 테이블 높이(리사이즈)
   const resizeRef = useRef(null);
 
@@ -2473,7 +2480,7 @@ function CombinePage({ selected, onRun }) {
                   <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
                     <div style={{ display: "flex", alignItems: "center", background: "#FAFAFB", borderBottom: `1px solid ${C.border}`, height: 50 }}>
                       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[0])} <span style={{ fontSize: 12, fontWeight: 600, color: C.faint }}>(기준)</span></div>
-                      <button onClick={() => setPicked((p) => [p[1], p[0]])} title="기준 ↔ 추가 교체" style={{ width: 44, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: C.sub }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
+                      <button onClick={doSwap} title="기준 ↔ 추가 교체" style={{ width: 44, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: C.sub }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
                       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[1])}</div>
                     </div>
                     {matchRows.map(([l, rr], i) => (
@@ -2512,11 +2519,22 @@ function CombinePage({ selected, onRun }) {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px 11px" }}>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>테이블 결과 <span style={{ fontSize: 11.5, fontWeight: 500, color: C.faint }}>· 미리보기</span></span>
-                    <button onClick={() => matchDirty && setAppliedRows(matchRows.map((r) => [...r]))} disabled={!matchDirty} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, fontFamily: FONT, borderRadius: 8, padding: "6px 12px", cursor: matchDirty ? "pointer" : "default", border: matchDirty ? "none" : `1px solid ${C.border}`, background: matchDirty ? C.purple : "#fff", color: matchDirty ? "#fff" : C.faint }}>수정 업데이트 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
+                    <button onClick={() => matchDirty && applyMatch()} disabled={!matchDirty} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, fontFamily: FONT, borderRadius: 8, padding: "6px 12px", cursor: matchDirty ? "pointer" : "default", border: matchDirty ? "none" : `1px solid ${C.border}`, background: matchDirty ? C.purple : "#fff", color: matchDirty ? "#fff" : C.faint }}>수정 업데이트 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
                   </div>
                 </div>
                 <div style={{ height: tableH, flexShrink: 0, overflow: "auto", background: "#fff" }}>
-                  {(() => {
+                  {tableLoading ? (
+                    <div style={{ minWidth: "fit-content" }}>
+                      <div style={{ display: "flex", background: "#FAFAFB", borderBottom: `1px solid ${C.border}` }}>
+                        {appliedRows.map((_, i) => <div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "14px 16px" }}><span style={{ display: "block", height: 10, borderRadius: 5, background: "#E6E8EC" }} /></div>)}
+                      </div>
+                      {Array.from({ length: 11 }).map((_, r) => (
+                        <div key={r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>
+                          {appliedRows.map((_, i) => <div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "13px 16px" }}><span style={{ display: "block", height: 9, width: i % 3 === 1 ? "55%" : "80%", borderRadius: 5, background: "#EEF0F3" }} /></div>)}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (() => {
                     const cols = appliedRows.map(([l]) => l);          // 적용된 매칭 기준 칼럼
                     const matched = appliedRows.map(([, rcol]) => !!rcol); // 추가에 매칭이 있나
                     const cell = (name, i, k, isNull) => <div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: isNull ? C.faint : C.text, fontStyle: isNull ? "italic" : "normal", background: isNull ? "#F4F4F6" : "transparent", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isNull ? "null" : colVal(name, k)}</div>;
