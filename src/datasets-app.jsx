@@ -2116,6 +2116,7 @@ function CombinePage({ selected, onRun }) {
   const infoRef = useRef(null);
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
+  const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
   const [tableH, setTableH] = useState(340);      // 하단 데이터 테이블 높이(리사이즈)
   const resizeRef = useRef(null);
 
@@ -2218,7 +2219,19 @@ function CombinePage({ selected, onRun }) {
   const MATCH_PAIRS = [["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_data", "client_id"], ["date", "customer_key"], ["time", "account_number"], ["time_period", "user_account"], ["structure", "customer_tag"], ["structure", "customer_tag"]];
   const T2_OPTIONS = ["user_identifier", "client_reference", "client_code", "client_id", "customer_key", "account_number", "user_account", "customer_tag", "매칭 안 함"];
   const GRID_COLS2 = [{ n: "customer_name", t: "key" }, { n: "time_zone", t: "#" }, { n: "company size", t: "#" }, { n: "Devices", t: "#" }, { n: "signup_date", t: "A" }, { n: "avg_session_minutes", t: "A" }, { n: "avg_session_minutes", t: "A" }];
-  const GRID_ROW2 = ["[이름1]", "UTC+09:00", "0-100", "ios", "null", "ios", "null"];
+  // 데이터셋(seed)별로 다른 실제 값 생성 — 교체하면 하단 테이블 값이 바뀜
+  const genGrid = (seed, n) => Array.from({ length: n }).map((_, r) => {
+    const k = (seed + 1) * 7 + r;
+    return [
+      "user_" + (1000 + seed * 137 + r),
+      ["UTC+09:00", "UTC+00:00", "UTC-05:00", "UTC+01:00"][k % 4],
+      ["0-100", "100-500", "500-1,000", "1,000+"][k % 4],
+      ["iOS", "Android", "Web"][k % 3],
+      k % 6 === 0 ? "null" : "2024-" + String((k % 12) + 1).padStart(2, "0") + "-1" + (k % 9),
+      ["iOS", "Android", "Web"][(k + 1) % 3],
+      k % 4 === 0 ? "null" : String(8 + (k % 52)),
+    ];
+  });
   // 칼럼 매칭 테이블 (기준 칼럼 → 추가 칼럼; r=null이면 매칭 없음)
   const MATCH_ROWS2 = [
     ["region", null], ["age", null], ["phone", null], ["address", null],
@@ -2457,13 +2470,17 @@ function CombinePage({ selected, onRun }) {
                       <div key={i} onMouseEnter={() => setHoverRow(i)} onMouseLeave={() => setHoverRow(-1)} style={{ display: "flex", alignItems: "center", height: 52, borderTop: `1px solid ${C.borderSoft}`, background: hoverRow === i ? "#FAFAFB" : "#fff" }}>
                         <div style={{ flex: 1, padding: "0 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint }}>#</span>{l} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></div>
                         <span style={{ width: 44, display: "flex", justifyContent: "center", color: rr ? C.purple : C.border }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                        <div style={{ flex: 1, padding: "0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ flex: 1, fontSize: 14, color: rr ? C.text : C.faint }}>{rr || "-"}</span>
-                          {hoverRow === i
-                            ? <span style={{ display: "flex", color: C.sub, cursor: "pointer" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5l-4-4L4 16v4zM13.5 6.5l4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                            : rr
-                              ? <span style={{ fontSize: 11, fontWeight: 700, color: C.purple, border: `1px solid ${ERD_TONE.purple.line}`, borderRadius: 6, padding: "3px 9px" }}>매칭</span>
-                              : <span style={{ fontSize: 11, fontWeight: 600, color: C.faint, background: "#F3F4F6", borderRadius: 6, padding: "3px 9px" }}>매칭 칼럼 없음</span>}
+                        <div style={{ flex: 1, padding: "0 16px", display: "flex", alignItems: "center", gap: 10 }}>
+                          {editRow === i
+                            ? <div style={{ flex: 1, display: "flex", alignItems: "center", height: 38, padding: "0 12px", border: `1.5px solid ${C.purple}`, borderRadius: 9, background: "#fff", fontSize: 14, boxShadow: "0 2px 8px rgba(80,60,160,0.12)" }}><span style={{ flex: 1 }}>{rr || l} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></span><span style={{ display: "flex", transform: "rotate(180deg)", color: C.sub }}><Icon.chevR width={15} height={15} style={{ transform: "rotate(90deg)" }} /></span></div>
+                            : <span style={{ flex: 1, fontSize: 14, color: rr ? C.text : C.faint }}>{rr || "-"}</span>}
+                          {editRow === i
+                            ? <button onClick={() => setEditRow(-1)} style={{ fontSize: 12.5, fontWeight: 700, color: C.text, background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>완료</button>
+                            : hoverRow === i
+                              ? <span onClick={() => setEditRow(i)} title="매칭 수정" style={{ display: "flex", color: C.sub, cursor: "pointer" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5l-4-4L4 16v4zM13.5 6.5l4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                              : rr
+                                ? <span style={{ fontSize: 11, fontWeight: 700, color: C.purple, border: `1px solid ${ERD_TONE.purple.line}`, borderRadius: 6, padding: "3px 9px" }}>매칭</span>
+                                : <span style={{ fontSize: 11, fontWeight: 600, color: C.faint, background: "#F3F4F6", borderRadius: 6, padding: "3px 9px" }}>매칭 칼럼 없음</span>}
                         </div>
                       </div>
                     ))}
@@ -2477,10 +2494,16 @@ function CombinePage({ selected, onRun }) {
                     <div style={{ display: "flex", background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0 }}>
                       {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "12px 16px", fontSize: 12.5, fontWeight: 600, color: C.sub, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint, fontSize: 11 }}>{c.t === "key" ? "🔑" : c.t}</span>{c.n}</div>)}
                     </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EFF4FF", fontSize: 12.5, fontWeight: 700, color: C.blue }}>{dsName(picked[0])} <span style={{ fontWeight: 500, color: C.faint }}>· 기준</span></div>
+                    {genGrid(picked[0], 20).map((vals, r) => (
+                      <div key={"b" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>
+                        {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: vals[i] === "null" ? C.faint : C.text, whiteSpace: "nowrap" }}>{vals[i]}</div>)}
+                      </div>
+                    ))}
                     <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EAF7EE", fontSize: 12.5, fontWeight: 700, color: "#15803D" }}>＋ {dsName(picked[1])} <span style={{ fontWeight: 500, color: C.faint }}>· 행 이어붙임</span></div>
-                    {Array.from({ length: 14 }).map((_, r) => (
-                      <div key={r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>
-                        {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: GRID_ROW2[i] === "null" ? C.faint : C.text, whiteSpace: "nowrap" }}>{GRID_ROW2[i]}</div>)}
+                    {genGrid(picked[1], 20).map((vals, r) => (
+                      <div key={"a" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>
+                        {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: vals[i] === "null" ? C.faint : C.text, whiteSpace: "nowrap" }}>{vals[i]}</div>)}
                       </div>
                     ))}
                   </div>
