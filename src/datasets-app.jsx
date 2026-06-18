@@ -2446,7 +2446,7 @@ function CombinePage({ selected, onRun }) {
                 {picked.length === 0
                   ? "먼저 기준이 될 데이터셋을 선택하세요."
                   : picked.length === 1
-                    ? <>방식이 명확하면 — 2번째를 <b style={{ color: C.sub }}>아래(Union·행↑)</b>나 <b style={{ color: C.sub }}>오른쪽(Join·열→)</b>으로 <b style={{ color: C.sub }}>끌어다 놓기</b>.<br />잘 모르겠으면 — 왼쪽에서 <b style={{ color: C.sub }}>그냥 클릭</b> → 아래 <b style={{ color: C.sub }}>「데이터 매칭 추천받기」</b>를 누르면 AI가 방식을 추천해요.</>
+                    ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.purple, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px" }}><Icon.spark width={14} height={14} /> 모르겠으면 그냥 클릭 → AI가 방식 추천</span>
                     : methodSrc === "user"
                       ? <>방식을 <b style={{ color: C.sub }}>{method === "join" ? "Join(옆으로)" : "Union(위아래)"}</b>으로 직접 골랐어요. 다음 단계에서 바꿀 수 있어요.</>
                       : <>방식 미정 — <b style={{ color: C.sub }}>「데이터 매칭 추천받기」</b>를 누르면 AI가 Union/Join을 추천해줘요.</>}
