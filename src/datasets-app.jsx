@@ -2506,7 +2506,7 @@ function CombinePage({ selected, onRun }) {
                     ))}
                   </div>
                 </div>
-                <div style={{ flexShrink: 0, background: "#F6F7F9", borderTop: `1px solid ${C.border}`, boxShadow: "0 -8px 16px -10px rgba(0,0,0,0.16)" }}>
+                <div style={{ flexShrink: 0, background: "#F6F7F9", borderTop: `1px solid ${C.border}` }}>
                   <div onMouseDown={(e) => { resizeRef.current = { startY: e.clientY, startH: tableH }; document.body.style.userSelect = "none"; }} title="드래그해서 높이 조절" style={{ height: 14, cursor: "ns-resize", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ width: 44, height: 4, borderRadius: 2, background: "#C7CBD1" }} />
                   </div>
