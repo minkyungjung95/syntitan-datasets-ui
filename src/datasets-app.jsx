@@ -2115,6 +2115,16 @@ function CombinePage({ selected, onRun }) {
   const [infoPos, setInfoPos] = useState(null);
   const infoRef = useRef(null);
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
+  const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
+  const [tableH, setTableH] = useState(340);      // 하단 데이터 테이블 높이(리사이즈)
+  const resizeRef = useRef(null);
+
+  useEffect(() => {
+    const move = (e) => { const s = resizeRef.current; if (!s) return; setTableH(Math.max(120, Math.min(760, s.startH - (e.clientY - s.startY)))); };
+    const up = () => { if (resizeRef.current) { resizeRef.current = null; document.body.style.userSelect = ""; } };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+    return () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+  }, []);
 
   useEffect(() => { setLoading(false); }, [done]);
   // 데이터 2개 채워지면 AI가 방식 자동 결정 → 즉시 매칭+미리보기 (별도 단계 없음)
@@ -2428,35 +2438,47 @@ function CombinePage({ selected, onRun }) {
                   <button onClick={() => { setMethod(method === "union" ? "join" : "union"); setMethodSrc("user"); }} title="클릭해서 Union / Join 전환" style={{ fontSize: 17, fontWeight: 700, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, color: C.text, padding: 0 }}>{method === "join" ? "Join" : "Union"}</button>
                   <span style={{ fontSize: 13.5, color: C.sub }}>{method === "join" ? "두 데이터는 키로 잇는 조인(열 병합)에 더 적합합니다." : "두 데이터는 유니온(행 병합)에 더 적합합니다."}</span>
                   <div style={{ flex: 1 }} />
-                  <button onClick={() => setPicked((p) => [p[1], p[0]])} title="기준 ↔ 추가 교체" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 12px", cursor: "pointer", fontFamily: FONT }}>
-                    <span style={{ fontWeight: 700, color: C.text }}>{dsName(picked[0])}</span>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                    <span>{dsName(picked[1])}</span>
-                  </button>
                   <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>Start Combine</button>
                 </div>
               </div>
-              <div style={{ flex: 1, overflow: "auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
-                <div style={{ padding: "18px 28px 10px" }}>
+              <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+                <div style={{ flex: 1, overflow: "auto", minHeight: 0, padding: "18px 28px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14.5, fontWeight: 700, color: C.purple }}><Icon.spark width={16} height={16} /> AI 자동 칼럼 매칭</span>
+                    <span style={{ fontSize: 14.5, fontWeight: 700 }}>AI 자동 칼럼 매칭</span>
                     <span style={{ fontSize: 13, color: C.purple, fontWeight: 600 }}>30건</span>
                   </div>
-                  {MATCH_PAIRS.map((p, i) => (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", alignItems: "center", marginBottom: 10 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7, height: 46, padding: "0 14px", border: `1px solid ${C.border}`, borderRadius: 10, background: "#fff", fontSize: 14 }}><span style={{ color: C.faint }}>#</span> {p[0]} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></div>
-                      <span style={{ display: "flex", justifyContent: "center", color: C.faint }}>→</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7, height: 46, padding: "0 14px", border: `1px solid ${C.border}`, borderRadius: 10, background: "#fff", fontSize: 14, cursor: "pointer" }}><span style={{ flex: 1 }}><span style={{ color: C.faint }}>#</span> {p[1]} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></span><span style={{ display: "flex", transform: "rotate(90deg)", color: C.faint }}><Icon.chevR width={15} height={15} /></span></div>
+                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", background: "#FAFAFB", borderBottom: `1px solid ${C.border}`, height: 50 }}>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[0])} <span style={{ fontSize: 12, fontWeight: 600, color: C.faint }}>(기준)</span></div>
+                      <button onClick={() => setPicked((p) => [p[1], p[0]])} title="기준 ↔ 추가 교체" style={{ width: 44, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: C.sub }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[1])}</div>
                     </div>
-                  ))}
+                    {MATCH_ROWS2.map(([l, rr], i) => (
+                      <div key={i} onMouseEnter={() => setHoverRow(i)} onMouseLeave={() => setHoverRow(-1)} style={{ display: "flex", alignItems: "center", height: 52, borderTop: `1px solid ${C.borderSoft}`, background: hoverRow === i ? "#FAFAFB" : "#fff" }}>
+                        <div style={{ flex: 1, padding: "0 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint }}>#</span>{l} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></div>
+                        <span style={{ width: 44, display: "flex", justifyContent: "center", color: rr ? C.purple : C.border }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                        <div style={{ flex: 1, padding: "0 16px", display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ flex: 1, fontSize: 14, color: rr ? C.text : C.faint }}>{rr || "-"}</span>
+                          {hoverRow === i
+                            ? <span style={{ display: "flex", color: C.sub, cursor: "pointer" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5l-4-4L4 16v4zM13.5 6.5l4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                            : rr
+                              ? <span style={{ fontSize: 11, fontWeight: 700, color: C.purple, border: `1px solid ${ERD_TONE.purple.line}`, borderRadius: 6, padding: "3px 9px" }}>매칭</span>
+                              : <span style={{ fontSize: 11, fontWeight: 600, color: C.faint, background: "#F3F4F6", borderRadius: 6, padding: "3px 9px" }}>매칭 칼럼 없음</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div style={{ borderTop: `1px solid ${C.border}`, overflowX: "auto" }}>
+                <div onMouseDown={(e) => { resizeRef.current = { startY: e.clientY, startH: tableH }; document.body.style.userSelect = "none"; }} style={{ height: 12, flexShrink: 0, cursor: "ns-resize", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", borderTop: `1px solid ${C.border}` }}>
+                  <span style={{ width: 44, height: 4, borderRadius: 2, background: C.border }} />
+                </div>
+                <div style={{ height: tableH, flexShrink: 0, overflow: "auto", borderTop: `1px solid ${C.border}`, background: "#fff" }}>
                   <div style={{ minWidth: "fit-content" }}>
-                    <div style={{ display: "flex", background: "#fff", borderBottom: `1px solid ${C.border}` }}>
+                    <div style={{ display: "flex", background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0 }}>
                       {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "12px 16px", fontSize: 12.5, fontWeight: 600, color: C.sub, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint, fontSize: 11 }}>{c.t === "key" ? "🔑" : c.t}</span>{c.n}</div>)}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EAF7EE", fontSize: 12.5, fontWeight: 700, color: "#15803D" }}>＋ {dsName(picked[1])} <span style={{ fontWeight: 500, color: C.faint }}>· 행 이어붙임</span></div>
-                    {Array.from({ length: 12 }).map((_, r) => (
+                    {Array.from({ length: 14 }).map((_, r) => (
                       <div key={r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>
                         {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: GRID_ROW2[i] === "null" ? C.faint : C.text, whiteSpace: "nowrap" }}>{GRID_ROW2[i]}</div>)}
                       </div>
