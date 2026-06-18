@@ -2116,6 +2116,7 @@ function CombinePage({ selected, onRun }) {
   const [infoOpen, setInfoOpen] = useState(false); // 방식 설명 툴팁
   const [infoPos, setInfoPos] = useState(null);
   const infoRef = useRef(null);
+  const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
 
   useEffect(() => { setLoading(false); }, [done]);
   // 데이터 2개 채워지면 AI가 방식 자동 결정 → 즉시 매칭+미리보기 (별도 단계 없음)
@@ -2199,6 +2200,20 @@ function CombinePage({ selected, onRun }) {
   const GRID_ADD = [["C104", "최지우", "jiwoo@beta.io", "2024-03-10"], ["C105", "정하준", "hajun@beta.io", "2024-03-12"], ["C106", "강시아", "sia@beta.io", "2024-03-15"]];
   const GRID_JOIN_EXTRA = [["서울", "29", "Pro"], ["부산", "34", "Basic"], ["대구", "41", "Pro"]];
   const GRID_W = { customer_id: 118, name: 96, email: 188, signup_date: 118, region: 88, age: 60, plan: 80 };
+  // ── 풀화면 매칭 레이아웃용 데이터 ──
+  const FOLDERS = [
+    { name: "DataGalaxy", items: ["DataVista", "DataVista", "DataVista", "DataVista", "DataVista"] },
+    { name: "File 1", items: ["Orders_2024.csv", "Orders_2025.csv"] },
+    { name: "File 2", items: ["Customers.csv", "Events.csv"] },
+  ];
+  const LOOSE = ["DataRhythm", "DataLink_2025.csv", "DataConnector", "DataSphere", "DataHarmony", "DataStreamline", "DataSphere", ...Array(14).fill("InsightHub")];
+  const ALL_DS = [...FOLDERS.flatMap((f) => f.items), ...LOOSE];
+  const FOLDER_BASE = FOLDERS.map((f) => f.items.length); // 각 폴더 시작 인덱스 계산용
+  const dsName = (i) => ALL_DS[i] || `Dataset ${i + 1}`;
+  const MATCH_PAIRS = [["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_data", "client_id"], ["date", "customer_key"], ["time", "account_number"], ["time_period", "user_account"], ["structure", "customer_tag"], ["structure", "customer_tag"]];
+  const T2_OPTIONS = ["user_identifier", "client_reference", "client_code", "client_id", "customer_key", "account_number", "user_account", "customer_tag", "매칭 안 함"];
+  const GRID_COLS2 = [{ n: "customer_name", t: "key" }, { n: "time_zone", t: "#" }, { n: "company size", t: "#" }, { n: "Devices", t: "#" }, { n: "signup_date", t: "A" }, { n: "avg_session_minutes", t: "A" }, { n: "avg_session_minutes", t: "A" }];
+  const GRID_ROW2 = ["[이름1]", "UTC+09:00", "0-100", "ios", "null", "ios", "null"];
 
   // ── 선택 화면 카드/슬롯 ──────────────────────────────
   const DsCard = ({ idx, isBase, w }) => (
@@ -2257,39 +2272,46 @@ function CombinePage({ selected, onRun }) {
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         {/* LEFT — 선택 / 칼럼 매칭 */}
         <aside style={{ width: 380, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
-          {!done ? (
-            <>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 6px" }}>
-                <span style={{ fontSize: 14, fontWeight: 700 }}>데이터 선택 <span style={{ color: picked.length === MAX_MERGE ? C.purple : C.faint }}>{picked.length} / {MAX_MERGE}</span></span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 16px 10px", padding: "8px 10px", borderRadius: 8, background: "#F7F6FB", fontSize: 11.5, color: C.sub, lineHeight: 1.45 }}>
-                <span style={{ display: "flex", color: C.purple, flexShrink: 0, marginTop: 1 }}><Icon.spark width={13} height={13} /></span>
-                <span><b style={{ color: C.text }}>클릭</b>하면 AI가 방식 추천 · <b style={{ color: C.text }}>끌어다 놓으면</b> 방식 직접 선택</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 16px 8px", padding: "0 12px", height: 38, border: `1px solid ${C.border}`, borderRadius: 9, background: "#fff" }}>
-                <span style={{ color: C.faint, display: "flex" }}><Icon.search width={15} height={15} /></span>
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" style={{ border: "none", outline: "none", flex: 1, fontSize: 13, fontFamily: FONT, background: "transparent" }} />
-              </div>
-              <div style={{ flex: 1, overflowY: "auto", padding: "2px 8px" }}>
-                {pool.filter((nm) => !q.trim() || nm.toLowerCase().includes(q.trim().toLowerCase())).map((nm, i) => {
-                  const checked = picked.includes(i);
-                  const atMax = !checked && picked.length >= MAX_MERGE;
-                  const order = picked.indexOf(i) + 1;
-                  return (
-                    <div key={i}
-                      onMouseDown={(e) => { if (atMax) return; e.preventDefault(); dragStart.current = { idx: i, sx: e.clientX, sy: e.clientY, started: false }; }}
-                      onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } if (!atMax) togglePick(i); }}
-                      style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 10px", borderRadius: 10, cursor: atMax ? "default" : (drag && drag.idx === i ? "grabbing" : "grab"), background: checked ? "#EEF4FF" : (drag && drag.idx === i ? "#F3F4F6" : "transparent"), opacity: atMax ? 0.45 : 1, userSelect: "none" }}>
-                      <span style={{ display: "flex", flexShrink: 0, color: C.border }} title="끌어서 슬롯에 놓기"><svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2.5" cy="3" r="1.3" /><circle cx="7.5" cy="3" r="1.3" /><circle cx="2.5" cy="8" r="1.3" /><circle cx="7.5" cy="8" r="1.3" /><circle cx="2.5" cy="13" r="1.3" /><circle cx="7.5" cy="13" r="1.3" /></svg></span>
-                      <span style={{ width: 30, height: 30, borderRadius: 7, background: checked ? "#fff" : "#F3F4F6", color: checked ? C.blue : C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.db /></span>
-                      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{poolLabel(i)}</div><div style={{ fontSize: 11.5, color: C.faint }}>58.2KB · 4컬럼 · 8,432행</div></div>
-                      {checked && <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", border: `1px solid ${C.blue}`, color: C.blue, fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{order}</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 16px 10px", padding: "0 12px", height: 38, border: `1px solid ${C.border}`, borderRadius: 9, background: "#fff" }}>
+            <span style={{ color: C.faint, display: "flex" }}><Icon.search width={15} height={15} /></span>
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="검색어를 입력해주세요" style={{ border: "none", outline: "none", flex: 1, fontSize: 13, fontFamily: FONT, background: "transparent" }} />
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "2px 8px 16px" }}>
+            {(() => {
+              const q2 = q.trim().toLowerCase();
+              const match = (nm) => !q2 || nm.toLowerCase().includes(q2);
+              const dsRow = (nm, i, indent) => {
+                const checked = picked.includes(i);
+                const atMax = !checked && picked.length >= MAX_MERGE;
+                const order = picked.indexOf(i) + 1;
+                return (
+                  <div key={"d" + i}
+                    onMouseDown={(e) => { if (atMax) return; e.preventDefault(); dragStart.current = { idx: i, sx: e.clientX, sy: e.clientY, started: false }; }}
+                    onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } if (!atMax) togglePick(i); }}
+                    style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", paddingLeft: indent ? 34 : 10, borderRadius: 9, cursor: atMax ? "default" : (drag && drag.idx === i ? "grabbing" : "pointer"), background: checked ? "#EEF4FF" : (drag && drag.idx === i ? "#F3F4F6" : "transparent"), opacity: atMax ? 0.4 : 1, userSelect: "none" }}>
+                    <span style={{ display: "flex", color: checked ? C.blue : C.sub, flexShrink: 0 }}><Icon.db width={16} height={16} /></span>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: checked ? 700 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nm}</span>
+                    {checked && <span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: "50%", border: `1px solid ${C.blue}`, color: C.blue, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{order}</span>}
+                  </div>
+                );
+              };
+              let idx = 0; const els = [];
+              FOLDERS.forEach((f) => {
+                const open = openFolders[f.name];
+                els.push(
+                  <div key={"f" + f.name} onClick={() => setOpenFolders((o) => ({ ...o, [f.name]: !o[f.name] }))} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 10px", borderRadius: 9, cursor: "pointer", color: C.sub, userSelect: "none" }}>
+                    <span style={{ display: "flex", transform: open ? "rotate(90deg)" : "none", transition: "transform .12s", color: C.faint }}><Icon.chevR width={14} height={14} /></span>
+                    <span style={{ display: "flex", color: C.faint }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 7a2 2 0 0 1 2-2h3.5l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /></svg></span>
+                    <span style={{ fontSize: 13.5, fontWeight: 600 }}>{f.name}</span>
+                  </div>
+                );
+                f.items.forEach((nm) => { const i = idx; idx++; if (open && match(nm)) els.push(dsRow(nm, i, true)); });
+              });
+              LOOSE.forEach((nm) => { const i = idx; idx++; if (match(nm)) els.push(dsRow(nm, i, false)); });
+              return els;
+            })()}
+          </div>
+          {false && (
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 28px" }}>
               {/* 헤더 — 방식 + ⓘ 설명 툴팁 */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
@@ -2361,39 +2383,7 @@ function CombinePage({ selected, onRun }) {
         </aside>
 
         {/* RIGHT — 캔버스(빈 상태 / 시각화) */}
-        <div style={{ flex: 1, minWidth: 0, position: "relative", overflow: "auto", backgroundColor: "#fff", backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)", backgroundSize: "18px 18px" }}>
-          {/* 방식 칩 (단일 · 클릭해서 Union/Join 전환) + AI 추천 표시 */}
-          {done && (() => { const isAi = methodSrc === "ai"; return (
-          <div style={{ position: "absolute", top: 18, left: 18, zIndex: 4, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7 }}>
-            <button onClick={() => { setMethod(method === "union" ? "join" : "union"); setMethodSrc("user"); }} title="클릭해서 Union / Join 전환" style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px 9px 14px", borderRadius: 10, border: `1px solid ${isAi ? C.purple : C.border}`, background: isAi ? "#FAF8FF" : "#fff", cursor: "pointer", fontFamily: FONT, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-              <span style={{ width: 26, height: 26, borderRadius: 7, background: isAi ? "#fff" : "#F3F4F6", color: isAi ? C.purple : C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>{method === "join" ? <Icon.join width={15} height={15} /> : <Icon.union width={15} height={15} />}</span>
-              <span style={{ fontSize: 14, fontWeight: 700 }}>{method === "join" ? "Join" : "Union"}</span>
-              {isAi
-                ? <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "3px 7px" }}>✦ AI 추천</span>
-                : <span style={{ fontSize: 11, fontWeight: 600, color: C.faint, background: "#F3F4F6", borderRadius: 6, padding: "3px 7px" }}>직접 선택</span>}
-            </button>
-            {method !== REC_METHOD && (
-              <button onClick={() => { setMethod(REC_METHOD); setMethodSrc("ai"); }} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: C.purple, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, padding: "0 2px" }}>
-                ✦ AI 추천 「{REC_METHOD === "join" ? "Join" : "Union"}」으로 되돌리기
-              </button>
-            )}
-          </div>
-          ); })()}
-          {/* ⤢ / ↻ */}
-          {done && (
-          <div style={{ position: "absolute", top: 18, right: 18, zIndex: 4, display: "flex", flexDirection: "column", gap: 8 }}>
-            <button title="넓게 보기" style={{ width: 36, height: 36, borderRadius: 9, border: `1px solid ${C.border}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
-            <div style={{ position: "relative" }} onMouseEnter={() => setTip(true)} onMouseLeave={() => setTip(false)}>
-              <button onClick={() => setStale(false)} style={{ width: 36, height: 36, borderRadius: 9, border: `1px solid ${stale ? C.purple : C.border}`, background: stale ? "#F5F3FF" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: stale ? C.purple : C.sub, position: "relative" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                {stale && <span style={{ position: "absolute", top: -3, right: -3, width: 9, height: 9, borderRadius: "50%", background: C.purple, border: "2px solid #fff" }} />}
-              </button>
-              {(tip || stale) && (
-                <div style={{ position: "absolute", top: "50%", right: "calc(100% + 10px)", transform: "translateY(-50%)", background: "#18181B", color: "#fff", fontSize: 12, fontWeight: 500, padding: "7px 11px", borderRadius: 8, whiteSpace: "nowrap", boxShadow: "0 4px 14px rgba(0,0,0,0.2)" }}>{stale ? "바뀐 내용이 있어요 — 눌러서 반영" : "바꾼 매칭 반영"}</div>
-              )}
-            </div>
-          </div>
-          )}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0, background: "#fff" }}>
 
           {!done ? (
             <div style={{ minHeight: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
@@ -2416,70 +2406,51 @@ function CombinePage({ selected, onRun }) {
                 </div>
               </div>
             </div>
-          ) : loading ? (
-            <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, color: C.faint }}>
-              <span style={{ width: 36, height: 36, border: "3px solid #E5E7EB", borderTopColor: C.purple, borderRadius: "50%", animation: "spin .8s linear infinite" }} />
-              <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>칼럼을 매칭하고 있어요…</div>
-            </div>
           ) : (
-            <div style={{ position: "relative", zIndex: 1, padding: "88px 28px 28px", display: "flex", justifyContent: "center" }}>
-              {(() => {
-                const isJoin = method === "join";
-                const cols = isJoin ? ["customer_id", "name", "email", "signup_date", "region", "age", "plan"] : ["customer_id", "name", "email", "signup_date"];
-                const isExtra = (c) => isJoin && ["region", "age", "plan"].includes(c);
-                const head = (
-                  <div style={{ display: "flex", background: "#FAFAFB", borderBottom: `1px solid ${C.border}` }}>
-                    <div style={{ width: 34, flexShrink: 0 }} />
-                    {cols.map((c) => <div key={c} style={{ width: GRID_W[c], flexShrink: 0, padding: "9px 12px", fontSize: 11.5, fontWeight: 700, color: isExtra(c) ? "#15803D" : C.sub, whiteSpace: "nowrap" }}>{c}{isExtra(c) ? " ＋" : ""}</div>)}
+            <>
+              <div style={{ padding: "16px 28px 14px", borderBottom: `1px solid ${C.border}` }}>
+                <button onClick={() => setPicked([])} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600, color: C.sub, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, padding: 0, marginBottom: 12 }}>
+                  <span style={{ display: "flex", transform: "rotate(180deg)" }}><Icon.chevR width={15} height={15} /></span> 데이터 재선택
+                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 7, padding: "4px 9px" }}>✦ AI 추천</span>
+                  <button onClick={() => { setMethod(method === "union" ? "join" : "union"); setMethodSrc("user"); }} title="클릭해서 Union / Join 전환" style={{ fontSize: 17, fontWeight: 700, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, color: C.text, padding: 0 }}>{method === "join" ? "Join" : "Union"}</button>
+                  <span style={{ fontSize: 13.5, color: C.sub }}>{method === "join" ? "두 데이터는 키로 잇는 조인(열 병합)에 더 적합합니다." : "두 데이터는 유니온(행 병합)에 더 적합합니다."}</span>
+                  <div style={{ flex: 1 }} />
+                  <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>Start Combine</button>
+                </div>
+              </div>
+              <div style={{ flex: 1, overflow: "auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
+                <div style={{ padding: "18px 28px 10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14.5, fontWeight: 700, color: C.purple }}><Icon.spark width={16} height={16} /> AI 자동 칼럼 매칭</span>
+                    <span style={{ fontSize: 13, color: C.purple, fontWeight: 600 }}>30건</span>
                   </div>
-                );
-                const row = (vals, dot, key) => (
-                  <div key={key} style={{ display: "flex", borderBottom: "1px solid #00000008", background: dot === "green" && !isJoin ? "#FAFEFB" : "#fff" }}>
-                    <div style={{ width: 34, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: dot === "green" ? "#34C77B" : "#5B9BFF" }} /></div>
-                    {cols.map((c, ci) => <div key={c} style={{ width: GRID_W[c], flexShrink: 0, padding: "9px 12px", fontSize: 12.5, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", background: isExtra(c) ? "#EAF7EE" : "transparent" }}>{vals[ci]}</div>)}
-                  </div>
-                );
-                return (
-                  <div style={{ width: "100%", maxWidth: 760, border: `1px solid ${C.border}`, borderRadius: 14, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 16px", borderBottom: `1px solid ${C.borderSoft}` }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 700 }}>실제 데이터 미리보기</span>
-                      <div style={{ flex: 1 }} />
-                      <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: C.sub }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#5B9BFF" }} />{poolLabel(picked[0])}</span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: C.sub }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34C77B" }} />{poolLabel(picked[1])}</span>
+                  {MATCH_PAIRS.map((p, i) => (
+                    <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", alignItems: "center", marginBottom: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, height: 46, padding: "0 14px", border: `1px solid ${C.border}`, borderRadius: 10, background: "#fff", fontSize: 14 }}><span style={{ color: C.faint }}>#</span> {p[0]} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></div>
+                      <span style={{ display: "flex", justifyContent: "center", color: C.faint }}>→</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, height: 46, padding: "0 14px", border: `1px solid ${C.border}`, borderRadius: 10, background: "#fff", fontSize: 14, cursor: "pointer" }}><span style={{ flex: 1 }}><span style={{ color: C.faint }}>#</span> {p[1]} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></span><span style={{ display: "flex", transform: "rotate(90deg)", color: C.faint }}><Icon.chevR width={15} height={15} /></span></div>
                     </div>
-                    <div style={{ overflowX: "auto" }}>
-                      <div style={{ minWidth: "fit-content" }}>
-                        {head}
-                        {isJoin
-                          ? GRID_BASE.map((b, i) => row([...b, ...GRID_JOIN_EXTRA[i]], "blue", "j" + i))
-                          : <>
-                              {GRID_BASE.map((b, i) => row(b, "blue", "b" + i))}
-                              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px 7px 34px", background: "#EAF7EE", fontSize: 11.5, fontWeight: 700, color: "#15803D", borderBottom: "1px solid #00000008" }}><Icon.union width={13} height={13} /> ＋ 추가 데이터셋 · {poolLabel(picked[1])} 행 이어붙임</div>
-                              {GRID_ADD.map((b, i) => row(b, "green", "a" + i))}
-                            </>}
+                  ))}
+                </div>
+                <div style={{ borderTop: `1px solid ${C.border}`, overflowX: "auto" }}>
+                  <div style={{ minWidth: "fit-content" }}>
+                    <div style={{ display: "flex", background: "#fff", borderBottom: `1px solid ${C.border}` }}>
+                      {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "12px 16px", fontSize: 12.5, fontWeight: 600, color: C.sub, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint, fontSize: 11 }}>{c.t === "key" ? "🔑" : c.t}</span>{c.n}</div>)}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EAF7EE", fontSize: 12.5, fontWeight: 700, color: "#15803D" }}>＋ {dsName(picked[1])} <span style={{ fontWeight: 500, color: C.faint }}>· 행 이어붙임</span></div>
+                    {Array.from({ length: 12 }).map((_, r) => (
+                      <div key={r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>
+                        {GRID_COLS2.map((c, i) => <div key={i} style={{ width: i === 0 ? 180 : 160, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: GRID_ROW2[i] === "null" ? C.faint : C.text, whiteSpace: "nowrap" }}>{GRID_ROW2[i]}</div>)}
                       </div>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5, padding: "11px 16px", borderTop: `1px solid ${C.borderSoft}`, background: "#FCFCFD", fontSize: 12, color: C.sub, lineHeight: 1.5 }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: "#15803D", fontWeight: 700 }}>✓</span> {isJoin ? "customer_id로 연결 — 8,432행 유지 · 4 → 7컬럼" : "칼럼 구조 자동 매핑 — 8,432 + 8,432 = 16,864행 결합"}</span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 6, color: C.faint }}><span style={{ color: "#B45309", fontWeight: 700 }}>⚠</span> {isJoin ? "키가 맞지 않는 행은 결과에서 제외돼요." : "한쪽에만 있는 칼럼은 기본 제거 (검토 필요에서 유지 선택 시 null)."}</span>
-                    </div>
+                    ))}
                   </div>
-                );
-              })()}
-            </div>
+                </div>
+              </div>
+            </>
           )}
         </div>
-      </div>
-
-      {/* 하단 바 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 24px", borderTop: `1px solid ${C.border}`, background: "#FCFCFD" }}>
-        <span style={{ fontSize: 14, fontWeight: 700 }}>총합</span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>행 <span style={pill}>{ready ? (method === "join" ? "8,432" : "16,864") : "0"}</span></span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>열 <span style={pill}>{ready ? (method === "join" ? "7" : "300") : "0"}</span></span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.sub }}>용량 <span style={pill}>{ready ? "3,000MB" : "0"}</span></span>
-        <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 13, color: C.faint }}>{!done ? "데이터셋 2개를 선택하고 완료를 눌러주세요." : loading ? "칼럼을 매칭하고 있어요…" : ""}</span>
-        <button onClick={() => ready && onRun(names)} disabled={!ready} style={{ background: ready ? C.dark : "#E5E7EB", color: ready ? "#fff" : C.faint, border: "none", borderRadius: 10, padding: "13px 22px", fontSize: 14, fontWeight: 600, cursor: ready ? "pointer" : "default", fontFamily: FONT }}>데이터 병합 실행하기</button>
       </div>
     </div>
   );
