@@ -2465,20 +2465,26 @@ function CombinePage({ selected, onRun }) {
                         <div style={{ flex: 1, padding: "0 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint }}>#</span>{l} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></div>
                         <span style={{ width: 44, display: "flex", justifyContent: "center", color: rr ? C.purple : C.border }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
                         <div style={{ flex: 1, padding: "0 16px", display: "flex", alignItems: "center", gap: 10 }}>
-                          {editRow === i
-                            ? <select autoFocus value={rr || "__none"} onChange={(e) => { const v = e.target.value === "__none" ? null : e.target.value; setMatchRows((rows) => rows.map((row, idx) => idx === i ? [row[0], v] : row)); }} style={{ flex: 1, height: 40, padding: "0 12px", border: `1.5px solid ${C.purple}`, borderRadius: 9, background: "#fff", fontSize: 14, fontFamily: FONT, color: C.text, cursor: "pointer", outline: "none", boxShadow: "0 2px 8px rgba(80,60,160,0.12)" }}>
+                          {editRow === i ? (
+                            <>
+                              <select autoFocus value={rr || "__none"} onChange={(e) => { const v = e.target.value === "__none" ? null : e.target.value; setMatchRows((rows) => rows.map((row, idx) => idx === i ? [row[0], v] : row)); }} style={{ flex: 1, height: 40, padding: "0 12px", border: `1.5px solid ${C.purple}`, borderRadius: 9, background: "#fff", fontSize: 14, fontFamily: FONT, color: C.text, cursor: "pointer", outline: "none", boxShadow: "0 2px 8px rgba(80,60,160,0.12)" }}>
                                 <option value="__none">매칭 안 함 (제거)</option>
                                 {T2_OPTIONS.filter((o) => o !== "매칭 안 함").map((o) => <option key={o} value={o}>{o}</option>)}
                                 {rr && !T2_OPTIONS.includes(rr) && <option value={rr}>{rr}</option>}
                               </select>
-                            : <span style={{ flex: 1, fontSize: 14, color: rr ? C.text : C.faint }}>{rr || "-"}</span>}
-                          {editRow === i
-                            ? <button onClick={() => setEditRow(-1)} style={{ fontSize: 12.5, fontWeight: 700, color: C.purple, background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>완료</button>
-                            : hoverRow === i
-                              ? <span onClick={() => setEditRow(i)} title="매칭 수정" style={{ display: "flex", color: C.sub, cursor: "pointer" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5l-4-4L4 16v4zM13.5 6.5l4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                              : rr
+                              <button onClick={() => setEditRow(-1)} style={{ fontSize: 12.5, fontWeight: 700, color: C.purple, background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>완료</button>
+                            </>
+                          ) : (
+                            <>
+                              <span onClick={() => setEditRow(i)} title="매칭 수정" style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, fontSize: 14, color: rr ? C.text : C.faint, cursor: "pointer" }}>
+                                {rr || "-"}
+                                <span style={{ display: "flex", color: C.purple, opacity: hoverRow === i ? 1 : 0, transition: "opacity .12s" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5l-4-4L4 16v4zM13.5 6.5l4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                              </span>
+                              {rr
                                 ? <span style={{ fontSize: 11, fontWeight: 700, color: C.purple, border: `1px solid ${ERD_TONE.purple.line}`, borderRadius: 6, padding: "3px 9px" }}>매칭</span>
                                 : <span style={{ fontSize: 11, fontWeight: 600, color: C.faint, background: "#F3F4F6", borderRadius: 6, padding: "3px 9px" }}>매칭 칼럼 없음</span>}
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}
