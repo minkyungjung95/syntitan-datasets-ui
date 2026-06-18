@@ -2253,8 +2253,12 @@ function CombinePage({ selected, onRun }) {
         <aside style={{ width: 380, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
           {!done ? (
             <>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 10px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 6px" }}>
                 <span style={{ fontSize: 14, fontWeight: 700 }}>데이터 선택 <span style={{ color: picked.length === MAX_MERGE ? C.purple : C.faint }}>{picked.length} / {MAX_MERGE}</span></span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 16px 10px", padding: "8px 10px", borderRadius: 8, background: "#F7F6FB", fontSize: 11.5, color: C.sub, lineHeight: 1.45 }}>
+                <span style={{ display: "flex", color: C.purple, flexShrink: 0, marginTop: 1 }}><Icon.spark width={13} height={13} /></span>
+                <span><b style={{ color: C.text }}>클릭</b>하면 AI가 방식 추천 · <b style={{ color: C.text }}>끌어다 놓으면</b> 방식 직접 선택</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 16px 8px", padding: "0 12px", height: 38, border: `1px solid ${C.border}`, borderRadius: 9, background: "#fff" }}>
                 <span style={{ color: C.faint, display: "flex" }}><Icon.search width={15} height={15} /></span>
@@ -2414,9 +2418,9 @@ function CombinePage({ selected, onRun }) {
                   </div>
                 </div>
               ) : methodSrc !== "user" ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, border: `1.5px dashed ${ERD_TONE.purple.line}`, borderRadius: 16, background: "#FAF8FF" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: C.purple }}><Icon.spark width={14} height={14} /> AI가 방식을 정해드려요 <span style={{ fontSize: 11, fontWeight: 600, color: C.faint }}>· Union/Join 미정</span></div>
                   <DsCard idx={picked[0]} isBase w={252} />
-                  <span style={{ width: 24, height: 24, borderRadius: "50%", background: "#fff", border: `1px solid ${C.border}`, color: C.sub, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 500, lineHeight: 1, boxShadow: "0 1px 2px rgba(0,0,0,0.06)" }}>+</span>
                   <DsCard idx={picked[1]} w={252} />
                 </div>
               ) : method === "join" ? (
