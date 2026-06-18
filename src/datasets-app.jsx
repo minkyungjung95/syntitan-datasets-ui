@@ -2283,7 +2283,7 @@ function CombinePage({ selected, onRun }) {
               </div>
               <div style={{ padding: 12, borderTop: `1px solid ${C.border}`, background: "#fff" }}>
                 <button disabled={picked.length !== MAX_MERGE} onClick={() => { if (picked.length !== MAX_MERGE) return; if (methodSrc === "none") { setMethod(REC_METHOD); setMethodSrc("ai"); } setDone(true); }} style={{ width: "100%", padding: "14px 0", borderRadius: 11, border: "none", background: picked.length === MAX_MERGE ? C.dark : "#E5E7EB", color: picked.length === MAX_MERGE ? "#fff" : C.faint, fontSize: 14.5, fontWeight: 700, cursor: picked.length === MAX_MERGE ? "pointer" : "default", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-                  {picked.length !== MAX_MERGE ? (picked.length === 1 ? "두 번째 데이터셋을 선택하세요" : "데이터셋을 선택하세요") : methodSrc === "user" ? `${method === "join" ? "Join" : "Union"} 방식으로 매칭하기 →` : "데이터 매칭 추천받기 →"}
+                  {methodSrc === "user" ? `${method === "join" ? "Join" : "Union"} 방식으로 매칭하기 →` : "데이터 매칭 추천받기 →"}
                 </button>
               </div>
             </>
