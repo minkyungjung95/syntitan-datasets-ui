@@ -156,7 +156,6 @@ function Sidebar({ active = "Home", onNav = () => {} }) {
         <NavItem icon={<Icon.home />} label="Home" active={active === "Home"} onClick={() => onNav("Home")} collapsed />
         <div style={{ height: 14 }} />
         <NavItem icon={<Icon.db />} label="Dataset" active={active === "Dataset"} onClick={() => onNav("Dataset")} collapsed />
-        <NavItem icon={<Icon.union />} label="Combine" active={active === "Combine"} onClick={() => onNav("Combine")} collapsed />
         <div style={{ height: 14 }} />
         <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} collapsed />
         <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} collapsed />
@@ -177,7 +176,6 @@ function Sidebar({ active = "Home", onNav = () => {} }) {
       <NavItem icon={<Icon.home />} label="Home" active={active === "Home"} onClick={() => onNav("Home")} />
       <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Edit dataset</div>
       <NavItem icon={<Icon.db />} label="Dataset" active={active === "Dataset"} onClick={() => onNav("Dataset")} />
-      <NavItem icon={<Icon.union />} label="Combine" active={active === "Combine"} onClick={() => onNav("Combine")} />
       <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Analyze</div>
       <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} />
       <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} />
@@ -2120,10 +2118,7 @@ function CombinePage({ selected, onRun }) {
 
   useEffect(() => { setLoading(false); }, [done]);
   // 데이터 2개 채워지면 AI가 방식 자동 결정 → 즉시 매칭+미리보기 (별도 단계 없음)
-  useEffect(() => {
-    if (picked.length >= MAX_MERGE) { setMethod(REC_METHOD); setMethodSrc("ai"); setDone(true); }
-    else { setDone(false); setMethodSrc("none"); }
-  }, [picked.length]);
+  useEffect(() => { if (picked.length < MAX_MERGE) { setDone(false); setMethodSrc("none"); } }, [picked.length]);
 
   // 좌측 행 → 우측 드롭존 마우스 드래그앤드랍 (위치 무관, 담기만 함 — 방식은 AI 자동)
   useEffect(() => {
@@ -2214,6 +2209,12 @@ function CombinePage({ selected, onRun }) {
   const T2_OPTIONS = ["user_identifier", "client_reference", "client_code", "client_id", "customer_key", "account_number", "user_account", "customer_tag", "매칭 안 함"];
   const GRID_COLS2 = [{ n: "customer_name", t: "key" }, { n: "time_zone", t: "#" }, { n: "company size", t: "#" }, { n: "Devices", t: "#" }, { n: "signup_date", t: "A" }, { n: "avg_session_minutes", t: "A" }, { n: "avg_session_minutes", t: "A" }];
   const GRID_ROW2 = ["[이름1]", "UTC+09:00", "0-100", "ios", "null", "ios", "null"];
+  // 칼럼 매칭 테이블 (기준 칼럼 → 추가 칼럼; r=null이면 매칭 없음)
+  const MATCH_ROWS2 = [
+    ["region", null], ["age", null], ["phone", null], ["address", null],
+    ["customer_id", "user_identifier"], ["name", "client_reference"], ["email", "client_code"], ["signup_date", "client_id"],
+    ["gender", "customer_key"], ["country", "account_number"], ["plan", "user_account"], ["device", "customer_tag"],
+  ];
 
   // ── 선택 화면 카드/슬롯 ──────────────────────────────
   const DsCard = ({ idx, isBase, w }) => (
@@ -2271,7 +2272,7 @@ function CombinePage({ selected, onRun }) {
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         {/* LEFT — 선택 / 칼럼 매칭 */}
-        <aside style={{ width: 380, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <aside style={{ width: 280, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 16px 10px", padding: "0 12px", height: 38, border: `1px solid ${C.border}`, borderRadius: 9, background: "#fff" }}>
             <span style={{ color: C.faint, display: "flex" }}><Icon.search width={15} height={15} /></span>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="검색어를 입력해주세요" style={{ border: "none", outline: "none", flex: 1, fontSize: 13, fontFamily: FONT, background: "transparent" }} />
@@ -2291,7 +2292,7 @@ function CombinePage({ selected, onRun }) {
                     style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", paddingLeft: indent ? 34 : 10, borderRadius: 9, cursor: atMax ? "default" : (drag && drag.idx === i ? "grabbing" : "pointer"), background: checked ? "#EEF4FF" : (drag && drag.idx === i ? "#F3F4F6" : "transparent"), opacity: atMax ? 0.4 : 1, userSelect: "none" }}>
                     <span style={{ display: "flex", color: checked ? C.blue : C.sub, flexShrink: 0 }}><Icon.db width={16} height={16} /></span>
                     <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: checked ? 700 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nm}</span>
-                    {checked && <span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: "50%", border: `1px solid ${C.blue}`, color: C.blue, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{order}</span>}
+                    {checked && <span style={{ flexShrink: 0, display: "flex", color: C.blue }}><Icon.checkCircle width={17} height={17} /></span>}
                   </div>
                 );
               };
@@ -2393,16 +2394,24 @@ function CombinePage({ selected, onRun }) {
                   <div style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>합칠 데이터셋을 선택해주세요.</div>
                   <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "3px 9px" }}>✦ AI</span>
                 </div>
-                <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                  {picked.length === 1 && <DsCard idx={picked[0]} isBase w="100%" />}
-                  <div ref={dropRef} style={{ width: "100%", minHeight: picked.length === 1 ? 130 : 200, border: `1.5px dashed ${overZone === "drop" ? C.purple : C.border}`, borderRadius: 14, background: overZone === "drop" ? "#F4F0FE" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: overZone === "drop" ? C.purple : C.faint, textAlign: "center", transition: "all .12s" }}>
-                    <span style={{ width: 44, height: 44, borderRadius: 12, background: "#fff", border: `1px solid ${overZone === "drop" ? C.purple : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: overZone === "drop" ? C.purple : C.sub }}><Icon.db width={21} height={21} /></span>
-                    <div style={{ fontSize: 14.5, fontWeight: 700, color: overZone === "drop" ? C.purple : C.text }}>{picked.length === 0 ? "기준 데이터셋 선택" : "추가 데이터셋 선택"}</div>
-                    <div style={{ fontSize: 12.5, color: C.faint }}>왼쪽에서 클릭하거나 끌어다 놓으세요</div>
-                  </div>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px" }}>
-                    <Icon.spark width={14} height={14} /> 2개를 고르면 AI가 합치는 방식을 자동으로 추천해요
-                  </div>
+                <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                  {picked[0] != null && <DsCard idx={picked[0]} isBase w="100%" />}
+                  {picked.length === 2 && (
+                    <button onClick={() => setPicked((p) => [p[1], p[0]])} title="기준 ↔ 추가 교체" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: C.purple, background: "#F4F0FE", border: `1px solid ${ERD_TONE.purple.line}`, borderRadius: 999, padding: "5px 12px", cursor: "pointer", fontFamily: FONT }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg> 기준 ↔ 추가 바꾸기
+                    </button>
+                  )}
+                  {picked[1] != null && <DsCard idx={picked[1]} w="100%" />}
+                  {picked.length < 2 && (
+                    <div ref={dropRef} style={{ width: "100%", minHeight: picked.length === 1 ? 130 : 200, border: `1.5px dashed ${overZone === "drop" ? C.purple : C.border}`, borderRadius: 14, background: overZone === "drop" ? "#F4F0FE" : "#FAFBFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: overZone === "drop" ? C.purple : C.faint, textAlign: "center", transition: "all .12s" }}>
+                      <span style={{ width: 44, height: 44, borderRadius: 12, background: "#fff", border: `1px solid ${overZone === "drop" ? C.purple : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: overZone === "drop" ? C.purple : C.sub }}><Icon.db width={21} height={21} /></span>
+                      <div style={{ fontSize: 14.5, fontWeight: 700, color: overZone === "drop" ? C.purple : C.text }}>{picked.length === 0 ? "기준 데이터셋 선택" : "추가 데이터셋 선택"}</div>
+                      <div style={{ fontSize: 12.5, color: C.faint }}>왼쪽에서 클릭하거나 끌어다 놓으세요</div>
+                    </div>
+                  )}
+                  {picked.length === 2
+                    ? <button onClick={() => { if (methodSrc === "none") { setMethod(REC_METHOD); setMethodSrc("ai"); } setDone(true); }} style={{ marginTop: 4, width: "100%", padding: "13px 0", borderRadius: 11, border: "none", background: C.dark, color: "#fff", fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>다음 →</button>
+                    : <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px" }}><Icon.spark width={14} height={14} /> 2개를 고르면 AI가 합치는 방식을 추천해요</div>}
                 </div>
               </div>
             </div>
@@ -2417,6 +2426,11 @@ function CombinePage({ selected, onRun }) {
                   <button onClick={() => { setMethod(method === "union" ? "join" : "union"); setMethodSrc("user"); }} title="클릭해서 Union / Join 전환" style={{ fontSize: 17, fontWeight: 700, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, color: C.text, padding: 0 }}>{method === "join" ? "Join" : "Union"}</button>
                   <span style={{ fontSize: 13.5, color: C.sub }}>{method === "join" ? "두 데이터는 키로 잇는 조인(열 병합)에 더 적합합니다." : "두 데이터는 유니온(행 병합)에 더 적합합니다."}</span>
                   <div style={{ flex: 1 }} />
+                  <button onClick={() => setPicked((p) => [p[1], p[0]])} title="기준 ↔ 추가 교체" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 12px", cursor: "pointer", fontFamily: FONT }}>
+                    <span style={{ fontWeight: 700, color: C.text }}>{dsName(picked[0])}</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    <span>{dsName(picked[1])}</span>
+                  </button>
                   <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>Start Combine</button>
                 </div>
               </div>
