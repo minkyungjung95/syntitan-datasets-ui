@@ -2486,6 +2486,22 @@ function CombinePage({ selected, onRun }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 7, padding: "4px 9px" }}>✦ AI 추천</span>
                   <button onClick={() => { setMethod(method === "union" ? "join" : "union"); setMethodSrc("user"); }} title="클릭해서 Union / Join 전환" style={{ fontSize: 17, fontWeight: 700, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, color: C.text, padding: 0 }}>{method === "join" ? "Join" : "Union"}</button>
+                  <span ref={infoRef} style={{ display: "flex", color: C.faint, cursor: "help" }} onMouseEnter={() => { const r = infoRef.current.getBoundingClientRect(); setInfoPos({ top: r.bottom + 12, left: Math.max(12, Math.min(r.left - 16, window.innerWidth - 332)) }); setInfoOpen(true); }} onMouseLeave={() => setInfoOpen(false)}>
+                    <Icon.infoCircle width={15} height={15} />
+                    {infoOpen && infoPos && (
+                      <div style={{ position: "fixed", top: infoPos.top, left: infoPos.left, width: 320, background: "#18181B", color: "#fff", borderRadius: 14, padding: 16, zIndex: 60, boxShadow: "0 18px 44px rgba(0,0,0,0.34)", fontWeight: 400 }}>
+                        <span style={{ position: "absolute", top: -7, left: 22, width: 14, height: 14, background: "#18181B", transform: "rotate(45deg)", borderRadius: 2 }} />
+                        <div style={{ background: "#fff", borderRadius: 9, overflow: "hidden", marginBottom: 13 }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", fontSize: 11, fontWeight: 700, color: "#9CA3AF", letterSpacing: 0.4, background: "#F3F4F6", padding: "7px 14px" }}><span>ID</span><span>AGE</span><span>CLASS</span></div>
+                          {[["001", "27", "A"], ["002", "34", "B"], ["003", "41", "A"], ["004", "29", "C"], ["005", "31", "B"], ["006", "38", "A"]].map((r, i) => (
+                            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", fontSize: 12.5, color: "#3F3F46", padding: "6px 14px", borderTop: i === 4 ? "2px solid #34C77B" : "1px solid #F1F1F3" }}><span>{r[0]}</span><span>{r[1]}</span><span>{r[2]}</span></div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 7 }}>위아래로 테이블을 이어 붙여요.</div>
+                        <div style={{ fontSize: 12.5, color: "#D4D4D8", lineHeight: 1.7 }}>같은 뜻의 칼럼끼리 두 데이터를 <b style={{ color: "#fff" }}>위아래로</b> 쌓아 행을 추가해요. 한쪽에만 있는 칼럼은 반대 쪽의 빈값(Null)으로 채워져요. 기준 칼럼은 첫번째 선택한 데이터셋이에요.</div>
+                      </div>
+                    )}
+                  </span>
                   <span style={{ fontSize: 13.5, color: C.sub }}>{caseDef.line}</span>
                   <div style={{ flex: 1 }} />
                   <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>{method === "join" ? "Join" : "Union"} 실행하기</button>
