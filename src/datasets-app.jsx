@@ -2365,6 +2365,9 @@ function CombinePage({ selected, onRun }) {
               return els;
             })()}
           </div>
+          <div style={{ padding: 12, borderTop: `1px solid ${C.border}`, background: "#fff" }}>
+            <button disabled={picked.length !== MAX_MERGE} onClick={() => { if (picked.length === MAX_MERGE) setDone(true); }} style={{ width: "100%", padding: "13px 0", borderRadius: 11, border: "none", background: picked.length === MAX_MERGE ? C.dark : "#EEF0F3", color: picked.length === MAX_MERGE ? "#fff" : C.faint, fontSize: 14, fontWeight: 700, cursor: picked.length === MAX_MERGE ? "pointer" : "default", fontFamily: FONT }}>{picked.length === MAX_MERGE ? "다음 →" : `데이터셋 선택 (${picked.length}/${MAX_MERGE})`}</button>
+          </div>
           {false && (
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 28px" }}>
               {/* 헤더 — 방식 + ⓘ 설명 툴팁 */}
@@ -2458,9 +2461,7 @@ function CombinePage({ selected, onRun }) {
                       <div style={{ fontSize: 12.5, color: C.faint }}>왼쪽에서 클릭하거나 끌어다 놓으세요</div>
                     </div>
                   )}
-                  {picked.length === 2
-                    ? <button onClick={() => { if (methodSrc === "none") { setMethod(REC_METHOD); setMethodSrc("ai"); } setDone(true); }} style={{ marginTop: 4, width: "100%", padding: "13px 0", borderRadius: 11, border: "none", background: C.dark, color: "#fff", fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>다음 →</button>
-                    : <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px" }}><Icon.spark width={14} height={14} /> 2개를 고르면 AI가 합치는 방식을 추천해요</div>}
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px" }}><Icon.spark width={14} height={14} /> {picked.length === 2 ? "왼쪽 아래 「다음」을 눌러 진행하세요" : "데이터셋 2개를 고르면 AI가 합치는 방식을 추천해요"}</div>
                 </div>
               </div>
             </div>
