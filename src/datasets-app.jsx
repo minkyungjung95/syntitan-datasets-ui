@@ -2095,6 +2095,22 @@ const CMB_B_ONLY = ["channel", "loyalty_tier"]; // B 전용
 const buildMatchRows = (swapped) => swapped
   ? [...CMB_B_ONLY.map((c) => [c, null]), ...CMB_MATCHED.map(([a, b]) => [b, a])]
   : [...CMB_A_ONLY.map((c) => [c, null]), ...CMB_MATCHED.map(([a, b]) => [a, b])];
+// 데이터 합치기 케이스 (개발자 자료 기준) — 선택한 데이터셋 쌍에 따라 전환
+const CMB_CASES = [
+  { k: "union-clean", method: "union", line: "같은 양식이라 그대로 이어붙일 수 있어요.", banner: null },
+  { k: "union-diff", method: "union", line: "컬럼 구조가 조금 달라요. 기준 데이터 구조를 따릅니다.", banner: { tone: "info", text: "기준에만 있는 컬럼은 합치는 쪽에서 빈칸, 합치는 쪽에만 있는 컬럼은 버려져요." } },
+  { k: "union-rename", method: "union", line: "양식은 같은데 컬럼 이름이 달라요. 짝을 직접 맞춰주세요.", banner: { tone: "warn", text: "이름이 달라 자동 매칭이 어려워요 — 아래에서 같은 컬럼끼리 직접 연결해 주세요." } },
+  { k: "join-clean", method: "join", line: "공통 키로 옆에 붙이기 좋아요.", banner: null },
+  { k: "join-multiply", method: "join", line: "한 기준에 여러 건이 붙어 행이 늘어날 수 있어요 (1:N).", banner: { tone: "info", text: "주문처럼 한 명에 여러 건이 있으면 그 수만큼 행이 복제돼요." } },
+  { k: "join-lowmatch", method: "join", line: "매칭률이 낮아 결과 대부분이 빈칸일 수 있어요.", banner: { tone: "warn", text: "매칭 30% — 결과 다수가 빈칸이에요. 막지는 않지만 결합 효과가 적을 수 있어요." } },
+];
+const buildCaseRows = (caseKey, swapped) => {
+  const base = buildMatchRows(swapped);
+  if (caseKey === "union-rename") return base.map(([l]) => [l, null]);          // 전부 수동 매핑 필요
+  if (caseKey === "union-diff") return base.map(([l, r], i) => (i < 4 ? [l, null] : [l, r])); // 미매칭 많음
+  if (caseKey === "join-lowmatch") return base.map(([l, r], i) => (i % 3 === 0 ? [l, null] : [l, r])); // 군데군데 미매칭
+  return base;
+};
 function CombinePage({ selected, onRun }) {
   const pool = useMemo(() => Array.from({ length: 14 }, (_, i) => poolLabel(i)), []);
   const came = selected && selected.length >= 2;
@@ -2129,7 +2145,8 @@ function CombinePage({ selected, onRun }) {
   const [appliedRows, setAppliedRows] = useState(() => buildMatchRows(false)); // 하단 테이블에 적용된 스냅샷
   const [tableLoading, setTableLoading] = useState(false); // 하단 테이블 스켈레톤
   const matchDirty = JSON.stringify(matchRows) !== JSON.stringify(appliedRows);
-  const doSwap = () => { const ns = !swapped; setSwapped(ns); const nr = buildMatchRows(ns); setMatchRows(nr); setAppliedRows(nr); setPicked((p) => [p[1], p[0]]); setTableLoading(true); setTimeout(() => setTableLoading(false), 2000); };
+  const caseDef = CMB_CASES[Math.min((picked[0] ?? 0), (picked[1] ?? 1)) % CMB_CASES.length]; // 선택 쌍 → 케이스
+  const doSwap = () => { const ns = !swapped; setSwapped(ns); const nr = buildCaseRows(caseDef.k, ns); setMatchRows(nr); setAppliedRows(nr); setPicked((p) => [p[1], p[0]]); setTableLoading(true); setTimeout(() => setTableLoading(false), 2000); };
   const applyMatch = () => { setTableLoading(true); setAppliedRows(matchRows.map((r) => [...r])); setTimeout(() => setTableLoading(false), 1200); };
   const [tableH, setTableH] = useState(340);      // 하단 데이터 테이블 높이(리사이즈)
   const resizeRef = useRef(null);
@@ -2144,7 +2161,7 @@ function CombinePage({ selected, onRun }) {
   useEffect(() => { setLoading(false); }, [done]);
   // 데이터 2개 채워지면 AI가 방식 자동 결정 → 즉시 매칭+미리보기 (별도 단계 없음)
   useEffect(() => { if (picked.length < MAX_MERGE) { setDone(false); setMethodSrc("none"); } }, [picked.length]);
-  useEffect(() => { if (done) { setLoading(true); const t = setTimeout(() => setLoading(false), 850); return () => clearTimeout(t); } }, [done]);
+  useEffect(() => { if (done) { setMethod(caseDef.method); setMethodSrc("ai"); const cr = buildCaseRows(caseDef.k, swapped); setMatchRows(cr); setAppliedRows(cr); setLoading(true); const t = setTimeout(() => setLoading(false), 850); return () => clearTimeout(t); } }, [done]);
 
   // 좌측 행 → 우측 드롭존 마우스 드래그앤드랍 (위치 무관, 담기만 함 — 방식은 AI 자동)
   useEffect(() => {
@@ -2461,7 +2478,7 @@ function CombinePage({ selected, onRun }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 7, padding: "4px 9px" }}>✦ AI 추천</span>
                   <button onClick={() => { setMethod(method === "union" ? "join" : "union"); setMethodSrc("user"); }} title="클릭해서 Union / Join 전환" style={{ fontSize: 17, fontWeight: 700, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, color: C.text, padding: 0 }}>{method === "join" ? "Join" : "Union"}</button>
-                  <span style={{ fontSize: 13.5, color: C.sub }}>{method === "join" ? "두 데이터는 키로 잇는 조인(열 병합)에 더 적합합니다." : "두 데이터는 유니온(행 병합)에 더 적합합니다."}</span>
+                  <span style={{ fontSize: 13.5, color: C.sub }}>{caseDef.line}</span>
                   <div style={{ flex: 1 }} />
                   <div style={{ display: "flex", alignItems: "center", gap: 14, marginRight: 6 }}>
                     {[["행", "1,000"], ["열", String(appliedRows.length)], ["용량", "3,000MB"]].map((s, i) => (
@@ -2471,6 +2488,12 @@ function CombinePage({ selected, onRun }) {
                   <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>Start Combine</button>
                 </div>
               </div>
+              {caseDef.banner && (
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, margin: "12px 28px 0", padding: "11px 14px", borderRadius: 10, fontSize: 13, lineHeight: 1.5, background: caseDef.banner.tone === "warn" ? "#FEF6EC" : "#F0F4FE", border: `1px solid ${caseDef.banner.tone === "warn" ? "#F5D9AE" : "#CFDCFB"}`, color: caseDef.banner.tone === "warn" ? "#B45309" : "#2B59C3" }}>
+                  <span style={{ display: "flex", flexShrink: 0, marginTop: 1 }}>{caseDef.banner.tone === "warn" ? <Icon.warn width={15} height={15} /> : <Icon.infoCircle width={15} height={15} />}</span>
+                  <span>{caseDef.banner.text}</span>
+                </div>
+              )}
               <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
                 <div style={{ flex: 1, overflow: "auto", minHeight: 0, padding: "18px 28px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
