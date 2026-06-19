@@ -2145,7 +2145,8 @@ function CombinePage({ selected, onRun }) {
   const [appliedRows, setAppliedRows] = useState(() => buildMatchRows(false)); // 하단 테이블에 적용된 스냅샷
   const [tableLoading, setTableLoading] = useState(false); // 하단 테이블 스켈레톤
   const matchDirty = JSON.stringify(matchRows) !== JSON.stringify(appliedRows);
-  const caseDef = CMB_CASES[Math.min((picked[0] ?? 0), (picked[1] ?? 1)) % CMB_CASES.length]; // 선택 쌍 → 케이스
+  const UNION_CASES = CMB_CASES.filter((c) => c.method === "union"); // 지금은 Union 케이스만 (Join은 별도 작업)
+  const caseDef = UNION_CASES[Math.min((picked[0] ?? 0), (picked[1] ?? 1)) % UNION_CASES.length]; // 선택 쌍 → Union 케이스
   const doSwap = () => { const ns = !swapped; setSwapped(ns); const nr = buildCaseRows(caseDef.k, ns); setMatchRows(nr); setAppliedRows(nr); setPicked((p) => [p[1], p[0]]); setTableLoading(true); setTimeout(() => setTableLoading(false), 2000); };
   const applyMatch = () => { setTableLoading(true); setAppliedRows(matchRows.map((r) => [...r])); setTimeout(() => setTableLoading(false), 1200); };
   const [tableH, setTableH] = useState(340);      // 하단 데이터 테이블 높이(리사이즈)
