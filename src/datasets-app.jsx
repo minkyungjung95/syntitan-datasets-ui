@@ -2138,6 +2138,9 @@ function CombinePage({ selected, onRun }) {
   const [infoOpen, setInfoOpen] = useState(false); // 방식 설명 툴팁
   const [infoPos, setInfoPos] = useState(null);
   const infoRef = useRef(null);
+  const [cmpOpen, setCmpOpen] = useState(false); // 선택화면 Union·Join 비교 팝오버
+  const [cmpPos, setCmpPos] = useState(null);
+  const cmpRef = useRef(null);
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
   const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
@@ -2467,7 +2470,42 @@ function CombinePage({ selected, onRun }) {
                       </div>
                     );
                   })}
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px", alignSelf: "flex-start", marginTop: 2 }}><Icon.spark width={14} height={14} /> {picked.length === 2 ? "왼쪽 아래 「다음」을 눌러 진행하세요" : "데이터셋 2개를 고르면 AI가 합치는 방식을 추천해요"}</div>
+                  <div style={{ marginTop: 6, paddingTop: 18, borderTop: `1px solid ${C.borderSoft}` }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11 }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: C.sub }}>합치는 방식은 2가지예요</span>
+                      <span ref={cmpRef} onMouseEnter={() => { const r = cmpRef.current.getBoundingClientRect(); setCmpPos({ top: r.bottom + 10, left: Math.max(12, Math.min(r.right - 340, window.innerWidth - 352)) }); setCmpOpen(true); }} onMouseLeave={() => setCmpOpen(false)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: C.purple, cursor: "help" }}>
+                        Union·Join이란? <Icon.infoCircle width={14} height={14} />
+                        {cmpOpen && cmpPos && (
+                          <div style={{ position: "fixed", top: cmpPos.top, left: cmpPos.left, width: 340, background: "#18181B", color: "#fff", borderRadius: 14, padding: 16, zIndex: 60, boxShadow: "0 18px 44px rgba(0,0,0,0.34)", fontWeight: 400, textAlign: "left" }}>
+                            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 12 }}>두 데이터를 합치는 2가지 방식</div>
+                            {[{ c: "#5B9BFF", t: "Union · 위아래로 행 잇기", d: "같은 뜻의 칼럼끼리 두 데이터를 위아래로 쌓아 행을 늘려요. 칼럼 구성이 비슷할 때 적합해요." }, { c: "#34C77B", t: "Join · 옆으로 열 잇기", d: "공통 키(예: 고객번호)로 옆에 붙여 칼럼을 늘려요. 키로 연결되는 데이터에 적합해요." }].map((m, i) => (
+                              <div key={i} style={{ display: "flex", gap: 10, marginBottom: i === 0 ? 12 : 0 }}>
+                                <span style={{ width: 8, height: 8, borderRadius: 3, background: m.c, marginTop: 5, flexShrink: 0 }} />
+                                <div><div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 3 }}>{m.t}</div><div style={{ fontSize: 12, color: "#D4D4D8", lineHeight: 1.6 }}>{m.d}</div></div>
+                              </div>
+                            ))}
+                            <div style={{ marginTop: 13, paddingTop: 11, borderTop: "1px solid #2E2E33", fontSize: 11.5, color: "#A78BFA", display: "flex", alignItems: "center", gap: 5 }}><Icon.spark width={12} height={12} /> 선택하면 AI가 둘 중 맞는 방식을 자동으로 추천해요</div>
+                          </div>
+                        )}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      {[{ c: "#5B9BFF", t: "Union", sub: "위아래로 행 잇기", d: "칼럼이 비슷한 데이터를 행으로 쌓아요", join: false }, { c: "#34C77B", t: "Join", sub: "옆으로 열 잇기", d: "공통 키로 옆에 붙여 칼럼을 늘려요", join: true }].map((m, i) => (
+                        <div key={i} style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 12, padding: "13px 13px 14px" }}>
+                          <div style={{ height: 40, background: "#F7F8FA", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 9 }}>
+                            {m.join ? (
+                              <svg width="92" height="26" viewBox="0 0 92 26" fill="none"><rect x="6" y="3" width="22" height="20" rx="3" fill="#5B9BFF" /><rect x="28" y="3" width="22" height="20" rx="3" fill="#34C77B" /><path d="M58 13h14m-5-4 5 4-5 4" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><rect x="76" y="3" width="10" height="20" rx="2.5" fill="#5B9BFF" /></svg>
+                            ) : (
+                              <svg width="64" height="30" viewBox="0 0 64 30" fill="none"><rect x="4" y="3" width="34" height="10" rx="2.5" fill="#5B9BFF" /><rect x="4" y="15" width="34" height="10" rx="2.5" fill="#34C77B" /><path d="M50 8v12m-4-5 4 5 4-5" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 7, height: 7, borderRadius: 2.5, background: m.c }} />{m.t} <span style={{ fontSize: 11, fontWeight: 600, color: C.faint }}>· {m.sub}</span></div>
+                          <div style={{ fontSize: 11.5, color: C.faint, marginTop: 4, lineHeight: 1.5 }}>{m.d}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px", marginTop: 12 }}><Icon.spark width={14} height={14} /> {picked.length === 2 ? "왼쪽 아래 「다음」을 눌러 진행하세요" : "데이터셋 2개를 고르면 AI가 둘 중 맞는 방식을 추천해요"}</div>
+                  </div>
                 </div>
               </div>
             </div>
