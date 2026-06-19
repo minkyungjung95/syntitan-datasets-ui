@@ -2097,19 +2097,20 @@ const buildMatchRows = (swapped) => swapped
   : [...CMB_A_ONLY.map((c) => [c, null]), ...CMB_MATCHED.map(([a, b]) => [a, b])];
 // 데이터 합치기 케이스 (개발자 자료 기준) — 선택한 데이터셋 쌍에 따라 전환
 const CMB_CASES = [
-  { k: "union-clean", method: "union", line: "같은 양식이라 그대로 이어붙일 수 있어요.", banner: null },
-  { k: "union-diff", method: "union", line: "컬럼 구조가 조금 달라요. 기준 데이터 구조를 따릅니다.", banner: { tone: "info", text: "기준에만 있는 컬럼은 합치는 쪽에서 빈칸, 합치는 쪽에만 있는 컬럼은 버려져요." } },
-  { k: "union-rename", method: "union", line: "양식은 같은데 컬럼 이름이 달라요. 짝을 직접 맞춰주세요.", banner: { tone: "warn", text: "이름이 달라 자동 매칭이 어려워요 — 아래에서 같은 컬럼끼리 직접 연결해 주세요." } },
+  // Union 3종 (선택 쌍에 따라 전환) — row 종류: [기준,추가]=매칭 / [기준,null]=기준전용(추가 null) / [null,추가]=추가전용(제거)
+  { k: "union-clean", method: "union", line: "두 데이터는 유니온(행 병합)에 더 적합합니다.", banner: { tone: "info", text: "두 데이터의 칼럼이 모두 일치해요. 빈 값(null)이나 제거되는 칼럼 없이 안전하게 합쳐져요." } },
+  { k: "union-drop", method: "union", line: "두 데이터는 유니온(행 병합)에 더 적합합니다.", banner: { tone: "info", text: "기준 데이터와 매칭되지 않은 추가 칼럼은 결과에서 제거돼요." } },
+  { k: "union-null", method: "union", line: "두 데이터는 유니온(행 병합)에 더 적합합니다.", banner: { tone: "info", text: "매칭되지 않은 칼럼의 기준 데이터 값은 그대로 유지되고, 추가된 칼럼은 빈 값(null)으로 채워져요." } },
   { k: "join-clean", method: "join", line: "공통 키로 옆에 붙이기 좋아요.", banner: null },
   { k: "join-multiply", method: "join", line: "한 기준에 여러 건이 붙어 행이 늘어날 수 있어요 (1:N).", banner: { tone: "info", text: "주문처럼 한 명에 여러 건이 있으면 그 수만큼 행이 복제돼요." } },
   { k: "join-lowmatch", method: "join", line: "매칭률이 낮아 결과 대부분이 빈칸일 수 있어요.", banner: { tone: "warn", text: "매칭 30% — 결과 다수가 빈칸이에요. 막지는 않지만 결합 효과가 적을 수 있어요." } },
 ];
 const buildCaseRows = (caseKey, swapped) => {
-  const base = buildMatchRows(swapped);
-  if (caseKey === "union-rename") return base.map(([l]) => [l, null]);          // 전부 수동 매핑 필요
-  if (caseKey === "union-diff") return base.map(([l, r], i) => (i < 4 ? [l, null] : [l, r])); // 미매칭 많음
-  if (caseKey === "join-lowmatch") return base.map(([l, r], i) => (i % 3 === 0 ? [l, null] : [l, r])); // 군데군데 미매칭
-  return base;
+  const matched = buildMatchRows(swapped).filter(([, r]) => r); // 매칭된 칼럼만 (8개)
+  if (caseKey === "union-drop") return [...matched, [null, "extra_tag"]];    // 추가 전용 1개 → 제거
+  if (caseKey === "union-null") return [...matched, ["loyalty_tier", null]]; // 기준 전용 1개 → 추가 null
+  if (caseKey === "join-lowmatch") return matched.map(([l, r], i) => (i % 3 === 0 ? [l, null] : [l, r]));
+  return matched; // union-clean / join-clean: 전부 매칭
 };
 function CombinePage({ selected, onRun }) {
   const pool = useMemo(() => Array.from({ length: 14 }, (_, i) => poolLabel(i)), []);
@@ -2482,25 +2483,31 @@ function CombinePage({ selected, onRun }) {
                   <button onClick={() => { setMethod(method === "union" ? "join" : "union"); setMethodSrc("user"); }} title="클릭해서 Union / Join 전환" style={{ fontSize: 17, fontWeight: 700, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, color: C.text, padding: 0 }}>{method === "join" ? "Join" : "Union"}</button>
                   <span style={{ fontSize: 13.5, color: C.sub }}>{caseDef.line}</span>
                   <div style={{ flex: 1 }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginRight: 6 }}>
-                    {[["행", "1,000"], ["열", String(appliedRows.length)], ["용량", "3,000MB"]].map((s, i) => (
-                      <span key={i} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: C.sub }}>{s[0]} <span style={{ minWidth: 26, textAlign: "center", padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", fontSize: 13, fontWeight: 700, color: C.text }}>{s[1]}</span></span>
-                    ))}
-                  </div>
-                  <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>Start Combine</button>
+                  <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>{method === "join" ? "Join" : "Union"} 실행하기</button>
                 </div>
               </div>
-              {caseDef.banner && (
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, margin: "12px 28px 0", padding: "11px 14px", borderRadius: 10, fontSize: 13, lineHeight: 1.5, background: caseDef.banner.tone === "warn" ? "#FEF6EC" : "#F0F4FE", border: `1px solid ${caseDef.banner.tone === "warn" ? "#F5D9AE" : "#CFDCFB"}`, color: caseDef.banner.tone === "warn" ? "#B45309" : "#2B59C3" }}>
-                  <span style={{ display: "flex", flexShrink: 0, marginTop: 1 }}>{caseDef.banner.tone === "warn" ? <Icon.warn width={15} height={15} /> : <Icon.infoCircle width={15} height={15} />}</span>
-                  <span>{caseDef.banner.text}</span>
-                </div>
-              )}
               <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-                <div style={{ flex: 1, overflow: "auto", minHeight: 0, padding: "18px 28px" }}>
+                <div style={{ flex: 1, overflow: "auto", minHeight: 0, padding: "18px 28px", display: "flex", gap: 24 }}>
+                  {(() => { const removed = matchRows.filter((m) => m[0] === null).length; const kept = matchRows.filter((m) => m[0] !== null).length; return (
+                  <>
+                  <div style={{ width: 300, flexShrink: 0, order: 2 }}>
+                    <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 12 }}>예상 총합</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 0, fontSize: 13.5, color: C.sub }}>
+                      {[["열", <><b style={{ color: C.text }}>{kept}</b> <span style={{ fontSize: 11, color: C.faint, background: "#F3F4F6", borderRadius: 5, padding: "1px 7px" }}>기준 유지</span></>], ["행", <><b style={{ color: C.text }}>1,000</b> <span style={{ fontSize: 11, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "1px 7px" }}>+500</span></>], ["용량", <b style={{ color: C.text }}>80.5 KB</b>], ...(removed ? [["제거 칼럼", <span style={{ display: "flex", alignItems: "center", gap: 4 }}><b style={{ color: "#C2410C" }}>{removed}</b> <Icon.infoCircle width={13} height={13} /></span>]] : [])].map((row, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 2px", borderBottom: "1px solid #00000008" }}><span>┃ {row[0]}</span><span>{row[1]}</span></div>
+                      ))}
+                    </div>
+                    {caseDef.banner && (
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 14, padding: "12px 13px", borderRadius: 10, fontSize: 12.5, lineHeight: 1.55, background: caseDef.banner.tone === "warn" ? "#FEF6EC" : "#EEF3FE", color: caseDef.banner.tone === "warn" ? "#B45309" : "#3A63C0" }}>
+                        <span style={{ display: "flex", flexShrink: 0, marginTop: 1 }}>{caseDef.banner.tone === "warn" ? <Icon.warn width={14} height={14} /> : <Icon.infoCircle width={14} height={14} />}</span>
+                        <span>{caseDef.banner.text}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, order: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                    <span style={{ fontSize: 14.5, fontWeight: 700 }}>AI 자동 칼럼 매칭</span>
-                    <span style={{ fontSize: 13, color: C.purple, fontWeight: 600 }}>30건</span>
+                    <span style={{ fontSize: 14.5, fontWeight: 700 }}>칼럼 매칭 결과</span>
+                    <span style={{ fontSize: 13, color: C.faint, fontWeight: 600 }}>총 {matchRows.length}건</span>
                   </div>
                   <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
                     <div style={{ display: "flex", alignItems: "center", background: "#FAFAFB", borderBottom: `1px solid ${C.border}`, height: 50 }}>
@@ -2510,7 +2517,7 @@ function CombinePage({ selected, onRun }) {
                     </div>
                     {matchRows.map(([l, rr], i) => (
                       <div key={i} onMouseEnter={() => setHoverRow(i)} onMouseLeave={() => setHoverRow(-1)} style={{ display: "flex", alignItems: "center", height: 52, borderTop: `1px solid ${C.borderSoft}`, background: editRow === i ? "#FAF8FF" : hoverRow === i ? "#FAFAFB" : "#fff" }}>
-                        <div style={{ flex: 1, padding: "0 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint }}>#</span>{l} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></div>
+                        <div style={{ flex: 1, padding: "0 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>{l ? <><span style={{ color: C.faint }}>#</span>{l} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></> : <span style={{ color: C.faint }}>—</span>}</div>
                         <span style={{ width: 44, display: "flex", justifyContent: "center", color: rr ? C.purple : C.border }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
                         <div style={{ flex: 1, padding: "0 16px", display: "flex", alignItems: "center", gap: 10 }}>
                           {editRow === i ? (
@@ -2521,6 +2528,11 @@ function CombinePage({ selected, onRun }) {
                                 {rr && !T2_OPTIONS.includes(rr) && <option value={rr}>{rr}</option>}
                               </select>
                               <button onClick={() => setEditRow(-1)} style={{ fontSize: 12.5, fontWeight: 700, color: C.purple, background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>완료</button>
+                            </>
+                          ) : l === null ? (
+                            <>
+                              <span style={{ flex: 1, fontSize: 14, color: C.sub, textDecoration: "line-through", textDecorationColor: "#D4787880" }}>{rr}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: "#C2410C", background: "#FEF1EC", borderRadius: 6, padding: "3px 9px" }}>제거</span>
                             </>
                           ) : (
                             <>
@@ -2537,6 +2549,9 @@ function CombinePage({ selected, onRun }) {
                       </div>
                     ))}
                   </div>
+                  </div>
+                  </>
+                  ); })()}
                 </div>
                 <div style={{ flexShrink: 0, background: "#F6F7F9", borderTop: `1px solid ${C.border}` }}>
                   <div onMouseDown={(e) => { resizeRef.current = { startY: e.clientY, startH: tableH }; document.body.style.userSelect = "none"; }} title="드래그해서 높이 조절" style={{ height: 14, cursor: "ns-resize", display: "flex", alignItems: "center", justifyContent: "center" }}>
