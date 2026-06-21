@@ -2449,62 +2449,121 @@ function CombinePage({ selected, onRun }) {
 
           {!done ? (
             <div style={{ minHeight: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
-              <div style={{ width: 600, maxWidth: "100%", border: `1px solid ${C.border}`, borderRadius: 16, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "15px 20px", borderBottom: `1px solid ${C.borderSoft}` }}>
-                  <span style={{ display: "flex", color: C.sub }}><Icon.db width={17} height={17} /></span>
-                  <div style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>합칠 데이터셋을 선택해주세요.</div>
-                  <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "3px 9px" }}>✦ AI</span>
+              <div style={{ width: 560, maxWidth: "100%", border: `1px solid ${C.border}`, borderRadius: 16, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+                <div style={{ padding: "22px 24px 6px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <div style={{ fontSize: 16, fontWeight: 700 }}>합치는 방식은 2가지예요</div>
+                    <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "3px 9px" }}>✦ AI 추천</span>
+                  </div>
+                  <div style={{ fontSize: 13, color: C.faint }}>왼쪽에서 데이터셋 2개를 고르면 AI가 아래 중 맞는 방식을 추천해드려요.</div>
                 </div>
-                <div ref={dropRef} style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 10 }}>
-                  {[0, 1].map((k) => {
-                    const idx = picked[k];
-                    if (idx != null) return <DsCard key={k} idx={idx} isBase={k === 0} w="100%" />;
-                    const isNext = picked.length === k; // 지금 채워야 할 칸
+                <div style={{ padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* Union 카드 */}
+                  {[
+                    {
+                      method: "union",
+                      accent: "#5B9BFF",
+                      accentBg: "#EEF4FF",
+                      goal: "명단을 더 모으고 싶어요",
+                      label: "Union",
+                      direction: "세로로 쌓기",
+                      desc: "같은 형태의 데이터를 위아래로 이어 붙여 행(줄)을 늘려요.",
+                      example: "예) 5월 신규 회원 + 6월 신규 회원",
+                      hints: ["5월 신규 회원 + 6월 신규 회원", "1월 주문 내역 + 2월 주문 내역"],
+                      visual: (
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, width: "100%", fontSize: 12 }}>
+                          {/* 5월 테이블 */}
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: "#93C5FD", marginBottom: 5 }}>5월 신규 회원</div>
+                            <table style={{ width: "100%", borderCollapse: "collapse", border: "1.5px solid #BFDBFE", borderRadius: 6, overflow: "hidden" }}>
+                              <thead><tr style={{ background: "#DBEAFE" }}>{["날짜","이름","등급"].map(h => <th key={h} style={{ padding: "5px 8px", fontSize: 11, fontWeight: 700, color: "#1D4ED8", textAlign: "center" }}>{h}</th>)}</tr></thead>
+                              <tbody>{[["5/3","김아민","일반"],["5/18","한석원","VIP"]].map(([d,n,g],i) => <tr key={i} style={{ background: i%2===0?"#F8FAFF":"#fff", borderTop: "1px solid #E5E7EB" }}><td style={{ padding:"5px 8px", textAlign:"center", color:"#374151" }}>{d}</td><td style={{ padding:"5px 8px", textAlign:"center", color:"#374151" }}>{n}</td><td style={{ padding:"5px 8px", textAlign:"center", color:"#6B7280" }}>{g}</td></tr>)}</tbody>
+                            </table>
+                          </div>
+                          {/* 화살표 */}
+                          <div style={{ color: "#D1D5DB", fontSize: 18, paddingTop: 28, flexShrink: 0 }}>→</div>
+                          {/* 결과 테이블 */}
+                          <div style={{ flex: 1.6 }}>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: "#93C5FD", marginBottom: 5 }}>5월 + 6월 통합 · 4행</div>
+                            <table style={{ width: "100%", borderCollapse: "collapse", border: "1.5px solid #BFDBFE", borderRadius: 6, overflow: "hidden" }}>
+                              <thead><tr style={{ background: "#DBEAFE" }}>{["날짜","이름","등급"].map(h => <th key={h} style={{ padding: "5px 8px", fontSize: 11, fontWeight: 700, color: "#1D4ED8", textAlign: "center" }}>{h}</th>)}</tr></thead>
+                              <tbody>{[["5/3","김아민","일반",false],["5/18","한석원","VIP",false],["6/3","정현아","일반",true],["6/20","김민수","VIP",true]].map(([d,n,g,isNew],i) => <tr key={i} style={{ background: isNew?"#EFF6FF": i%2===0?"#F8FAFF":"#fff", borderTop:"1px solid #E5E7EB" }}><td style={{ padding:"5px 8px", textAlign:"center", color:"#374151" }}>{d}</td><td style={{ padding:"5px 8px", textAlign:"center", color:"#374151" }}>{n}</td><td style={{ padding:"5px 8px", textAlign:"center", color:"#6B7280" }}>{g}</td></tr>)}</tbody>
+                            </table>
+                            <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 5 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "#EFF6FF", border: "1px solid #BFDBFE", display: "inline-block" }} /><span style={{ fontSize: 10, color: "#9CA3AF" }}>6월에서 추가된 행</span></div>
+                          </div>
+                        </div>
+                      ),
+                    },
+                    {
+                      method: "join",
+                      accent: "#34C77B",
+                      accentBg: "#EDFAF3",
+                      goal: "각 항목에 정보를 더 붙이고 싶어요",
+                      label: "Join",
+                      direction: "가로로 붙이기",
+                      desc: "공동 조인키 (예: 고객 ID)를 기준으로 옆에 붙여 열을 늘려요.",
+                      example: "예) 고객 ID (공동) + CS 문의 이력 + 포인트 잔액",
+                      hints: ["고객 ID (공동) + CS 문의 이력 + 포인트 잔액", "고객 ID (공동) + 구매 이력"],
+                      visual: (
+                        <div style={{ width: "100%", fontSize: 12 }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", border: "1.5px solid #A7F3D0", borderRadius: 6, overflow: "hidden" }}>
+                            <thead>
+                              <tr style={{ background: "#D1FAE5" }}>
+                                {["고객 ID (공동)","CS 문의 이력","포인트 잔액"].map(h => <th key={h} style={{ padding:"6px 10px", fontSize:11, fontWeight:700, color:"#065F46", textAlign:"center" }}>{h}</th>)}
+                                <th style={{ padding:"6px 10px", fontSize:11, fontWeight:700, color:"#059669", textAlign:"center", background:"#BBFDE8" }}>구매 이력</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {[["user_001","2건","4,200P","12만"],["user_002","3건","8,900P","34만"],["user_003","0건","900P","52만"],["user_004","1건","—","—"]].map(([id,cs,pt,buy],i) => (
+                                <tr key={i} style={{ background: i%2===0?"#F0FDF4":"#fff", borderTop:"1px solid #E5E7EB" }}>
+                                  <td style={{ padding:"6px 10px", textAlign:"center", color:"#374151" }}>{id}</td>
+                                  <td style={{ padding:"6px 10px", textAlign:"center", color:"#374151" }}>{cs}</td>
+                                  <td style={{ padding:"6px 10px", textAlign:"center", color: pt==="—"?"#9CA3AF":"#374151" }}>{pt}</td>
+                                  <td style={{ padding:"6px 10px", textAlign:"center", fontWeight: buy==="—"?"400":"600", color: buy==="—"?"#EF4444":"#065F46", background: buy==="—"?"#FEF2F2":"#D1FAE5" }}>{buy}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          <div style={{ fontSize: 10, color: "#9CA3AF", marginTop: 6 }}>구매 이력이 없는 user_004는 빈칸(—)으로 표시돼요</div>
+                        </div>
+                      ),
+                    },
+                  ].map((m) => {
+                    const active = method === m.method;
                     return (
-                      <div key={k} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "16px 16px", borderRadius: 12, border: `1px solid ${isNext ? C.purple : C.border}`, background: isNext ? "#FAF8FF" : "#FBFBFC", opacity: isNext ? 1 : 0.7 }}>
-                        <span style={{ width: 34, height: 34, borderRadius: 8, background: "#fff", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: C.faint }}><Icon.db width={16} height={16} /></span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, color: isNext ? C.text : C.sub }}>{k === 0 ? "기준 데이터셋" : "추가 데이터셋"}{isNext && <span style={{ fontSize: 10.5, fontWeight: 700, color: C.purple }}>← 지금 선택</span>}</div>
-                          <div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>왼쪽 목록에서 클릭해 선택하세요</div>
+                      <div
+                        key={m.method}
+                        style={{ display: "flex", flexDirection: "column", gap: 14, padding: "18px 18px", borderRadius: 14, border: `1.5px solid ${C.border}`, background: "#FAFAFA" }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                              <span style={{ fontSize: 14.5, fontWeight: 700 }}>{m.goal}</span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                              <span style={{ fontSize: 11.5, fontWeight: 700, color: m.accent }}>{m.label}</span>
+                              <span style={{ fontSize: 11.5, color: C.faint }}>· {m.direction}</span>
+                            </div>
+                            <div style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.6 }}>{m.desc}</div>
+                          </div>
+                        </div>
+                        <div style={{ background: "#fff", borderRadius: 10, border: `1px solid ${C.border}`, padding: "12px 16px", display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+                          {m.visual}
+                        </div>
+                        <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: C.faint, marginBottom: 2 }}>이런 데이터라면 골라보세요</div>
+                          {m.hints.map((h, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, color: C.text }}>
+                              <span style={{ width: 5, height: 5, borderRadius: "50%", background: m.accent, flexShrink: 0 }} />
+                              {h}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );
                   })}
-                  <div style={{ marginTop: 6, paddingTop: 18, borderTop: `1px solid ${C.borderSoft}` }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11 }}>
-                      <span style={{ fontSize: 12.5, fontWeight: 700, color: C.sub }}>합치는 방식은 2가지예요</span>
-                      <span ref={cmpRef} onMouseEnter={() => { const r = cmpRef.current.getBoundingClientRect(); setCmpPos({ top: r.bottom + 10, left: Math.max(12, Math.min(r.right - 340, window.innerWidth - 352)) }); setCmpOpen(true); }} onMouseLeave={() => setCmpOpen(false)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: C.purple, cursor: "help" }}>
-                        Union·Join이란? <Icon.infoCircle width={14} height={14} />
-                        {cmpOpen && cmpPos && (
-                          <div style={{ position: "fixed", top: cmpPos.top, left: cmpPos.left, width: 340, background: "#18181B", color: "#fff", borderRadius: 14, padding: 16, zIndex: 60, boxShadow: "0 18px 44px rgba(0,0,0,0.34)", fontWeight: 400, textAlign: "left" }}>
-                            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 12 }}>두 데이터를 합치는 2가지 방식</div>
-                            {[{ c: "#5B9BFF", t: "Union · 위아래로 행 잇기", d: "같은 뜻의 칼럼끼리 두 데이터를 위아래로 쌓아 행을 늘려요. 칼럼 구성이 비슷할 때 적합해요." }, { c: "#34C77B", t: "Join · 옆으로 열 잇기", d: "공통 키(예: 고객번호)로 옆에 붙여 칼럼을 늘려요. 키로 연결되는 데이터에 적합해요." }].map((m, i) => (
-                              <div key={i} style={{ display: "flex", gap: 10, marginBottom: i === 0 ? 12 : 0 }}>
-                                <span style={{ width: 8, height: 8, borderRadius: 3, background: m.c, marginTop: 5, flexShrink: 0 }} />
-                                <div><div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 3 }}>{m.t}</div><div style={{ fontSize: 12, color: "#D4D4D8", lineHeight: 1.6 }}>{m.d}</div></div>
-                              </div>
-                            ))}
-                            <div style={{ marginTop: 13, paddingTop: 11, borderTop: "1px solid #2E2E33", fontSize: 11.5, color: "#A78BFA", display: "flex", alignItems: "center", gap: 5 }}><Icon.spark width={12} height={12} /> 선택하면 AI가 둘 중 맞는 방식을 자동으로 추천해요</div>
-                          </div>
-                        )}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      {[{ c: "#5B9BFF", t: "Union", sub: "위아래로 행 잇기", d: "칼럼이 비슷한 데이터를 행으로 쌓아요", join: false }, { c: "#34C77B", t: "Join", sub: "옆으로 열 잇기", d: "공통 키로 옆에 붙여 칼럼을 늘려요", join: true }].map((m, i) => (
-                        <div key={i} style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 12, padding: "13px 13px 14px" }}>
-                          <div style={{ height: 40, background: "#F7F8FA", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 9 }}>
-                            {m.join ? (
-                              <svg width="92" height="26" viewBox="0 0 92 26" fill="none"><rect x="6" y="3" width="22" height="20" rx="3" fill="#5B9BFF" /><rect x="28" y="3" width="22" height="20" rx="3" fill="#34C77B" /><path d="M58 13h14m-5-4 5 4-5 4" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><rect x="76" y="3" width="10" height="20" rx="2.5" fill="#5B9BFF" /></svg>
-                            ) : (
-                              <svg width="64" height="30" viewBox="0 0 64 30" fill="none"><rect x="4" y="3" width="34" height="10" rx="2.5" fill="#5B9BFF" /><rect x="4" y="15" width="34" height="10" rx="2.5" fill="#34C77B" /><path d="M50 8v12m-4-5 4 5 4-5" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                            )}
-                          </div>
-                          <div style={{ fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 7, height: 7, borderRadius: 2.5, background: m.c }} />{m.t} <span style={{ fontSize: 11, fontWeight: 600, color: C.faint }}>· {m.sub}</span></div>
-                          <div style={{ fontSize: 11.5, color: C.faint, marginTop: 4, lineHeight: 1.5 }}>{m.d}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px", marginTop: 12 }}><Icon.spark width={14} height={14} /> {picked.length === 2 ? "왼쪽 아래 「다음」을 눌러 진행하세요" : "데이터셋 2개를 고르면 AI가 둘 중 맞는 방식을 추천해요"}</div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: C.sub, background: "#F4F0FE", borderRadius: 999, padding: "7px 14px", alignSelf: "flex-start" }}>
+                    <Icon.spark width={14} height={14} /> {picked.length === 2 ? "왼쪽 아래 「다음」을 눌러 진행하세요" : "데이터셋 2개를 고르면 AI가 최적 방식을 추천해요"}
                   </div>
                 </div>
               </div>
@@ -2642,11 +2701,11 @@ function CombinePage({ selected, onRun }) {
                         <div style={{ display: "flex", background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0 }}>
                           {cols.map((name, i) => <div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "12px 16px", fontSize: 12.5, fontWeight: 600, color: matched[i] ? C.sub : C.faint, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint, fontSize: 11 }}>{colType(name) === "key" ? "🔑" : colType(name)}</span>{name}</div>)}
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EFF4FF", fontSize: 12.5, fontWeight: 700, color: C.blue }}>{dsName(picked[0])} <span style={{ fontWeight: 500, color: C.faint }}>· 기존(기준)</span></div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EFF4FF", fontSize: 12.5, fontWeight: 700, color: C.blue }}>{dsName(picked[0])} <span style={{ fontWeight: 500, color: C.faint }}>· 기준</span></div>
                         {Array.from({ length: 20 }).map((_, r) => { const k = ((picked[0] || 0) + 1) * 7 + r; return (
                           <div key={"b" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>{cols.map((name, i) => cell(name, i, k, false))}</div>
                         ); })}
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EAF7EE", fontSize: 12.5, fontWeight: 700, color: "#15803D" }}>＋ {dsName(picked[1])} <span style={{ fontWeight: 500, color: C.faint }}>· 신규(이어붙임) · 매칭 없는 칼럼은 빈칸</span></div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#EAF7EE", fontSize: 12.5, fontWeight: 700, color: "#15803D" }}>{dsName(picked[1])} <span style={{ fontWeight: 500, color: C.faint }}>· 추가되는 행</span></div>
                         {Array.from({ length: 20 }).map((_, r) => { const k = ((picked[1] || 0) + 1) * 7 + r; return (
                           <div key={"a" + r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>{cols.map((name, i) => cell(name, i, k, !matched[i]))}</div>
                         ); })}
