@@ -2152,6 +2152,7 @@ function CombinePage({ selected, onRun }) {
   const [cmpPos, setCmpPos] = useState(null);
   const cmpRef = useRef(null);
   const [joinViz, setJoinViz] = useState("left"); // 결과 형태 학습용 익스플레이너 선택 종류
+  const [joinModal, setJoinModal] = useState(false); // JOIN 종류 비교 모달
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
   const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
@@ -2697,59 +2698,79 @@ function CombinePage({ selected, onRun }) {
                       </div>
                     ))}
                   </div>
-                  {joinMode && (() => { const vz = JOIN_VIZ[joinViz]; const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8"; const aFill = vz.a ? med : lite, bFill = vz.b ? med : lite; return (
+                  {joinMode && (
                     <div style={{ marginTop: 28 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12 }}>
                         <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="13" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" strokeDasharray="2.4 2.4" /></svg></span>
                         <span style={{ fontSize: 14.5, fontWeight: 700 }}>결과 형태</span>
-                        <span style={{ fontSize: 12, color: C.faint }}>· JOIN 종류를 예시 데이터로 비교해보세요</span>
                       </div>
-                      <div style={{ fontSize: 12, color: C.faint, marginBottom: 16 }}>실제 합치기는 <b style={{ color: C.sub }}>LEFT join</b>으로 실행돼요. 나머지는 이해를 돕는 예시예요.</div>
-
-                      {/* 예시 원본 테이블 A / B */}
-                      <div style={{ display: "flex", gap: 14, marginBottom: 18, flexWrap: "wrap" }}>
-                        {[{ t: "고객 (A)", h: ["id", "이름"], rows: JOIN_A }, { t: "주문 (B)", h: ["고객id", "상품"], rows: JOIN_B }].map((tb, ti) => (
-                          <div key={ti} style={{ flex: "1 1 240px", border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: "#3A63C0", padding: "10px 14px 8px" }}>{tb.t}</div>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", fontSize: 11.5, fontWeight: 600, color: C.faint, padding: "0 14px 6px" }}>{tb.h.map((h, i) => <span key={i}>{h}</span>)}</div>
-                            {tb.rows.map((r, i) => (<div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", fontSize: 13, color: C.text, padding: "6px 14px", borderTop: `1px solid ${C.borderSoft}` }}><span style={{ color: C.sub }}>{r[0]}</span><span>{r[1]}</span></div>))}
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* 종류 토글 */}
-                      <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
-                        {JOIN_VIZ_ORDER.map((k) => { const on = joinViz === k; return (
-                          <button key={k} onClick={() => setJoinViz(k)} style={{ flex: "0 0 auto", padding: "9px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 700, letterSpacing: 0.4, background: on ? C.dark : "#F1F2F4", color: on ? "#fff" : C.sub }}>{k.toUpperCase()}</button>
-                        ); })}
-                      </div>
-
-                      {/* Venn + 설명 */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 20 }}>
-                        <svg width="260" height="160" viewBox="0 0 260 160" fill="none">
-                          <defs><clipPath id="vennA"><circle cx="100" cy="80" r="60" /></clipPath></defs>
-                          <circle cx="100" cy="80" r="60" fill={aFill} stroke="#6BA0F0" strokeWidth="1.4" />
-                          <circle cx="160" cy="80" r="60" fill={bFill} stroke="#6BA0F0" strokeWidth="1.4" />
-                          <circle cx="160" cy="80" r="60" fill={dark} clipPath="url(#vennA)" />
-                          <text x="72" y="87" fontSize="20" fontWeight="700" fill="#1F2937" fontFamily={FONT}>A</text>
-                          <text x="180" y="87" fontSize="20" fontWeight="700" fill="#1F2937" fontFamily={FONT}>B</text>
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 18px", border: `1px solid ${C.border}`, borderRadius: 14, background: "#FBFCFE" }}>
+                        <svg width="84" height="56" viewBox="0 0 130 88" fill="none" style={{ flexShrink: 0 }}>
+                          <defs><clipPath id="vennMini"><circle cx="52" cy="44" r="34" /></clipPath></defs>
+                          <circle cx="52" cy="44" r="34" fill="#9DC0F7" stroke="#6BA0F0" strokeWidth="1.4" />
+                          <circle cx="86" cy="44" r="34" fill="#E4EEFC" stroke="#6BA0F0" strokeWidth="1.4" />
+                          <circle cx="86" cy="44" r="34" fill="#4F86E8" clipPath="url(#vennMini)" />
+                          <text x="36" y="50" fontSize="14" fontWeight="700" fill="#1F2937" fontFamily={FONT}>A</text>
+                          <text x="98" y="50" fontSize="14" fontWeight="700" fill="#1F2937" fontFamily={FONT}>B</text>
                         </svg>
-                        <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: 0.3, marginTop: 6 }}>{vz.label}</div>
-                        <div style={{ fontSize: 13, color: C.sub, textAlign: "center", maxWidth: 460, lineHeight: 1.55 }}>{vz.desc}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: 0.3 }}>LEFT JOIN <span style={{ fontSize: 11, fontWeight: 600, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "1px 7px", marginLeft: 4 }}>현재 지원</span></div>
+                          <div style={{ fontSize: 12.5, color: C.faint, marginTop: 3, lineHeight: 1.5 }}>기준(A)의 모든 행을 유지하고, 매칭되는 B만 옆에 붙여요. 없으면 빈칸(NULL).</div>
+                        </div>
+                        <button onClick={() => setJoinModal(true)} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, fontFamily: FONT, color: C.text, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 15px", cursor: "pointer" }}>JOIN 종류 비교 <span style={{ display: "flex" }}><Icon.chevR width={14} height={14} /></span></button>
                       </div>
+                    </div>
+                  )}
+                  {joinModal && (() => { const vz = JOIN_VIZ[joinViz]; const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8"; const aFill = vz.a ? med : lite, bFill = vz.b ? med : lite; return (
+                    <div onClick={() => setJoinModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(17,18,22,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 24 }}>
+                      <div onClick={(e) => e.stopPropagation()} style={{ width: 620, maxWidth: "94vw", maxHeight: "88vh", overflow: "auto", background: "#fff", borderRadius: 18, padding: "22px 26px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.32)", fontFamily: FONT }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
+                          <div style={{ fontSize: 16, fontWeight: 800 }}>JOIN 종류 <span style={{ fontWeight: 600, color: C.faint }}>— 실제 데이터로 비교</span></div>
+                          <button onClick={() => setJoinModal(false)} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", color: C.faint, padding: 2 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></button>
+                        </div>
+                        <div style={{ fontSize: 12.5, color: C.faint, marginBottom: 18 }}>실제 합치기는 <b style={{ color: C.sub }}>LEFT join</b>으로 실행돼요. 나머지는 이해를 돕는 예시예요.</div>
 
-                      {/* 결과 테이블 */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: C.sub }}>결과 <span style={{ fontWeight: 500, color: C.faint }}>(id로 매칭)</span></span>
-                        <span style={{ fontSize: 12.5, color: C.faint }}>{vz.rows.length} rows</span>
-                      </div>
-                      <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "0.7fr 1fr 1fr", fontSize: 12, fontWeight: 700, color: C.faint, background: "#FAFAFB", padding: "10px 16px", borderBottom: `1px solid ${C.border}` }}><span>id</span><span>이름</span><span>상품</span></div>
-                        {vz.rows.map((r, i) => (
-                          <div key={i} style={{ display: "grid", gridTemplateColumns: "0.7fr 1fr 1fr", fontSize: 13.5, padding: "11px 16px", borderTop: i ? `1px solid ${C.borderSoft}` : "none" }}>
-                            {r.map((c, j) => <span key={j} style={{ color: c === null ? "#DC2626" : (j === 0 ? C.sub : C.text), fontWeight: c === null ? 700 : 400 }}>{c === null ? "NULL" : c}</span>)}
-                          </div>
-                        ))}
+                        <div style={{ display: "flex", gap: 14, marginBottom: 18, flexWrap: "wrap" }}>
+                          {[{ t: "고객 (A)", h: ["id", "이름"], rows: JOIN_A }, { t: "주문 (B)", h: ["고객id", "상품"], rows: JOIN_B }].map((tb, ti) => (
+                            <div key={ti} style={{ flex: "1 1 240px", border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "#3A63C0", padding: "10px 14px 8px" }}>{tb.t}</div>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", fontSize: 11.5, fontWeight: 600, color: C.faint, padding: "0 14px 6px" }}>{tb.h.map((h, i) => <span key={i}>{h}</span>)}</div>
+                              {tb.rows.map((r, i) => (<div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", fontSize: 13, color: C.text, padding: "6px 14px", borderTop: `1px solid ${C.borderSoft}` }}><span style={{ color: C.sub }}>{r[0]}</span><span>{r[1]}</span></div>))}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
+                          {JOIN_VIZ_ORDER.map((k) => { const on = joinViz === k; return (
+                            <button key={k} onClick={() => setJoinViz(k)} style={{ flex: "0 0 auto", padding: "9px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 700, letterSpacing: 0.4, background: on ? C.dark : "#F1F2F4", color: on ? "#fff" : C.sub }}>{k.toUpperCase()}</button>
+                          ); })}
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 20 }}>
+                          <svg width="260" height="160" viewBox="0 0 260 160" fill="none">
+                            <defs><clipPath id="vennModalA"><circle cx="100" cy="80" r="60" /></clipPath></defs>
+                            <circle cx="100" cy="80" r="60" fill={aFill} stroke="#6BA0F0" strokeWidth="1.4" />
+                            <circle cx="160" cy="80" r="60" fill={bFill} stroke="#6BA0F0" strokeWidth="1.4" />
+                            <circle cx="160" cy="80" r="60" fill={dark} clipPath="url(#vennModalA)" />
+                            <text x="72" y="87" fontSize="20" fontWeight="700" fill="#1F2937" fontFamily={FONT}>A</text>
+                            <text x="180" y="87" fontSize="20" fontWeight="700" fill="#1F2937" fontFamily={FONT}>B</text>
+                          </svg>
+                          <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: 0.3, marginTop: 6 }}>{vz.label}</div>
+                          <div style={{ fontSize: 13, color: C.sub, textAlign: "center", maxWidth: 460, lineHeight: 1.55 }}>{vz.desc}</div>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: C.sub }}>결과 <span style={{ fontWeight: 500, color: C.faint }}>(id로 매칭)</span></span>
+                          <span style={{ fontSize: 12.5, color: C.faint }}>{vz.rows.length} rows</span>
+                        </div>
+                        <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "0.7fr 1fr 1fr", fontSize: 12, fontWeight: 700, color: C.faint, background: "#FAFAFB", padding: "10px 16px", borderBottom: `1px solid ${C.border}` }}><span>id</span><span>이름</span><span>상품</span></div>
+                          {vz.rows.map((r, i) => (
+                            <div key={i} style={{ display: "grid", gridTemplateColumns: "0.7fr 1fr 1fr", fontSize: 13.5, padding: "11px 16px", borderTop: i ? `1px solid ${C.borderSoft}` : "none" }}>
+                              {r.map((c, j) => <span key={j} style={{ color: c === null ? "#DC2626" : (j === 0 ? C.sub : C.text), fontWeight: c === null ? 700 : 400 }}>{c === null ? "NULL" : c}</span>)}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   ); })()}
