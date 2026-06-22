@@ -2112,6 +2112,16 @@ const buildCaseRows = (caseKey, swapped) => {
   if (caseKey === "join-lowmatch") return matched.map(([l, r], i) => (i % 3 === 0 ? [l, null] : [l, r]));
   return matched; // union-clean / join-clean: 전부 매칭
 };
+// JOIN 종류 학습용 익스플레이너 — 실제 예시 데이터(고객 A · 주문 B), id로 매칭
+const JOIN_A = [["1", "민경"], ["2", "철수"], ["3", "영희"]];
+const JOIN_B = [["1", "노트북"], ["1", "마우스"], ["2", "키보드"], ["4", "모니터"]];
+const JOIN_VIZ = {
+  inner: { label: "INNER JOIN", desc: "A와 B 양쪽에 모두 매칭되는 행만", a: false, b: false, rows: [["1", "민경", "노트북"], ["1", "민경", "마우스"], ["2", "철수", "키보드"]] },
+  left: { label: "LEFT JOIN", desc: "A는 전부 포함, 매칭되는 B만 붙이고 없으면 NULL (영희=주문 없음)", a: true, b: false, rows: [["1", "민경", "노트북"], ["1", "민경", "마우스"], ["2", "철수", "키보드"], ["3", "영희", null]] },
+  right: { label: "RIGHT JOIN", desc: "B는 전부 포함, 매칭되는 A만 붙이고 없으면 NULL (모니터=고객id 4가 A에 없음)", a: false, b: true, rows: [["1", "민경", "노트북"], ["1", "민경", "마우스"], ["2", "철수", "키보드"], ["4", null, "모니터"]] },
+  full: { label: "FULL OUTER JOIN", desc: "A, B 전부 포함하는 합집합, 매칭 안 되면 양쪽 다 NULL", a: true, b: true, rows: [["1", "민경", "노트북"], ["1", "민경", "마우스"], ["2", "철수", "키보드"], ["3", "영희", null], ["4", null, "모니터"]] },
+};
+const JOIN_VIZ_ORDER = ["inner", "left", "right", "full"];
 function CombinePage({ selected, onRun }) {
   const pool = useMemo(() => Array.from({ length: 14 }, (_, i) => poolLabel(i)), []);
   const came = selected && selected.length >= 2;
@@ -2141,6 +2151,7 @@ function CombinePage({ selected, onRun }) {
   const [cmpOpen, setCmpOpen] = useState(false); // 선택화면 Union·Join 비교 팝오버
   const [cmpPos, setCmpPos] = useState(null);
   const cmpRef = useRef(null);
+  const [joinViz, setJoinViz] = useState("left"); // 결과 형태 학습용 익스플레이너 선택 종류
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
   const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
@@ -2686,33 +2697,62 @@ function CombinePage({ selected, onRun }) {
                       </div>
                     ))}
                   </div>
-                  {joinMode && (
+                  {joinMode && (() => { const vz = JOIN_VIZ[joinViz]; const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8"; const aFill = vz.a ? med : lite, bFill = vz.b ? med : lite; return (
                     <div style={{ marginTop: 28 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
                         <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="13" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" strokeDasharray="2.4 2.4" /></svg></span>
                         <span style={{ fontSize: 14.5, fontWeight: 700 }}>결과 형태</span>
+                        <span style={{ fontSize: 12, color: C.faint }}>· JOIN 종류를 예시 데이터로 비교해보세요</span>
                       </div>
-                      <div style={{ display: "flex", gap: 32, alignItems: "center", flexWrap: "wrap" }}>
-                        <div style={{ flexShrink: 0, width: 300, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                          <svg width="280" height="170" viewBox="0 0 280 170" fill="none">
-                            <circle cx="170" cy="85" r="64" fill="#fff" stroke="#C9D2DC" strokeWidth="1.5" />
-                            <circle cx="110" cy="85" r="64" fill="#DCE9FC" stroke="#5B9BFF" strokeWidth="1.5" fillOpacity="0.85" />
-                            <text x="78" y="92" fontSize="22" fontWeight="600" fill="#3A63C0" fontFamily={FONT}>A</text>
-                            <text x="198" y="92" fontSize="22" fontWeight="600" fill="#A1A8B3" fontFamily={FONT}>B</text>
-                          </svg>
-                          <div style={{ fontSize: 12, color: C.faint }}>기준(A)의 모든 행을 유지하고 B를 붙여요</div>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 280, display: "flex", flexDirection: "column", gap: 11 }}>
-                          {[{ k: "left", t: "Left join", on: true }, { k: "right", t: "Right join" }, { k: "inner", t: "Inner join" }, { k: "full", t: "Full join" }].map((j) => (
-                            <div key={j.k} title={j.on ? "현재 지원" : "곧 지원 예정"} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 60, padding: "0 22px", borderRadius: 12, border: j.on ? `1.5px solid ${C.text}` : `1px solid ${C.border}`, background: j.on ? "#fff" : "#FBFBFC", color: j.on ? C.text : C.faint, fontSize: 16, fontWeight: 600, cursor: j.on ? "default" : "not-allowed" }}>
-                              <span>{j.t}</span>
-                              {!j.on && <span style={{ fontSize: 12, fontWeight: 600, color: C.faint, background: "#F1F2F4", borderRadius: 6, padding: "3px 11px" }}>예정</span>}
-                            </div>
-                          ))}
-                        </div>
+                      <div style={{ fontSize: 12, color: C.faint, marginBottom: 16 }}>실제 합치기는 <b style={{ color: C.sub }}>LEFT join</b>으로 실행돼요. 나머지는 이해를 돕는 예시예요.</div>
+
+                      {/* 예시 원본 테이블 A / B */}
+                      <div style={{ display: "flex", gap: 14, marginBottom: 18, flexWrap: "wrap" }}>
+                        {[{ t: "고객 (A)", h: ["id", "이름"], rows: JOIN_A }, { t: "주문 (B)", h: ["고객id", "상품"], rows: JOIN_B }].map((tb, ti) => (
+                          <div key={ti} style={{ flex: "1 1 240px", border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#3A63C0", padding: "10px 14px 8px" }}>{tb.t}</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", fontSize: 11.5, fontWeight: 600, color: C.faint, padding: "0 14px 6px" }}>{tb.h.map((h, i) => <span key={i}>{h}</span>)}</div>
+                            {tb.rows.map((r, i) => (<div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", fontSize: 13, color: C.text, padding: "6px 14px", borderTop: `1px solid ${C.borderSoft}` }}><span style={{ color: C.sub }}>{r[0]}</span><span>{r[1]}</span></div>))}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* 종류 토글 */}
+                      <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
+                        {JOIN_VIZ_ORDER.map((k) => { const on = joinViz === k; return (
+                          <button key={k} onClick={() => setJoinViz(k)} style={{ flex: "0 0 auto", padding: "9px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 700, letterSpacing: 0.4, background: on ? C.dark : "#F1F2F4", color: on ? "#fff" : C.sub }}>{k.toUpperCase()}</button>
+                        ); })}
+                      </div>
+
+                      {/* Venn + 설명 */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 20 }}>
+                        <svg width="260" height="160" viewBox="0 0 260 160" fill="none">
+                          <defs><clipPath id="vennA"><circle cx="100" cy="80" r="60" /></clipPath></defs>
+                          <circle cx="100" cy="80" r="60" fill={aFill} stroke="#6BA0F0" strokeWidth="1.4" />
+                          <circle cx="160" cy="80" r="60" fill={bFill} stroke="#6BA0F0" strokeWidth="1.4" />
+                          <circle cx="160" cy="80" r="60" fill={dark} clipPath="url(#vennA)" />
+                          <text x="72" y="87" fontSize="20" fontWeight="700" fill="#1F2937" fontFamily={FONT}>A</text>
+                          <text x="180" y="87" fontSize="20" fontWeight="700" fill="#1F2937" fontFamily={FONT}>B</text>
+                        </svg>
+                        <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: 0.3, marginTop: 6 }}>{vz.label}</div>
+                        <div style={{ fontSize: 13, color: C.sub, textAlign: "center", maxWidth: 460, lineHeight: 1.55 }}>{vz.desc}</div>
+                      </div>
+
+                      {/* 결과 테이블 */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: C.sub }}>결과 <span style={{ fontWeight: 500, color: C.faint }}>(id로 매칭)</span></span>
+                        <span style={{ fontSize: 12.5, color: C.faint }}>{vz.rows.length} rows</span>
+                      </div>
+                      <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "0.7fr 1fr 1fr", fontSize: 12, fontWeight: 700, color: C.faint, background: "#FAFAFB", padding: "10px 16px", borderBottom: `1px solid ${C.border}` }}><span>id</span><span>이름</span><span>상품</span></div>
+                        {vz.rows.map((r, i) => (
+                          <div key={i} style={{ display: "grid", gridTemplateColumns: "0.7fr 1fr 1fr", fontSize: 13.5, padding: "11px 16px", borderTop: i ? `1px solid ${C.borderSoft}` : "none" }}>
+                            {r.map((c, j) => <span key={j} style={{ color: c === null ? "#DC2626" : (j === 0 ? C.sub : C.text), fontWeight: c === null ? 700 : 400 }}>{c === null ? "NULL" : c}</span>)}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  )}
+                  ); })()}
                   </div>
                   </>
                   ); })()}
