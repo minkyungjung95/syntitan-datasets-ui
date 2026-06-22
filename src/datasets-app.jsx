@@ -2588,6 +2588,21 @@ function CombinePage({ selected, onRun }) {
                     {infoOpen && infoPos && (
                       <div style={{ position: "fixed", top: infoPos.top, left: infoPos.left, width: 320, background: "#18181B", color: "#fff", borderRadius: 14, padding: 16, zIndex: 60, boxShadow: "0 18px 44px rgba(0,0,0,0.34)", fontWeight: 400 }}>
                         <span style={{ position: "absolute", top: -7, left: 22, width: 14, height: 14, background: "#18181B", transform: "rotate(45deg)", borderRadius: 2 }} />
+                        {method === "join" ? (<>
+                          <div style={{ display: "flex", gap: 8, marginBottom: 13 }}>
+                            <div style={{ flex: 1, background: "#fff", borderRadius: 9, overflow: "hidden" }}>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", fontSize: 10.5, fontWeight: 700, color: "#9CA3AF", background: "#F3F4F6", padding: "6px 11px" }}><span>ID</span><span>AGE</span></div>
+                              {[["001", "27"], ["002", "34"], ["003", "41"]].map((r, i) => (<div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", fontSize: 12, color: "#3F3F46", padding: "5px 11px", borderTop: "1px solid #F1F1F3" }}><span style={{ color: "#5B9BFF", fontWeight: 600 }}>{r[0]}</span><span>{r[1]}</span></div>))}
+                            </div>
+                            <span style={{ display: "flex", alignItems: "center", color: "#71717A", fontSize: 13 }}>＋</span>
+                            <div style={{ flex: 1, background: "#fff", borderRadius: 9, overflow: "hidden" }}>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", fontSize: 10.5, fontWeight: 700, color: "#9CA3AF", background: "#F3F4F6", padding: "6px 11px" }}><span>ID</span><span>CITY</span></div>
+                              {[["001", "서울"], ["003", "부산"], ["—", "—"]].map((r, i) => (<div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", fontSize: 12, color: r[0] === "—" ? "#C4787880" : "#3F3F46", padding: "5px 11px", borderTop: "1px solid #F1F1F3" }}><span style={{ color: r[0] === "—" ? "#C4787880" : "#34C77B", fontWeight: 600 }}>{r[0]}</span><span>{r[1]}</span></div>))}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 7 }}>옆으로 열을 이어 붙여요.</div>
+                          <div style={{ fontSize: 12.5, color: "#D4D4D8", lineHeight: 1.7 }}>공통 키(예: 고객번호)가 같은 줄끼리 두 데이터를 <b style={{ color: "#fff" }}>옆으로</b> 붙여 칼럼을 늘려요. 기준 데이터의 행은 모두 유지되고, 키가 맞지 않으면 빈값(Null)이 돼요. 현재 <b style={{ color: "#fff" }}>Left join</b>만 지원해요.</div>
+                        </>) : (<>
                         <div style={{ background: "#fff", borderRadius: 9, overflow: "hidden", marginBottom: 13 }}>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", fontSize: 11, fontWeight: 700, color: "#9CA3AF", letterSpacing: 0.4, background: "#F3F4F6", padding: "7px 14px" }}><span>ID</span><span>AGE</span><span>CLASS</span></div>
                           {[["001", "27", "A"], ["002", "34", "B"], ["003", "41", "A"], ["004", "29", "C"], ["005", "31", "B"], ["006", "38", "A"]].map((r, i) => (
@@ -2596,36 +2611,40 @@ function CombinePage({ selected, onRun }) {
                         </div>
                         <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 7 }}>위아래로 테이블을 이어 붙여요.</div>
                         <div style={{ fontSize: 12.5, color: "#D4D4D8", lineHeight: 1.7 }}>같은 뜻의 칼럼끼리 두 데이터를 <b style={{ color: "#fff" }}>위아래로</b> 쌓아 행을 추가해요. 한쪽에만 있는 칼럼은 반대 쪽의 빈값(Null)으로 채워져요. 기준 칼럼은 첫번째 선택한 데이터셋이에요.</div>
+                        </>)}
                       </div>
                     )}
                   </span>
-                  <span style={{ fontSize: 13.5, color: C.sub }}>{caseDef.line}</span>
+                  <span style={{ fontSize: 13.5, color: C.sub }}>{method === "join" ? "공통 키를 기준으로 옆으로 열을 붙여요. 현재 Left join만 지원해요." : caseDef.line}</span>
                   <div style={{ flex: 1 }} />
-                  <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>{method === "join" ? "Join" : "Union"} 실행하기</button>
+                  <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>{method === "join" ? "병합하기" : "Union 실행하기"}</button>
                 </div>
               </div>
               <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
                 <div style={{ flex: 1, overflow: "auto", minHeight: 0, padding: "18px 28px", display: "flex", gap: 24 }}>
-                  {(() => { const removed = matchRows.filter((m) => m[0] === null).length; const kept = matchRows.filter((m) => m[0] !== null).length; return (
+                  {(() => { const removed = matchRows.filter((m) => m[0] === null).length; const kept = matchRows.filter((m) => m[0] !== null).length; const joinMode = method === "join"; const banner = joinMode ? { tone: "info", text: "기준 데이터 1,000행 중 700행이 매칭되지 않아 빈칸이 됩니다." } : caseDef.banner; const statRows = joinMode
+                    ? [["열", <><b style={{ color: C.text }}>8</b> <span style={{ fontSize: 11, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "1px 7px" }}>+5 ↑</span></>], ["행", <><b style={{ color: C.text }}>1,000</b> <span style={{ fontSize: 11, color: C.faint, background: "#F3F4F6", borderRadius: 5, padding: "1px 7px" }}>변화 없음</span></>], [<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>매칭률 <Icon.infoCircle width={13} height={13} /></span>, <b style={{ color: "#DC2626" }}>30%</b>], ["용량", <b style={{ color: C.text }}>90 MB</b>]]
+                    : [["열", <><b style={{ color: C.text }}>{kept}</b> <span style={{ fontSize: 11, color: C.faint, background: "#F3F4F6", borderRadius: 5, padding: "1px 7px" }}>기준 유지</span></>], ["행", <><b style={{ color: C.text }}>1,000</b> <span style={{ fontSize: 11, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "1px 7px" }}>+500</span></>], ["용량", <b style={{ color: C.text }}>80.5 KB</b>], ...(removed ? [["제거 칼럼", <span style={{ display: "flex", alignItems: "center", gap: 4 }}><b style={{ color: "#C2410C" }}>{removed}</b> <Icon.infoCircle width={13} height={13} /></span>]] : [])]; return (
                   <>
                   <div style={{ width: 300, flexShrink: 0, order: 2 }}>
                     <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 12 }}>예상 총합</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 0, fontSize: 13.5, color: C.sub }}>
-                      {[["열", <><b style={{ color: C.text }}>{kept}</b> <span style={{ fontSize: 11, color: C.faint, background: "#F3F4F6", borderRadius: 5, padding: "1px 7px" }}>기준 유지</span></>], ["행", <><b style={{ color: C.text }}>1,000</b> <span style={{ fontSize: 11, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "1px 7px" }}>+500</span></>], ["용량", <b style={{ color: C.text }}>80.5 KB</b>], ...(removed ? [["제거 칼럼", <span style={{ display: "flex", alignItems: "center", gap: 4 }}><b style={{ color: "#C2410C" }}>{removed}</b> <Icon.infoCircle width={13} height={13} /></span>]] : [])].map((row, i) => (
+                      {statRows.map((row, i) => (
                         <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 2px", borderBottom: "1px solid #00000008" }}><span>┃ {row[0]}</span><span>{row[1]}</span></div>
                       ))}
                     </div>
-                    {caseDef.banner && (
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 14, padding: "12px 13px", borderRadius: 10, fontSize: 12.5, lineHeight: 1.55, background: caseDef.banner.tone === "warn" ? "#FEF6EC" : "#EEF3FE", color: caseDef.banner.tone === "warn" ? "#B45309" : "#3A63C0" }}>
-                        <span style={{ display: "flex", flexShrink: 0, marginTop: 1 }}>{caseDef.banner.tone === "warn" ? <Icon.warn width={14} height={14} /> : <Icon.infoCircle width={14} height={14} />}</span>
-                        <span>{caseDef.banner.text}</span>
+                    {banner && (
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 14, padding: "12px 13px", borderRadius: 10, fontSize: 12.5, lineHeight: 1.55, background: banner.tone === "warn" ? "#FEF6EC" : "#EEF3FE", color: banner.tone === "warn" ? "#B45309" : "#3A63C0" }}>
+                        <span style={{ display: "flex", flexShrink: 0, marginTop: 1 }}>{banner.tone === "warn" ? <Icon.warn width={14} height={14} /> : <Icon.infoCircle width={14} height={14} />}</span>
+                        <span>{banner.text}</span>
                       </div>
                     )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0, order: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                    <span style={{ fontSize: 14.5, fontWeight: 700 }}>칼럼 매칭 결과</span>
-                    <span style={{ fontSize: 13, color: C.faint, fontWeight: 600 }}>총 {matchRows.length}건</span>
+                    {joinMode && <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 7a4 4 0 1 0-3.9 5L8 15v3h3v-2h2v-2h1.1A4 4 0 0 0 15 7z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
+                    <span style={{ fontSize: 14.5, fontWeight: 700 }}>{joinMode ? "키값 매칭 결과" : "칼럼 매칭 결과"}</span>
+                    {!joinMode && <span style={{ fontSize: 13, color: C.faint, fontWeight: 600 }}>총 {matchRows.length}건</span>}
                   </div>
                   <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
                     <div style={{ display: "flex", alignItems: "center", background: "#FAFAFB", borderBottom: `1px solid ${C.border}`, height: 50 }}>
@@ -2667,6 +2686,33 @@ function CombinePage({ selected, onRun }) {
                       </div>
                     ))}
                   </div>
+                  {joinMode && (
+                    <div style={{ marginTop: 28 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
+                        <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="13" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" strokeDasharray="2.4 2.4" /></svg></span>
+                        <span style={{ fontSize: 14.5, fontWeight: 700 }}>결과 형태</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 32, alignItems: "center", flexWrap: "wrap" }}>
+                        <div style={{ flexShrink: 0, width: 300, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                          <svg width="280" height="170" viewBox="0 0 280 170" fill="none">
+                            <circle cx="170" cy="85" r="64" fill="#fff" stroke="#C9D2DC" strokeWidth="1.5" />
+                            <circle cx="110" cy="85" r="64" fill="#DCE9FC" stroke="#5B9BFF" strokeWidth="1.5" fillOpacity="0.85" />
+                            <text x="78" y="92" fontSize="22" fontWeight="600" fill="#3A63C0" fontFamily={FONT}>A</text>
+                            <text x="198" y="92" fontSize="22" fontWeight="600" fill="#A1A8B3" fontFamily={FONT}>B</text>
+                          </svg>
+                          <div style={{ fontSize: 12, color: C.faint }}>기준(A)의 모든 행을 유지하고 B를 붙여요</div>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 280, display: "flex", flexDirection: "column", gap: 11 }}>
+                          {[{ k: "left", t: "Left join", on: true }, { k: "right", t: "Right join" }, { k: "inner", t: "Inner join" }, { k: "full", t: "Full join" }].map((j) => (
+                            <div key={j.k} title={j.on ? "현재 지원" : "곧 지원 예정"} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 60, padding: "0 22px", borderRadius: 12, border: j.on ? `1.5px solid ${C.text}` : `1px solid ${C.border}`, background: j.on ? "#fff" : "#FBFBFC", color: j.on ? C.text : C.faint, fontSize: 16, fontWeight: 600, cursor: j.on ? "default" : "not-allowed" }}>
+                              <span>{j.t}</span>
+                              {!j.on && <span style={{ fontSize: 12, fontWeight: 600, color: C.faint, background: "#F1F2F4", borderRadius: 6, padding: "3px 11px" }}>예정</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   </div>
                   </>
                   ); })()}
