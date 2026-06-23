@@ -2725,7 +2725,6 @@ function CombinePage({ selected, onRun }) {
                         <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="13" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" strokeDasharray="2.4 2.4" /></svg></span>
                         <span style={{ fontSize: 14.5, fontWeight: 700 }}>결과 형태</span>
                         <span style={{ fontSize: 12, color: C.faint }}>· 기준 데이터를 다 살려요</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "2px 8px", marginLeft: 2 }}>{swapped ? "RIGHT JOIN" : "LEFT JOIN"}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", margin: "14px 0 6px" }}>
                         <svg width="200" height="124" viewBox="0 0 200 124" fill="none" style={{ flexShrink: 0 }}>
@@ -2742,7 +2741,7 @@ function CombinePage({ selected, onRun }) {
                         </div>
                       </div>
                       <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, margin: "4px 0 0", maxWidth: 560 }}>짝이 없는 행의 {addName} 칼럼은 빈 값(null)으로 채워져요.</p>
-                      <p style={{ fontSize: 12, color: C.faint, margin: "8px 0 0" }}>위 조인 키의 <b style={{ color: C.sub }}>⇄</b> 로 기준을 바꾸면 Right join이 돼요.</p>
+                      <p style={{ fontSize: 12, color: C.faint, margin: "8px 0 0" }}>위 조인 키의 <b style={{ color: C.sub }}>⇄</b> 로 어느 데이터를 기준으로 둘지 바꿀 수 있어요.</p>
                       <button onClick={() => setJoinModal(true)} style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12.5, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>JOIN 종류 예시로 자세히 보기 <span style={{ display: "flex" }}><Icon.chevR width={13} height={13} /></span></button>
                     </div>
                     ); })()}
