@@ -2821,7 +2821,20 @@ function CombinePage({ selected, onRun }) {
                     const cols = appliedRows.map(([l]) => l);          // 적용된 매칭 기준 칼럼
                     const matched = appliedRows.map(([, rcol]) => !!rcol); // 추가에 매칭이 있나
                     const cell = (name, i, k, isNull) => <div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: isNull ? C.faint : C.text, fontStyle: isNull ? "italic" : "normal", background: isNull ? "#F4F4F6" : "transparent", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isNull ? "null" : colVal(name, k)}</div>;
-                    return (
+                    return joinMode ? (() => {
+                      const extra = Math.min(2, Math.max(1, cols.length - 1));   // 오른쪽 붙는 컬럼 수
+                      const baseN = cols.length - extra;
+                      const isAdd = (i) => i >= baseN;
+                      return (
+                      <div style={{ minWidth: "fit-content" }}>
+                        <div style={{ display: "flex", background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0 }}>
+                          {cols.map((name, i) => <div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "12px 16px", fontSize: 12.5, fontWeight: 600, color: C.sub, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6, background: isAdd(i) ? "#EFF4FF" : "#fff", boxShadow: isAdd(i) && i === baseN ? "inset 1px 0 0 #D4E2FB" : "none" }}><span style={{ color: C.faint, fontSize: 11 }}>{colType(name) === "key" ? "🔑" : colType(name)}</span>{name}{isAdd(i) && i === baseN && <span style={{ fontSize: 10, fontWeight: 700, color: C.blue, marginLeft: 2 }}>붙는 컬럼 →</span>}</div>)}
+                        </div>
+                        {Array.from({ length: 20 }).map((_, r) => { const k = ((picked[0] || 0) + 1) * 7 + r; const rowMatched = (r % 10) < 3; return (
+                          <div key={r} style={{ display: "flex", borderBottom: "1px solid #00000008" }}>{cols.map((name, i) => { const nul = isAdd(i) && !rowMatched; return (<div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: nul ? C.faint : C.text, fontStyle: nul ? "italic" : "normal", background: isAdd(i) ? "#F7FAFF" : "transparent", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nul ? "null" : colVal(name, k)}</div>); })}</div>
+                        ); })}
+                      </div>
+                      ); })() : (
                       <div style={{ minWidth: "fit-content" }}>
                         <div style={{ display: "flex", background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0 }}>
                           {cols.map((name, i) => <div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "12px 16px", fontSize: 12.5, fontWeight: 600, color: matched[i] ? C.sub : C.faint, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.faint, fontSize: 11 }}>{colType(name) === "key" ? "🔑" : colType(name)}</span>{name}</div>)}
