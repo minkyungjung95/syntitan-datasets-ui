@@ -2153,6 +2153,8 @@ function CombinePage({ selected, onRun }) {
   const cmpRef = useRef(null);
   const [joinViz, setJoinViz] = useState("left"); // 결과 형태 학습용 익스플레이너 선택 종류
   const [joinModal, setJoinModal] = useState(false); // JOIN 종류 비교 모달
+  const [joinKeep, setJoinKeep] = useState("left"); // 결과에 남길 행: left(기준 전부)/inner(공통)/full(둘 다)
+  const [joinSwap, setJoinSwap] = useState(false);  // 기준 ↔ 추가 좌우 교체 (left일 때만 의미 = Right join)
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
   const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
@@ -2698,29 +2700,50 @@ function CombinePage({ selected, onRun }) {
                       </div>
                     ))}
                   </div>
-                  {joinMode && (
+                  {joinMode && (() => {
+                    const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8";
+                    const baseName = dsName(picked[joinSwap ? 1 : 0]);
+                    const addName = dsName(picked[joinSwap ? 0 : 1]);
+                    const aFill = joinKeep === "full" ? med : (joinKeep === "left" && !joinSwap ? med : lite);
+                    const bFill = joinKeep === "full" ? med : (joinKeep === "left" && joinSwap ? med : lite);
+                    const KEEP = { left: { n: "1,000", desc: `지금 기준(${baseName})의 1,000행이 모두 남아요. 짝이 없는 행의 ${addName} 칼럼은 빈 값(null)이 돼요.` }, inner: { n: "920", desc: "양쪽에 다 있는 920행만 남고, 한쪽에만 있는 행은 빠져요. (좌우 무관)" }, full: { n: "약 1,080", desc: "양쪽 행을 모두 남기고, 짝이 없는 칸은 빈 값(null)이 돼요. (좌우 무관)" } }[joinKeep];
+                    const symmetric = joinKeep !== "left";
+                    return (
                     <div style={{ marginTop: 28 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
                         <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="13" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" strokeDasharray="2.4 2.4" /></svg></span>
                         <span style={{ fontSize: 14.5, fontWeight: 700 }}>결과 형태</span>
+                        <span style={{ fontSize: 12, color: C.faint }}>· 결과에 어떤 행을 남길까요?</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 18px", border: `1px solid ${C.border}`, borderRadius: 14, background: "#FBFCFE" }}>
-                        <svg width="84" height="56" viewBox="0 0 130 88" fill="none" style={{ flexShrink: 0 }}>
-                          <defs><clipPath id="vennMini"><circle cx="52" cy="44" r="34" /></clipPath></defs>
-                          <circle cx="52" cy="44" r="34" fill="#9DC0F7" stroke="#6BA0F0" strokeWidth="1.4" />
-                          <circle cx="86" cy="44" r="34" fill="#E4EEFC" stroke="#6BA0F0" strokeWidth="1.4" />
-                          <circle cx="86" cy="44" r="34" fill="#4F86E8" clipPath="url(#vennMini)" />
-                          <text x="36" y="50" fontSize="14" fontWeight="700" fill="#1F2937" fontFamily={FONT}>A</text>
-                          <text x="98" y="50" fontSize="14" fontWeight="700" fill="#1F2937" fontFamily={FONT}>B</text>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "14px 0 14px" }}>
+                        {[["left", "기준 다 살리기", true], ["inner", "공통만 남기기", false], ["full", "둘 다 살리기", false]].map(([k, label, rec]) => { const on = joinKeep === k; return (
+                          <button key={k} onClick={() => setJoinKeep(k)} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 999, border: on ? "none" : `1px solid ${C.border}`, cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 600, background: on ? C.purple : "#fff", color: on ? "#fff" : C.sub }}>{label}{rec && <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 5, padding: "1px 6px", background: on ? "rgba(255,255,255,0.22)" : "#EEE9FE", color: on ? "#fff" : C.purple }}>추천</span>}</button>
+                        ); })}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 600, borderRadius: 8, padding: "6px 11px", background: !joinSwap ? "#EEE9FE" : "#F3F4F6", color: !joinSwap ? C.purple : C.sub }}>{dsName(picked[0])} · {joinSwap ? "추가" : "기준"}</span>
+                        <button onClick={() => !symmetric && setJoinSwap((s) => !s)} disabled={symmetric} title={symmetric ? "좌우 대칭이라 바꿔도 같아요" : "기준 ↔ 추가 교체"} style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", cursor: symmetric ? "not-allowed" : "pointer", opacity: symmetric ? 0.4 : 1, color: C.text }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
+                        <span style={{ fontSize: 12.5, fontWeight: 600, borderRadius: 8, padding: "6px 11px", background: joinSwap ? "#EEE9FE" : "#F3F4F6", color: joinSwap ? C.purple : C.sub }}>{dsName(picked[1])} · {joinSwap ? "기준" : "추가"}</span>
+                        <span style={{ fontSize: 12, color: C.faint }}>{symmetric ? "좌우 대칭이라 바꿔도 결과가 같아요" : "기준을 바꾸면 Right join이 돼요"}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", margin: "8px 0 6px" }}>
+                        <svg width="200" height="124" viewBox="0 0 200 124" fill="none" style={{ flexShrink: 0 }}>
+                          <defs><clipPath id="vennKeep"><circle cx="78" cy="62" r="48" /></clipPath></defs>
+                          <circle cx="122" cy="62" r="48" fill={bFill} stroke="#9FB6D8" strokeWidth="1.3" />
+                          <circle cx="78" cy="62" r="48" fill={aFill} stroke="#6BA0F0" strokeWidth="1.3" />
+                          <circle cx="122" cy="62" r="48" fill={dark} clipPath="url(#vennKeep)" />
+                          <text x="56" y="67" fontSize="13" fontWeight="700" fill="#1F2937" fontFamily={FONT} textAnchor="middle">{joinSwap ? "추가" : "기준"}</text>
+                          <text x="146" y="67" fontSize="13" fontWeight="700" fill="#1F2937" fontFamily={FONT} textAnchor="middle">{joinSwap ? "기준" : "추가"}</text>
                         </svg>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: 0.3 }}>LEFT JOIN <span style={{ fontSize: 11, fontWeight: 600, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "1px 7px", marginLeft: 4 }}>현재 지원</span></div>
-                          <div style={{ fontSize: 12.5, color: C.faint, marginTop: 3, lineHeight: 1.5 }}>기준(A)의 모든 행을 유지하고, 매칭되는 B만 옆에 붙여요. 없으면 빈칸(NULL).</div>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><span style={{ fontSize: 30, fontWeight: 700, letterSpacing: -0.5 }}>{KEEP.n}</span><span style={{ fontSize: 15, color: C.sub }}>행 남음</span></div>
+                          <div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>결과에 남는 행</div>
                         </div>
-                        <button onClick={() => setJoinModal(true)} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, fontFamily: FONT, color: C.text, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 15px", cursor: "pointer" }}>JOIN 종류 비교 <span style={{ display: "flex" }}><Icon.chevR width={14} height={14} /></span></button>
                       </div>
+                      <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, margin: "4px 0 0", maxWidth: 560 }}>{KEEP.desc}</p>
+                      <button onClick={() => setJoinModal(true)} style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12.5, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>JOIN 종류 예시로 자세히 보기 <span style={{ display: "flex" }}><Icon.chevR width={13} height={13} /></span></button>
                     </div>
-                  )}
+                    ); })()}
                   {joinModal && (() => { const vz = JOIN_VIZ[joinViz]; const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8"; const aFill = vz.a ? med : lite, bFill = vz.b ? med : lite; return (
                     <div onClick={() => setJoinModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(17,18,22,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 24 }}>
                       <div onClick={(e) => e.stopPropagation()} style={{ width: 620, maxWidth: "94vw", maxHeight: "88vh", overflow: "auto", background: "#fff", borderRadius: 18, padding: "22px 26px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.32)", fontFamily: FONT }}>
