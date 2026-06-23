@@ -2818,6 +2818,7 @@ function CombinePage({ selected, onRun }) {
                       ))}
                     </div>
                   ) : (() => {
+                    const joinMode = method === "join";
                     const cols = appliedRows.map(([l]) => l);          // 적용된 매칭 기준 칼럼
                     const matched = appliedRows.map(([, rcol]) => !!rcol); // 추가에 매칭이 있나
                     const cell = (name, i, k, isNull) => <div key={i} style={{ width: i === 0 ? 160 : 140, flexShrink: 0, padding: "11px 16px", fontSize: 13, color: isNull ? C.faint : C.text, fontStyle: isNull ? "italic" : "normal", background: isNull ? "#F4F4F6" : "transparent", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isNull ? "null" : colVal(name, k)}</div>;
