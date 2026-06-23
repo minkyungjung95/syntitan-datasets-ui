@@ -2098,9 +2098,9 @@ const buildMatchRows = (swapped) => swapped
 // 데이터 합치기 케이스 (개발자 자료 기준) — 선택한 데이터셋 쌍에 따라 전환
 const CMB_CASES = [
   // Union 3종 (선택 쌍에 따라 전환) — row 종류: [기준,추가]=매칭 / [기준,null]=기준전용(추가 null) / [null,추가]=추가전용(제거)
-  { k: "union-clean", method: "union", line: "두 데이터는 유니온(행 병합)에 더 적합합니다.", banner: { tone: "info", text: "두 데이터의 칼럼이 모두 일치해요. 빈 값(null)이나 제거되는 칼럼 없이 안전하게 합쳐져요." } },
-  { k: "union-drop", method: "union", line: "두 데이터는 유니온(행 병합)에 더 적합합니다.", banner: { tone: "info", text: "기준 데이터와 매칭되지 않은 추가 칼럼은 결과에서 제거돼요." } },
-  { k: "union-null", method: "union", line: "두 데이터는 유니온(행 병합)에 더 적합합니다.", banner: { tone: "info", text: "매칭되지 않은 칼럼의 기준 데이터 값은 그대로 유지되고, 추가된 칼럼은 빈 값(null)으로 채워져요." } },
+  { k: "union-clean", method: "union", line: "칼럼 구성이 비슷해 행을 이어 붙이는 Union이 적합해요.", banner: { tone: "info", text: "두 데이터의 칼럼이 모두 일치해요. 빈 값(null)이나 제거되는 칼럼 없이 안전하게 합쳐져요." } },
+  { k: "union-drop", method: "union", line: "칼럼 구성이 비슷해 행을 이어 붙이는 Union이 적합해요.", banner: { tone: "info", text: "기준 데이터와 매칭되지 않은 추가 칼럼은 결과에서 제거돼요." } },
+  { k: "union-null", method: "union", line: "칼럼 구성이 비슷해 행을 이어 붙이는 Union이 적합해요.", banner: { tone: "info", text: "매칭되지 않은 칼럼의 기준 데이터 값은 그대로 유지되고, 추가된 칼럼은 빈 값(null)으로 채워져요." } },
   { k: "join-clean", method: "join", line: "공통 키로 옆에 붙이기 좋아요.", banner: null },
   { k: "join-multiply", method: "join", line: "한 기준에 여러 건이 붙어 행이 늘어날 수 있어요 (1:N).", banner: { tone: "info", text: "주문처럼 한 명에 여러 건이 있으면 그 수만큼 행이 복제돼요." } },
   { k: "join-lowmatch", method: "join", line: "매칭률이 낮아 결과 대부분이 빈칸일 수 있어요.", banner: { tone: "warn", text: "매칭 30% — 결과 다수가 빈칸이에요. 막지는 않지만 결합 효과가 적을 수 있어요." } },
@@ -2745,14 +2745,14 @@ function CombinePage({ selected, onRun }) {
                       <button onClick={() => setJoinModal(true)} style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12.5, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>JOIN 종류 예시로 자세히 보기 <span style={{ display: "flex" }}><Icon.chevR width={13} height={13} /></span></button>
                     </div>
                     ); })()}
-                  {joinModal && (() => { const vz = JOIN_VIZ[joinViz]; const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8"; const aFill = vz.a ? med : lite, bFill = vz.b ? med : lite; return (
+                  {joinModal && (() => { const vz = JOIN_VIZ.left; const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8"; const aFill = med, bFill = lite; return (
                     <div onClick={() => setJoinModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(17,18,22,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 24 }}>
                       <div onClick={(e) => e.stopPropagation()} style={{ width: 620, maxWidth: "94vw", maxHeight: "88vh", overflow: "auto", background: "#fff", borderRadius: 18, padding: "22px 26px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.32)", fontFamily: FONT }}>
                         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
-                          <div style={{ fontSize: 16, fontWeight: 800 }}>JOIN 종류 <span style={{ fontWeight: 600, color: C.faint }}>— 실제 데이터로 비교</span></div>
+                          <div style={{ fontSize: 16, fontWeight: 800 }}>조인 결과 <span style={{ fontWeight: 600, color: C.faint }}>— 예시로 보기</span></div>
                           <button onClick={() => setJoinModal(false)} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", color: C.faint, padding: 2 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></button>
                         </div>
-                        <div style={{ fontSize: 12.5, color: C.faint, marginBottom: 18 }}>현재 제품은 <b style={{ color: C.sub }}>Left · Right join</b>을 지원해요. 나머지는 이해를 돕는 예시예요.</div>
+                        <div style={{ fontSize: 12.5, color: C.faint, marginBottom: 18 }}>기준 데이터(고객)의 모든 행을 남기고, 공통 키로 매칭되는 행을 옆에 붙여요. 짝이 없으면 빈 값(NULL)이 돼요.</div>
 
                         <div style={{ display: "flex", gap: 14, marginBottom: 18, flexWrap: "wrap" }}>
                           {[{ t: "고객 (A)", h: ["id", "이름"], rows: JOIN_A }, { t: "주문 (B)", h: ["고객id", "상품"], rows: JOIN_B }].map((tb, ti) => (
@@ -2764,23 +2764,17 @@ function CombinePage({ selected, onRun }) {
                           ))}
                         </div>
 
-                        <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
-                          {JOIN_VIZ_ORDER.map((k) => { const on = joinViz === k; return (
-                            <button key={k} onClick={() => setJoinViz(k)} style={{ flex: "0 0 auto", padding: "9px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 700, letterSpacing: 0.4, background: on ? C.dark : "#F1F2F4", color: on ? "#fff" : C.sub }}>{k.toUpperCase()}</button>
-                          ); })}
-                        </div>
-
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 20 }}>
                           <svg width="260" height="160" viewBox="0 0 260 160" fill="none">
                             <defs><clipPath id="vennModalA"><circle cx="100" cy="80" r="60" /></clipPath></defs>
                             <circle cx="100" cy="80" r="60" fill={aFill} stroke="#6BA0F0" strokeWidth="1.4" />
                             <circle cx="160" cy="80" r="60" fill={bFill} stroke="#6BA0F0" strokeWidth="1.4" />
                             <circle cx="160" cy="80" r="60" fill={dark} clipPath="url(#vennModalA)" />
-                            <text x="72" y="87" fontSize="20" fontWeight="700" fill="#1F2937" fontFamily={FONT}>A</text>
-                            <text x="180" y="87" fontSize="20" fontWeight="700" fill="#1F2937" fontFamily={FONT}>B</text>
+                            <text x="68" y="87" fontSize="15" fontWeight="700" fill="#1F2937" fontFamily={FONT}>기준</text>
+                            <text x="172" y="87" fontSize="15" fontWeight="700" fill="#1F2937" fontFamily={FONT}>추가</text>
                           </svg>
-                          <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: 0.3, marginTop: 6 }}>{vz.label}</div>
-                          <div style={{ fontSize: 13, color: C.sub, textAlign: "center", maxWidth: 460, lineHeight: 1.55 }}>{vz.desc}</div>
+                          <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: 0.3, marginTop: 6 }}>기준(고객) 데이터를 다 살려요</div>
+                          <div style={{ fontSize: 13, color: C.sub, textAlign: "center", maxWidth: 460, lineHeight: 1.55 }}>기준 행은 모두 남고, 매칭되는 주문만 붙어요. 짝이 없으면 NULL이에요 (영희 = 주문 없음).</div>
                         </div>
 
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
