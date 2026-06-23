@@ -2721,28 +2721,27 @@ function CombinePage({ selected, onRun }) {
                     const addName = dsName(picked[1]);
                     return (
                     <div style={{ marginTop: 28 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
-                        <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="13" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" strokeDasharray="2.4 2.4" /></svg></span>
-                        <span style={{ fontSize: 14.5, fontWeight: 700 }}>결과 형태</span>
-                        <span style={{ fontSize: 12, color: C.faint }}>· 기준 데이터를 다 살려요</span>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                          <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="13" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" strokeDasharray="2.4 2.4" /></svg></span>
+                          <span style={{ fontSize: 14.5, fontWeight: 700 }}>결과 형태를 확인하세요</span>
+                        </span>
+                        <button onClick={() => setJoinModal(true)} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 13, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>예시 설명 보러가기 <span style={{ display: "flex" }}><Icon.chevR width={14} height={14} /></span></button>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", margin: "14px 0 6px" }}>
-                        <svg width="200" height="124" viewBox="0 0 200 124" fill="none" style={{ flexShrink: 0 }}>
-                          <defs><clipPath id="vennKeep"><circle cx="78" cy="62" r="48" /></clipPath></defs>
-                          <circle cx="122" cy="62" r="48" fill={lite} stroke="#9FB6D8" strokeWidth="1.3" />
-                          <circle cx="78" cy="62" r="48" fill={med} stroke="#6BA0F0" strokeWidth="1.3" />
-                          <circle cx="122" cy="62" r="48" fill={dark} clipPath="url(#vennKeep)" />
-                          <text x="56" y="67" fontSize="13" fontWeight="700" fill="#1F2937" fontFamily={FONT} textAnchor="middle">기준</text>
-                          <text x="146" y="67" fontSize="13" fontWeight="700" fill="#1F2937" fontFamily={FONT} textAnchor="middle">추가</text>
-                        </svg>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><span style={{ fontSize: 30, fontWeight: 700, letterSpacing: -0.5 }}>1,000</span><span style={{ fontSize: 15, color: C.sub }}>행 전부 유지</span></div>
-                          <div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>기준({baseName})의 모든 행이 남아요</div>
+                      <div style={{ display: "flex", height: 184, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                        <div style={{ flex: 5, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, borderRight: `1px solid ${C.border}` }}>
+                          <span style={{ fontSize: 16, fontWeight: 700, color: C.text }}>5칼럼 × 1,000행</span>
+                          <span style={{ fontSize: 11.5, color: C.faint }}>기준 데이터 · 그대로 유지</span>
+                        </div>
+                        <div style={{ flex: 3, display: "flex", flexDirection: "column" }}>
+                          <div style={{ flex: "0 0 30%", background: "#EFF4FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#2F6FE0" }}>+3칼럼</div>
+                          <div style={{ flex: 1, background: "repeating-linear-gradient(45deg, #F5F6F8, #F5F6F8 6px, #E6E8EC 6px, #E6E8EC 7px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, color: C.sub }}>
+                            <span style={{ fontSize: 14, fontWeight: 700 }}>90% 빈칸</span>
+                            <span style={{ fontSize: 11.5, color: C.faint }}>빗금 = null</span>
+                          </div>
                         </div>
                       </div>
-                      <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, margin: "4px 0 0", maxWidth: 560 }}>짝이 없는 행의 {addName} 칼럼은 빈 값(null)으로 채워져요.</p>
-                      <p style={{ fontSize: 12, color: C.faint, margin: "8px 0 0" }}>위 조인 키의 <b style={{ color: C.sub }}>⇄</b> 로 어느 데이터를 기준으로 둘지 바꿀 수 있어요.</p>
-                      <button onClick={() => setJoinModal(true)} style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12.5, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>JOIN 종류 예시로 자세히 보기 <span style={{ display: "flex" }}><Icon.chevR width={13} height={13} /></span></button>
+                      <p style={{ fontSize: 12, color: C.faint, margin: "12px 0 0" }}>기준 행은 그대로 유지되고 오른쪽으로 칼럼이 붙어요. 위 조인 키의 <b style={{ color: C.sub }}>⇄</b> 로 어느 데이터를 기준으로 둘지 바꿀 수 있어요.</p>
                     </div>
                     ); })()}
                   {joinModal && (() => { const vz = JOIN_VIZ.left; const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8"; const aFill = med, bFill = lite; return (
