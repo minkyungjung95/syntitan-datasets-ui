@@ -2153,7 +2153,6 @@ function CombinePage({ selected, onRun }) {
   const cmpRef = useRef(null);
   const [joinViz, setJoinViz] = useState("left"); // 결과 형태 학습용 익스플레이너 선택 종류
   const [joinModal, setJoinModal] = useState(false); // JOIN 종류 비교 모달
-  const [joinSwap, setJoinSwap] = useState(false);  // 기준 ↔ 추가 좌우 교체 = Left ↔ Right join
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
   const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
@@ -2656,16 +2655,32 @@ function CombinePage({ selected, onRun }) {
                   <div style={{ flex: 1, minWidth: 0, order: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                     {joinMode && <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 7a4 4 0 1 0-3.9 5L8 15v3h3v-2h2v-2h1.1A4 4 0 0 0 15 7z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
-                    <span style={{ fontSize: 14.5, fontWeight: 700 }}>{joinMode ? "키값 매칭 결과" : "칼럼 매칭 결과"}</span>
-                    {!joinMode && <span style={{ fontSize: 13, color: C.faint, fontWeight: 600 }}>총 {matchRows.length}건</span>}
+                    <span style={{ fontSize: 14.5, fontWeight: 700 }}>{joinMode ? "조인 키" : "칼럼 매칭 결과"}</span>
+                    <span style={{ fontSize: 12.5, color: C.faint, fontWeight: 600 }}>{joinMode ? "· 두 데이터를 잇는 공통 키 1개" : `총 ${matchRows.length}건`}</span>
                   </div>
                   <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
                     <div style={{ display: "flex", alignItems: "center", background: "#FAFAFB", borderBottom: `1px solid ${C.border}`, height: 50 }}>
                       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[0])} <span style={{ fontSize: 12, fontWeight: 600, color: C.faint }}>(기준)</span></div>
-                      <button onClick={doSwap} title="기준 ↔ 추가 교체" style={{ width: 44, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: C.sub }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
+                      <button onClick={doSwap} title={joinMode ? "기준 ↔ 추가 교체 (Left ↔ Right join)" : "기준 ↔ 추가 교체"} style={{ width: 44, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: joinMode ? C.purple : C.sub }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
                       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[1])}</div>
                     </div>
-                    {matchRows.map(([l, rr], i) => (
+                    {(joinMode ? [matchRows.find(([l, rr]) => l && rr) || matchRows[0]] : matchRows).map(([l, rr], i) => (
+                      joinMode ? (
+                      <div key={i} style={{ display: "flex", alignItems: "center", height: 56, borderTop: `1px solid ${C.borderSoft}` }}>
+                        <div style={{ flex: 1, padding: "0 16px", display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ display: "flex", color: C.purple }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 7a4 4 0 1 0-3.9 5L8 15v3h3v-2h2v-2h1.1A4 4 0 0 0 15 7z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                          <span style={{ fontSize: 14, fontWeight: 600 }}>{l}</span>
+                          <span style={{ fontSize: 12.5, color: C.faint }}>String</span>
+                          <span style={{ display: "flex", color: C.faint, marginLeft: 1 }} title="조인 키 변경"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                        </div>
+                        <span style={{ width: 44, display: "flex", justifyContent: "center", color: C.purple }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                        <div style={{ flex: 1, padding: "0 16px", display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 14 }}>{rr}</span>
+                          <span style={{ fontSize: 12.5, color: C.faint }}>String</span>
+                        </div>
+                        <span style={{ marginRight: 16, fontSize: 11, fontWeight: 700, color: C.purple, border: `1px solid ${ERD_TONE.purple.line}`, borderRadius: 6, padding: "3px 9px" }}>키</span>
+                      </div>
+                      ) : (
                       <div key={i} onMouseEnter={() => setHoverRow(i)} onMouseLeave={() => setHoverRow(-1)} style={{ display: "flex", alignItems: "center", height: 52, borderTop: `1px solid ${C.borderSoft}`, background: editRow === i ? "#FAF8FF" : hoverRow === i ? "#FAFAFB" : "#fff" }}>
                         <div style={{ flex: 1, padding: "0 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>{l ? <><span style={{ color: C.faint }}>#</span>{l} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></> : <span style={{ color: C.faint }}>—</span>}</div>
                         <span style={{ width: 44, display: "flex", justifyContent: "center", color: rr ? C.purple : C.border }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
@@ -2697,36 +2712,29 @@ function CombinePage({ selected, onRun }) {
                           )}
                         </div>
                       </div>
+                      )
                     ))}
                   </div>
                   {joinMode && (() => {
                     const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8";
-                    const baseName = dsName(picked[joinSwap ? 1 : 0]);
-                    const addName = dsName(picked[joinSwap ? 0 : 1]);
-                    const aFill = joinSwap ? lite : med;   // 왼쪽 원: 안 바꿨으면 기준(강조)
-                    const bFill = joinSwap ? med : lite;   // 오른쪽 원: 바꿨으면 기준(강조)
+                    const baseName = dsName(picked[0]);   // doSwap이 picked를 뒤집어 picked[0]=항상 현재 기준
+                    const addName = dsName(picked[1]);
                     return (
                     <div style={{ marginTop: 28 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
                         <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="13" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" strokeDasharray="2.4 2.4" /></svg></span>
                         <span style={{ fontSize: 14.5, fontWeight: 700 }}>결과 형태</span>
                         <span style={{ fontSize: 12, color: C.faint }}>· 기준 데이터를 다 살려요</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "2px 8px", marginLeft: 2 }}>{joinSwap ? "RIGHT JOIN" : "LEFT JOIN"}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "2px 8px", marginLeft: 2 }}>{swapped ? "RIGHT JOIN" : "LEFT JOIN"}</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "14px 0 4px", flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 12.5, fontWeight: 600, borderRadius: 8, padding: "6px 11px", background: !joinSwap ? "#EEE9FE" : "#F3F4F6", color: !joinSwap ? C.purple : C.sub }}>{dsName(picked[0])} · {joinSwap ? "추가" : "기준"}</span>
-                        <button onClick={() => setJoinSwap((s) => !s)} title="기준 ↔ 추가 교체 (Left/Right)" style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", cursor: "pointer", color: C.text }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
-                        <span style={{ fontSize: 12.5, fontWeight: 600, borderRadius: 8, padding: "6px 11px", background: joinSwap ? "#EEE9FE" : "#F3F4F6", color: joinSwap ? C.purple : C.sub }}>{dsName(picked[1])} · {joinSwap ? "기준" : "추가"}</span>
-                        <span style={{ fontSize: 12, color: C.faint }}>⇄ 기준을 바꾸면 Right join이 돼요</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", margin: "8px 0 6px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", margin: "14px 0 6px" }}>
                         <svg width="200" height="124" viewBox="0 0 200 124" fill="none" style={{ flexShrink: 0 }}>
                           <defs><clipPath id="vennKeep"><circle cx="78" cy="62" r="48" /></clipPath></defs>
-                          <circle cx="122" cy="62" r="48" fill={bFill} stroke="#9FB6D8" strokeWidth="1.3" />
-                          <circle cx="78" cy="62" r="48" fill={aFill} stroke="#6BA0F0" strokeWidth="1.3" />
+                          <circle cx="122" cy="62" r="48" fill={lite} stroke="#9FB6D8" strokeWidth="1.3" />
+                          <circle cx="78" cy="62" r="48" fill={med} stroke="#6BA0F0" strokeWidth="1.3" />
                           <circle cx="122" cy="62" r="48" fill={dark} clipPath="url(#vennKeep)" />
-                          <text x="56" y="67" fontSize="13" fontWeight="700" fill="#1F2937" fontFamily={FONT} textAnchor="middle">{joinSwap ? "추가" : "기준"}</text>
-                          <text x="146" y="67" fontSize="13" fontWeight="700" fill="#1F2937" fontFamily={FONT} textAnchor="middle">{joinSwap ? "기준" : "추가"}</text>
+                          <text x="56" y="67" fontSize="13" fontWeight="700" fill="#1F2937" fontFamily={FONT} textAnchor="middle">기준</text>
+                          <text x="146" y="67" fontSize="13" fontWeight="700" fill="#1F2937" fontFamily={FONT} textAnchor="middle">추가</text>
                         </svg>
                         <div>
                           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><span style={{ fontSize: 30, fontWeight: 700, letterSpacing: -0.5 }}>1,000</span><span style={{ fontSize: 15, color: C.sub }}>행 전부 유지</span></div>
@@ -2734,6 +2742,7 @@ function CombinePage({ selected, onRun }) {
                         </div>
                       </div>
                       <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, margin: "4px 0 0", maxWidth: 560 }}>짝이 없는 행의 {addName} 칼럼은 빈 값(null)으로 채워져요.</p>
+                      <p style={{ fontSize: 12, color: C.faint, margin: "8px 0 0" }}>위 조인 키의 <b style={{ color: C.sub }}>⇄</b> 로 기준을 바꾸면 Right join이 돼요.</p>
                       <button onClick={() => setJoinModal(true)} style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12.5, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>JOIN 종류 예시로 자세히 보기 <span style={{ display: "flex" }}><Icon.chevR width={13} height={13} /></span></button>
                     </div>
                     ); })()}
