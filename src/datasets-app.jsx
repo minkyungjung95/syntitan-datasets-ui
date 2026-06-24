@@ -2716,9 +2716,14 @@ function CombinePage({ selected, onRun }) {
                     ))}
                   </div>
                   {joinMode && (() => {
-                    const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8";
-                    const baseName = dsName(picked[0]);   // doSwap이 picked를 뒤집어 picked[0]=항상 현재 기준
-                    const addName = dsName(picked[1]);
+                    // 데모값 — 실제론 계산값으로 교체
+                    const baseCols = 100, addCols = 3, baseRows = "1,000";
+                    const matchRate = 20;                              // 매칭률 %
+                    const missRate = 100 - matchRate;
+                    const rightW = Math.min(60, Math.max(18, Math.round(addCols / (baseCols + addCols) * 100))); // 가로: 컬럼 수 비례(18~60% 클램프)
+                    const small = (h) => h < 15;                       // 섹션 작으면 라벨 숨기고 툴팁(native title)
+                    const matchFull = `매칭 ${matchRate}% · 값 채움`;
+                    const missFull = `미매칭 ${missRate}% · 빈칸(null)`;
                     return (
                     <div style={{ marginTop: 28 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -2729,19 +2734,24 @@ function CombinePage({ selected, onRun }) {
                         <button onClick={() => setJoinModal(true)} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 13, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>예시 설명 보러가기 <span style={{ display: "flex" }}><Icon.chevR width={14} height={14} /></span></button>
                       </div>
                       <div style={{ display: "flex", height: 184, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
-                        <div style={{ flex: 5, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, borderRight: `1px solid ${C.border}` }}>
-                          <span style={{ fontSize: 16, fontWeight: 700, color: C.text }}>5칼럼 × 1,000행</span>
-                          <span style={{ fontSize: 11.5, color: C.faint }}>기준 데이터 · 그대로 유지</span>
+                        <div style={{ width: `${100 - rightW}%`, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, borderRight: `1px solid ${C.border}`, padding: "0 8px", overflow: "hidden" }}>
+                          <span style={{ fontSize: 16, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }} title={`기준 ${baseCols}칼럼 × ${baseRows}행`}>{baseCols}칼럼 × {baseRows}행</span>
+                          <span style={{ fontSize: 11.5, color: C.faint, whiteSpace: "nowrap" }}>기준 데이터 · 그대로 유지</span>
                         </div>
-                        <div style={{ flex: 3, display: "flex", flexDirection: "column" }}>
-                          <div style={{ flex: "0 0 30%", background: "#EFF4FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#2F6FE0" }}>+3칼럼</div>
-                          <div style={{ flex: 1, background: "repeating-linear-gradient(45deg, #F5F6F8, #F5F6F8 6px, #E6E8EC 6px, #E6E8EC 7px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, color: C.sub }}>
-                            <span style={{ fontSize: 14, fontWeight: 700 }}>90% 빈칸</span>
-                            <span style={{ fontSize: 11.5, color: C.faint }}>빗금 = null</span>
+                        <div style={{ width: `${rightW}%`, display: "flex", flexDirection: "column", minWidth: 0 }}>
+                          <div title={`+${addCols}칼럼 · ${matchFull}`} style={{ height: `${matchRate}%`, background: "#EAF1FF", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#2F6FE0", overflow: "hidden", padding: "0 6px" }}>
+                            {!small(matchRate) && <span style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>+{addCols}칼럼 · 매칭 {matchRate}%</span>}
+                          </div>
+                          <div title={missFull} style={{ flex: 1, background: "repeating-linear-gradient(45deg, #F5F6F8, #F5F6F8 6px, #E6E8EC 6px, #E6E8EC 7px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, color: C.sub, overflow: "hidden", padding: "0 6px" }}>
+                            {!small(missRate) && <><span style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>미매칭 {missRate}%</span><span style={{ fontSize: 11.5, color: C.faint, whiteSpace: "nowrap" }}>빈칸 · null</span></>}
                           </div>
                         </div>
                       </div>
-                      <p style={{ fontSize: 12, color: C.faint, margin: "12px 0 0" }}>기준 행은 그대로 유지되고 오른쪽으로 칼럼이 붙어요. 위 조인 키의 <b style={{ color: C.sub }}>⇄</b> 로 어느 데이터를 기준으로 둘지 바꿀 수 있어요.</p>
+                      <div style={{ display: "flex", marginTop: 8, fontSize: 11.5, color: C.faint }}>
+                        <span style={{ width: `${100 - rightW}%` }}>기준 데이터</span>
+                        <span style={{ width: `${rightW}%`, textAlign: "center" }}>+ 붙는 칼럼 · 빗금=null</span>
+                      </div>
+                      <p style={{ fontSize: 12, color: C.faint, margin: "10px 0 0" }}>기준 행은 그대로 유지되고 오른쪽으로 칼럼이 붙어요. 위 조인 키의 <b style={{ color: C.sub }}>⇄</b> 로 어느 데이터를 기준으로 둘지 바꿀 수 있어요.</p>
                     </div>
                     ); })()}
                   {joinModal && (() => { const vz = JOIN_VIZ.left; const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8"; const aFill = med, bFill = lite; return (
