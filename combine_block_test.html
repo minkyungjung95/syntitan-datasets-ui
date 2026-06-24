@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Combine 결과형태 블록 테스트</title>
+<style>
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif; }
+  body { margin: 0; padding: 28px; background: #F7F8FA; color: #1F2937; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { font-size: 13px; color: #6B7280; margin: 0 0 20px; }
+  .panel { background: #fff; border: 1px solid #E5E7EB; border-radius: 14px; padding: 18px 20px; margin-bottom: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px 28px; max-width: 720px; }
+  .ctrl label { display: block; font-size: 12.5px; font-weight: 600; color: #374151; margin-bottom: 7px; }
+  .ctrl .row { display: flex; align-items: center; gap: 10px; }
+  .ctrl input[type=range] { flex: 1; }
+  .ctrl input[type=number] { width: 84px; height: 32px; border: 1px solid #D1D5DB; border-radius: 8px; padding: 0 10px; font-size: 14px; }
+  .val { font-size: 13px; font-weight: 700; color: #2F6FE0; min-width: 64px; text-align: right; }
+  .readout { font-size: 12.5px; color: #6B7280; margin: 0 0 14px; }
+  .readout b { color: #1F2937; }
+
+  .stage { background: #fff; border: 1px dashed #D1D5DB; border-radius: 14px; padding: 20px; overflow-x: auto; }
+  .stage-inner { margin: 0 auto; transition: width .1s; }
+
+  .blk { display: flex; height: 184px; border-radius: 14px; overflow: hidden; border: 1px solid #E5E7EB; }
+  .left { background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-right: 1px solid #E5E7EB; padding: 0 8px; overflow: hidden; }
+  .left .b { font-size: 16px; font-weight: 700; white-space: nowrap; }
+  .left .s { font-size: 11.5px; color: #9CA3AF; white-space: nowrap; }
+  .right { display: flex; flex-direction: column; min-width: 0; }
+  .sec { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; overflow: hidden; padding: 0 6px; position: relative; }
+  .matched { background: #EAF1FF; color: #2F6FE0; }
+  .miss { background: repeating-linear-gradient(45deg,#F5F6F8,#F5F6F8 6px,#E6E8EC 6px,#E6E8EC 7px); color: #5F6B7A; }
+  .sec .l1 { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .sec .l2 { font-size: 11.5px; color: #9CA3AF; white-space: nowrap; }
+  .hint { position: absolute; top: 4px; right: 5px; width: 13px; height: 13px; border-radius: 50%; background: rgba(0,0,0,.18); color: #fff; font-size: 9px; display: none; align-items: center; justify-content: center; }
+  .sec.tiny .l1, .sec.tiny .l2 { display: none; }
+  .sec.tiny .hint { display: flex; }
+  .tip { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); background: #18181B; color: #fff; font-size: 12px; line-height: 1.5; padding: 8px 11px; border-radius: 9px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 5; box-shadow: 0 8px 22px rgba(0,0,0,.3); }
+  .sec:hover .tip { opacity: 1; }
+  .axis { display: flex; margin-top: 8px; font-size: 11.5px; color: #9CA3AF; }
+  .note { font-size: 12px; color: #9CA3AF; margin-top: 10px; max-width: 720px; }
+</style>
+</head>
+<body>
+  <h1>Combine 결과형태 블록 — 테스트</h1>
+  <p class="sub">값을 바꾸면 블록이 실시간으로 바뀝니다. 작아지면 라벨이 툴팁으로 들어가요(호버). 화면폭 781~1260 대응.</p>
+
+  <div class="panel">
+    <div class="ctrl">
+      <label>기준 칼럼 수</label>
+      <div class="row"><input type="number" id="baseCols" min="1" value="100" /></div>
+    </div>
+    <div class="ctrl">
+      <label>붙는 칼럼 수 (+)</label>
+      <div class="row"><input type="number" id="addCols" min="0" value="3" /></div>
+    </div>
+    <div class="ctrl">
+      <label>빈칸(null) 비율</label>
+      <div class="row"><input type="range" id="nullPct" min="0" max="100" value="80" /><span class="val" id="nullPctV">80%</span></div>
+    </div>
+    <div class="ctrl">
+      <label>화면 폭 (px)</label>
+      <div class="row"><input type="range" id="screenW" min="781" max="1260" value="1260" /><span class="val" id="screenWV">1260</span></div>
+    </div>
+  </div>
+
+  <p class="readout" id="readout"></p>
+
+  <div class="stage">
+    <div class="stage-inner" id="stageInner">
+      <div class="blk" id="blk"></div>
+      <div class="axis" id="axis"></div>
+    </div>
+  </div>
+  <p class="note">· 가로 좌:우 = 기준 칼럼 : 붙는 칼럼 (18~82% 클램프) · 세로(우측) 매칭:미매칭 = (100−빈칸%) : 빈칸% · 섹션이 작거나(높이 &lt;15%) 글자가 넘치면 라벨 숨기고 호버 툴팁.</p>
+
+<script>
+  const $ = id => document.getElementById(id);
+  function clamp(v,a,b){ return Math.min(b, Math.max(a, v)); }
+
+  function render() {
+    const baseCols = Math.max(1, parseInt($('baseCols').value || 1, 10));
+    const addCols  = Math.max(0, parseInt($('addCols').value || 0, 10));
+    const nullPct  = parseInt($('nullPct').value, 10);
+    const matchRate = 100 - nullPct;
+    const screenW  = parseInt($('screenW').value, 10);
+
+    $('nullPctV').textContent = nullPct + '%';
+    $('screenWV').textContent = screenW;
+
+    // 가로: 컬럼 수 비례 (클램프 18~60%)
+    const rightW = addCols === 0 ? 0 : clamp(Math.round(addCols / (baseCols + addCols) * 100), 18, 82);
+    const leftW = 100 - rightW;
+
+    // 결과 컬럼 수 = 기준 + 붙는
+    const resultCols = baseCols + addCols;
+
+    $('stageInner').style.width = screenW + 'px';
+    $('readout').innerHTML =
+      `결과 칼럼 <b>${resultCols}</b> (기준 ${baseCols} + 붙는 ${addCols}) · `
+      + `매칭률 <b>${matchRate}%</b> / 빈칸 <b>${nullPct}%</b> · `
+      + `가로 좌:우 = <b>${leftW}% : ${rightW}%</b>`;
+
+    const tiny = h => h < 15;            // 섹션 높이 < 15% → 라벨 숨김+툴팁
+
+    const matchedTiny = addCols === 0 ? false : tiny(matchRate);
+    const missTiny = addCols === 0 ? false : tiny(nullPct);
+
+    let rightHTML = '';
+    if (addCols > 0) {
+      rightHTML = `
+        <div class="right" style="width:${rightW}%">
+          <div class="sec matched ${matchedTiny?'tiny':''}" style="height:${matchRate}%">
+            <span class="l1">+${addCols}칼럼 · 매칭 ${matchRate}%</span>
+            <span class="hint">i</span>
+            <div class="tip">+${addCols}칼럼 · 매칭 ${matchRate}% · 값 채움</div>
+          </div>
+          <div class="sec miss ${missTiny?'tiny':''}" style="height:${nullPct}%">
+            <span class="l1">미매칭 ${nullPct}%</span>
+            <span class="l2">빈칸 · null</span>
+            <span class="hint">i</span>
+            <div class="tip">미매칭 ${nullPct}% · 빈칸(null) 처리</div>
+          </div>
+        </div>`;
+    }
+
+    $('blk').innerHTML = `
+      <div class="left" style="width:${addCols>0?leftW:100}%">
+        <span class="b">${baseCols}칼럼 × 1,000행</span>
+        <span class="s">기준 데이터 · 그대로 유지</span>
+      </div>
+      ${rightHTML}`;
+
+    $('axis').innerHTML = addCols>0
+      ? `<span style="width:${leftW}%">기준 데이터</span><span style="width:${rightW}%;text-align:center">+ 붙는 칼럼 · 빗금=null</span>`
+      : `<span style="width:100%">기준 데이터 (붙는 칼럼 없음)</span>`;
+  }
+
+  ['baseCols','addCols','nullPct','screenW'].forEach(id => $(id).addEventListener('input', render));
+  render();
+</script>
+</body>
+</html>

@@ -2720,7 +2720,7 @@ function CombinePage({ selected, onRun }) {
                     const baseCols = 100, addCols = 3, baseRows = "1,000";
                     const matchRate = 20;                              // 매칭률 %
                     const missRate = 100 - matchRate;
-                    const rightW = Math.min(60, Math.max(18, Math.round(addCols / (baseCols + addCols) * 100))); // 가로: 컬럼 수 비례(18~60% 클램프)
+                    const rightW = Math.min(82, Math.max(18, Math.round(addCols / (baseCols + addCols) * 100))); // 가로: 컬럼 수 비례(18~82% 클램프)
                     const small = (h) => h < 15;                       // 섹션 작으면 라벨 숨기고 툴팁(native title)
                     const matchFull = `매칭 ${matchRate}% · 값 채움`;
                     const missFull = `미매칭 ${missRate}% · 빈칸(null)`;
