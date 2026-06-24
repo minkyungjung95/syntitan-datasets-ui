@@ -2734,11 +2734,11 @@ function CombinePage({ selected, onRun }) {
                         <button onClick={() => setJoinModal(true)} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 13, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>예시 설명 보러가기 <span style={{ display: "flex" }}><Icon.chevR width={14} height={14} /></span></button>
                       </div>
                       <div style={{ display: "flex", height: 184, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
-                        <div style={{ width: `${100 - rightW}%`, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, borderRight: `1px solid ${C.border}`, padding: "0 8px", overflow: "hidden" }}>
+                        <div style={{ width: `${100 - rightW}%`, minWidth: 168, flexShrink: 0, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, borderRight: `1px solid ${C.border}`, padding: "0 8px", overflow: "hidden" }}>
                           <span style={{ fontSize: 16, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }} title={`기준 ${baseCols}칼럼 × ${baseRows}행`}>{baseCols}칼럼 × {baseRows}행</span>
                           <span style={{ fontSize: 11.5, color: C.faint, whiteSpace: "nowrap" }}>기준 데이터 · 그대로 유지</span>
                         </div>
-                        <div style={{ width: `${rightW}%`, display: "flex", flexDirection: "column", minWidth: 0 }}>
+                        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
                           <div title={`+${addCols}칼럼 · ${matchFull}`} style={{ height: `${matchRate}%`, background: "#EAF1FF", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#2F6FE0", overflow: "hidden", padding: "0 6px" }}>
                             {!small(matchRate) && <span style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>+{addCols}칼럼 · 매칭 {matchRate}%</span>}
                           </div>

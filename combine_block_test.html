@@ -108,7 +108,7 @@
     let rightHTML = '';
     if (addCols > 0) {
       rightHTML = `
-        <div class="right" style="width:${rightW}%">
+        <div class="right" style="flex:1;min-width:0">
           <div class="sec matched ${matchedTiny?'tiny':''}" style="height:${matchRate}%">
             <span class="l1">+${addCols}칼럼 · 매칭 ${matchRate}%</span>
             <span class="hint">i</span>
@@ -124,7 +124,7 @@
     }
 
     $('blk').innerHTML = `
-      <div class="left" style="width:${addCols>0?leftW:100}%">
+      <div class="left" style="width:${addCols>0?leftW:100}%;min-width:168px;flex-shrink:0">
         <span class="b">${baseCols}칼럼 × 1,000행</span>
         <span class="s">기준 데이터 · 그대로 유지</span>
       </div>
