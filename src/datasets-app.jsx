@@ -2153,6 +2153,7 @@ function CombinePage({ selected, onRun }) {
   const cmpRef = useRef(null);
   const [joinViz, setJoinViz] = useState("left"); // 결과 형태 학습용 익스플레이너 선택 종류
   const [joinModal, setJoinModal] = useState(false); // JOIN 종류 비교 모달
+  const [matchPop, setMatchPop] = useState(false); // 매칭률 설명 팝업
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
   const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
@@ -2464,10 +2465,11 @@ function CombinePage({ selected, onRun }) {
               <div style={{ width: 560, maxWidth: "100%", border: `1px solid ${C.border}`, borderRadius: 16, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
                 <div style={{ padding: "22px 24px 6px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <div style={{ fontSize: 16, fontWeight: 700 }}>합치는 방식은 2가지예요</div>
+                    <div style={{ fontSize: 16, fontWeight: 700 }}>데이터셋 2개를 선택해 주세요</div>
                     <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 6, padding: "3px 9px" }}>✦ AI 추천</span>
                   </div>
-                  <div style={{ fontSize: 13, color: C.faint }}>왼쪽에서 데이터셋 2개를 고르면 AI가 아래 중 맞는 방식을 추천해드려요.</div>
+                  <div style={{ fontSize: 13, color: C.faint }}>AI가 결합 방식을 추천해 드려요.</div>
+                  <div style={{ fontSize: 12, color: C.faint, marginTop: 6, display: "flex", alignItems: "flex-start", gap: 5, lineHeight: 1.5 }}><span style={{ display: "flex", flexShrink: 0, marginTop: 1, color: C.faint }}><Icon.infoCircle width={13} height={13} /></span>민감 정보를 마스킹했거나 편집 권한이 없는 항목은 표시되지 않아요.</div>
                 </div>
                 <div style={{ padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
                   {/* Union 카드 */}
@@ -2627,19 +2629,19 @@ function CombinePage({ selected, onRun }) {
                       </div>
                     )}
                   </span>
-                  <span style={{ fontSize: 13.5, color: C.sub }}>{method === "join" ? "공통 키를 기준으로 옆으로 열을 붙여요. 현재 Left join만 지원해요." : caseDef.line}</span>
+                  <span style={{ fontSize: 13.5, color: C.sub }}>{method === "join" ? "Join columns side by side on a common key." : caseDef.line}</span>
                   <div style={{ flex: 1 }} />
-                  <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>{method === "join" ? "병합하기" : "Union 실행하기"}</button>
+                  <button onClick={() => onRun(picked.map(dsName))} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>{method === "join" ? "Merge" : "Run Union"}</button>
                 </div>
               </div>
               <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
                 <div style={{ flex: 1, overflow: "auto", minHeight: 0, padding: "18px 28px", display: "flex", gap: 24 }}>
-                  {(() => { const removed = matchRows.filter((m) => m[0] === null).length; const kept = matchRows.filter((m) => m[0] !== null).length; const joinMode = method === "join"; const banner = joinMode ? { tone: "info", text: "기준 데이터 1,000행 중 700행이 매칭되지 않아 빈칸이 됩니다." } : caseDef.banner; const statRows = joinMode
-                    ? [["열", <><b style={{ color: C.text }}>8</b> <span style={{ fontSize: 11, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "1px 7px" }}>+5 ↑</span></>], ["행", <><b style={{ color: C.text }}>1,000</b> <span style={{ fontSize: 11, color: C.faint, background: "#F3F4F6", borderRadius: 5, padding: "1px 7px" }}>변화 없음</span></>], [<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>매칭률 <Icon.infoCircle width={13} height={13} /></span>, <b style={{ color: "#DC2626" }}>30%</b>], ["용량", <b style={{ color: C.text }}>90 MB</b>]]
-                    : [["열", <><b style={{ color: C.text }}>{kept}</b> <span style={{ fontSize: 11, color: C.faint, background: "#F3F4F6", borderRadius: 5, padding: "1px 7px" }}>기준 유지</span></>], ["행", <><b style={{ color: C.text }}>1,000</b> <span style={{ fontSize: 11, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "1px 7px" }}>+500</span></>], ["용량", <b style={{ color: C.text }}>80.5 KB</b>], ...(removed ? [["제거 칼럼", <span style={{ display: "flex", alignItems: "center", gap: 4 }}><b style={{ color: "#C2410C" }}>{removed}</b> <Icon.infoCircle width={13} height={13} /></span>]] : [])]; return (
+                  {(() => { const removed = matchRows.filter((m) => m[0] === null).length; const kept = matchRows.filter((m) => m[0] !== null).length; const joinMode = method === "join"; const banner = joinMode ? { tone: "info", text: "700 of the 1,000 base rows don't match and will be empty." } : caseDef.banner; const statRows = joinMode
+                    ? [["Columns", <><b style={{ color: C.text }}>8</b> <span style={{ fontSize: 11, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "1px 7px" }}>+5 ↑</span></>], ["Rows", <><b style={{ color: C.text }}>1,000</b> <span style={{ fontSize: 11, color: C.faint, background: "#F3F4F6", borderRadius: 5, padding: "1px 7px" }}>No change</span></>], [<span onClick={() => setMatchPop(true)} title="What is match rate?" style={{ display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer" }}>Match rate <span style={{ display: "flex", color: C.purple }}><Icon.infoCircle width={13} height={13} /></span></span>, <b style={{ color: "#DC2626" }}>30%</b>], ["Size", <b style={{ color: C.text }}>90 MB</b>]]
+                    : [["Columns", <><b style={{ color: C.text }}>{kept}</b> <span style={{ fontSize: 11, color: C.faint, background: "#F3F4F6", borderRadius: 5, padding: "1px 7px" }}>Base kept</span></>], ["Rows", <><b style={{ color: C.text }}>1,000</b> <span style={{ fontSize: 11, color: "#15803D", background: "#E6F8EC", borderRadius: 5, padding: "1px 7px" }}>+500</span></>], ["Size", <b style={{ color: C.text }}>80.5 KB</b>], ...(removed ? [["Dropped columns", <span style={{ display: "flex", alignItems: "center", gap: 4 }}><b style={{ color: "#C2410C" }}>{removed}</b> <Icon.infoCircle width={13} height={13} /></span>]] : [])]; return (
                   <>
                   <div style={{ width: 300, flexShrink: 0, order: 2 }}>
-                    <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 12 }}>예상 총합</div>
+                    <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 12 }}>Expected result</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 0, fontSize: 13.5, color: C.sub }}>
                       {statRows.map((row, i) => (
                         <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 2px", borderBottom: "1px solid #00000008" }}><span>┃ {row[0]}</span><span>{row[1]}</span></div>
@@ -2655,13 +2657,13 @@ function CombinePage({ selected, onRun }) {
                   <div style={{ flex: 1, minWidth: 0, order: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                     {joinMode && <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 7a4 4 0 1 0-3.9 5L8 15v3h3v-2h2v-2h1.1A4 4 0 0 0 15 7z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
-                    <span style={{ fontSize: 14.5, fontWeight: 700 }}>{joinMode ? "조인 키" : "칼럼 매칭 결과"}</span>
-                    <span style={{ fontSize: 12.5, color: C.faint, fontWeight: 600 }}>{joinMode ? "· 두 데이터를 잇는 공통 키 1개" : `총 ${matchRows.length}건`}</span>
+                    <span style={{ fontSize: 14.5, fontWeight: 700 }}>{joinMode ? "Join key" : "Column mapping"}</span>
+                    <span style={{ fontSize: 12.5, color: C.faint, fontWeight: 600 }}>{joinMode ? "· 1 common key linking both" : `${matchRows.length} total`}</span>
                   </div>
                   <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
                     <div style={{ display: "flex", alignItems: "center", background: "#FAFAFB", borderBottom: `1px solid ${C.border}`, height: 50 }}>
-                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[0])} <span style={{ fontSize: 12, fontWeight: 600, color: C.faint }}>(기준)</span></div>
-                      <button onClick={doSwap} title={joinMode ? "기준 ↔ 추가 교체 (Left ↔ Right join)" : "기준 ↔ 추가 교체"} style={{ width: 44, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: joinMode ? C.purple : C.sub }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[0])} <span style={{ fontSize: 12, fontWeight: 600, color: C.faint }}>(base)</span></div>
+                      <button onClick={doSwap} title={joinMode ? "Swap base ↔ target (Left ↔ Right join)" : "Swap base ↔ target"} style={{ width: 44, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: joinMode ? C.purple : C.sub }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
                       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[1])}</div>
                     </div>
                     {(joinMode ? [matchRows.find(([l, rr]) => l && rr) || matchRows[0]] : matchRows).map(([l, rr], i) => (
@@ -2716,42 +2718,126 @@ function CombinePage({ selected, onRun }) {
                     ))}
                   </div>
                   {joinMode && (() => {
-                    // 데모값 — 실제론 계산값으로 교체
-                    const baseCols = 100, addCols = 3, baseRows = "1,000";
-                    const matchRate = 20;                              // 매칭률 %
-                    const missRate = 100 - matchRate;
-                    const rightW = Math.min(82, Math.max(18, Math.round(addCols / (baseCols + addCols) * 100))); // 가로: 컬럼 수 비례(18~82% 클램프)
-                    const small = (h) => h < 15;                       // 섹션 작으면 라벨 숨기고 툴팁(native title)
-                    const matchFull = `매칭 ${matchRate}% · 값 채움`;
-                    const missFull = `미매칭 ${missRate}% · 빈칸(null)`;
+                    const med = "#9DC0F7", light = "#E4EEFC", empty = "#F3F4F6";
+                    const VZ = {
+                      left:  { sub: "A 전체 + B에서 일치하는 것만 결합돼요.", a: med,   b: empty, legend: [["fill", "값 채움", "920행"], ["empty", "빈칸", "90행"]] },
+                      right: { sub: "B 전체 + A에서 일치하는 것만 결합돼요.", a: empty, b: med,   legend: [["fill", "값 채움", "800행"], ["empty", "빈칸", "30행"]] },
+                      inner: { sub: "A · B 둘 다 있는 것만 남아요. 한쪽에만 있으면 사라져요.", a: empty, b: empty, legend: [["fill", "값 채움", "920행"], ["empty", "제거", "800행"]] },
+                      outer: { sub: "A · B 전부 남아요. 짝이 없는 행은 반대쪽이 빈칸으로 채워져요.", a: "hatch", b: light, legend: [["fill", "양쪽 매칭", "400행"], ["hatch", "A만 있음 → B 빈칸", "80행"], ["light", "B만 있음 → A 빈칸", "80행"]] },
+                    };
+                    const TYPES = ["left", "right", "inner", "outer"];
+                    const vt = VZ[joinViz] || VZ.left;
+                    const fillOf = (v) => v === "hatch" ? "url(#vennHatch)" : v;
+                    const swatch = (kind) => kind === "hatch" ? "repeating-linear-gradient(45deg,#E4EEFC,#E4EEFC 3px,#9DC0F7 3px,#9DC0F7 4px)" : kind === "fill" ? med : kind === "light" ? light : "#fff";
                     return (
                     <div style={{ marginTop: 28 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                         <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
                           <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="13" y="4" width="8" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.7" strokeDasharray="2.4 2.4" /></svg></span>
-                          <span style={{ fontSize: 14.5, fontWeight: 700 }}>결과 형태를 확인하세요</span>
+                          <span style={{ fontSize: 14.5, fontWeight: 700 }}>결합 방식을 선택하세요</span>
                         </span>
                         <button onClick={() => setJoinModal(true)} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 13, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>예시 설명 보러가기 <span style={{ display: "flex" }}><Icon.chevR width={14} height={14} /></span></button>
                       </div>
-                      <div style={{ display: "flex", height: 184, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
-                        <div style={{ width: `${100 - rightW}%`, minWidth: 168, flexShrink: 0, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, borderRight: `1px solid ${C.border}`, padding: "0 8px", overflow: "hidden" }}>
-                          <span style={{ fontSize: 16, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }} title={`기준 ${baseCols}칼럼 × ${baseRows}행`}>{baseCols}칼럼 × {baseRows}행</span>
-                          <span style={{ fontSize: 11.5, color: C.faint, whiteSpace: "nowrap" }}>기준 데이터 · 그대로 유지</span>
-                        </div>
-                        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-                          <div title={`+${addCols}칼럼 · ${matchFull}`} style={{ height: `${matchRate}%`, background: "#EAF1FF", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#2F6FE0", overflow: "hidden", padding: "0 6px" }}>
-                            {!small(matchRate) && <span style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>+{addCols}칼럼 · 매칭 {matchRate}%</span>}
+                      <p style={{ fontSize: 12.5, color: C.faint, margin: "0 0 14px" }}>{vt.sub}</p>
+                      <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 24px" }}>
+                        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+                          <div style={{ display: "inline-flex", background: "#F1F2F4", borderRadius: 10, padding: 4, gap: 2 }}>
+                            {TYPES.map((t) => (
+                              <button key={t} onClick={() => setJoinViz(t)} style={{ fontSize: 13.5, fontWeight: 600, fontFamily: FONT, border: "none", cursor: "pointer", borderRadius: 7, padding: "7px 20px", background: joinViz === t ? "#fff" : "transparent", color: joinViz === t ? C.text : C.faint, boxShadow: joinViz === t ? "0 1px 3px rgba(0,0,0,0.12)" : "none" }}>{t}</button>
+                            ))}
                           </div>
-                          <div title={missFull} style={{ flex: 1, background: "repeating-linear-gradient(45deg, #F5F6F8, #F5F6F8 6px, #E6E8EC 6px, #E6E8EC 7px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, color: C.sub, overflow: "hidden", padding: "0 6px" }}>
-                            {!small(missRate) && <><span style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>미매칭 {missRate}%</span><span style={{ fontSize: 11.5, color: C.faint, whiteSpace: "nowrap" }}>빈칸 · null</span></>}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 44 }}>
+                          <svg width="260" height="150" viewBox="0 0 260 150" fill="none">
+                            <defs>
+                              <clipPath id="vennClipA"><circle cx="100" cy="75" r="58" /></clipPath>
+                              <pattern id="vennHatch" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)"><rect width="7" height="7" fill={light} /><line x1="0" y1="0" x2="0" y2="7" stroke="#9DC0F7" strokeWidth="2.4" /></pattern>
+                            </defs>
+                            <circle cx="100" cy="75" r="58" fill={fillOf(vt.a)} />
+                            <circle cx="160" cy="75" r="58" fill={fillOf(vt.b)} />
+                            <g clipPath="url(#vennClipA)"><circle cx="160" cy="75" r="58" fill={med} /></g>
+                            <circle cx="100" cy="75" r="58" fill="none" stroke="#A9C4EE" strokeWidth="1.4" />
+                            <circle cx="160" cy="75" r="58" fill="none" stroke="#A9C4EE" strokeWidth="1.4" />
+                            <text x="70" y="81" fontSize="15" fontWeight="700" fill={C.text} fontFamily={FONT}>A</text>
+                            <text x="186" y="81" fontSize="15" fontWeight="700" fill={C.text} fontFamily={FONT}>B</text>
+                          </svg>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+                            {vt.legend.map(([kind, label, val], i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13.5, color: C.sub }}>
+                                <span style={{ width: 20, height: 20, borderRadius: 5, flexShrink: 0, border: `1px solid ${C.border}`, background: swatch(kind) }} />
+                                <span>{label} : <b style={{ color: C.text }}>{val}</b></span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: "flex", marginTop: 8, fontSize: 11.5, color: C.faint }}>
-                        <span style={{ width: `${100 - rightW}%` }}>기준 데이터</span>
-                        <span style={{ width: `${rightW}%`, textAlign: "center" }}>+ 붙는 칼럼 · 빗금=null</span>
+                    </div>
+                    ); })()}
+                  {matchPop && (() => {
+                    const keyIcon = <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}><path d="M15 7a4 4 0 1 0-3.9 5L8 15v3h3v-2h2v-2h1.1A4 4 0 0 0 15 7z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+                    const A = [["1", "정민경"], ["2", "김철수"], ["3", "한영희"]];
+                    const B = [["1", "노트북"], ["1", "마우스"], ["2", "키보드"], ["4", "모니터"]];
+                    const RES = [["1", "정민경", "노트북", true], ["1", "정민경", "마우스", true], ["2", "김철수", "키보드", true], ["3", "한영희", null, false]];
+                    const SrcTbl = ({ label, base, head, rows }) => (
+                      <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8 }}>
+                          <span style={{ fontSize: 13.5, fontWeight: 700 }}>{label}</span>
+                          {base && <span style={{ fontSize: 11, fontWeight: 700, color: C.sub, background: "#EEF0F3", borderRadius: 6, padding: "2px 8px" }}>기준</span>}
+                        </div>
+                        <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1.2fr", background: "#FAFAFB", borderBottom: `1px solid ${C.border}`, fontSize: 12, fontWeight: 700, color: C.faint, padding: "10px 14px" }}><span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: C.purple }}>{keyIcon}{head[0]}</span><span>{head[1]}</span></div>
+                          {rows.map(([k, v], i) => (<div key={i} style={{ display: "grid", gridTemplateColumns: "0.8fr 1.2fr", fontSize: 13.5, padding: "11px 14px", borderTop: i ? `1px solid ${C.borderSoft}` : "none" }}><span style={{ color: C.sub }}>{k}</span><span>{v}</span></div>))}
+                        </div>
                       </div>
-                      <p style={{ fontSize: 12, color: C.faint, margin: "10px 0 0" }}>기준 행은 그대로 유지되고 오른쪽으로 칼럼이 붙어요. 위 조인 키의 <b style={{ color: C.sub }}>⇄</b> 로 어느 데이터를 기준으로 둘지 바꿀 수 있어요.</p>
+                    );
+                    return (
+                    <div onClick={() => setMatchPop(false)} style={{ position: "fixed", inset: 0, background: "rgba(17,18,22,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 24 }}>
+                      <div onClick={(e) => e.stopPropagation()} style={{ width: 620, maxWidth: "94vw", maxHeight: "88vh", overflow: "auto", background: "#fff", borderRadius: 18, padding: "24px 28px 22px", boxShadow: "0 24px 64px rgba(0,0,0,0.32)", fontFamily: FONT }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+                          <div style={{ fontSize: 18, fontWeight: 800 }}>매칭률이 무엇을 의미하나요?</div>
+                          <button onClick={() => setMatchPop(false)} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", color: C.faint, padding: 2 }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></button>
+                        </div>
+                        <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.6, marginBottom: 22 }}>조인 키가 양쪽에서 <b style={{ color: C.text }}>일치하는 기준 행</b>의 비율이에요. 일치하면 값이 채워지고, 짝이 없으면 <b style={{ color: C.text }}>빈칸(null)</b>이 돼요.</div>
+
+                        <div style={{ display: "flex", gap: 24, marginBottom: 6, flexWrap: "wrap" }}>
+                          <SrcTbl label="A  고객 데이터" base head={["고객 ID", "이름"]} rows={A} />
+                          <SrcTbl label="B  주문 데이터" head={["고객 ID", "상품"]} rows={B} />
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "center", margin: "10px 0 18px" }}>
+                          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: "50%", border: `1px solid ${C.border}`, color: C.faint }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                        </div>
+
+                        <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>Join 결과</div>
+                        <div style={{ fontSize: 13, color: C.faint, lineHeight: 1.6, marginBottom: 10 }}>기준 데이터를 기준으로 매칭되는 주문만 붙어요. 짝이 없으면 null(빈값)으로 처리돼요.</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 800, color: C.purple, marginBottom: 12 }}><span style={{ display: "flex" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 4.7L18.5 9l-4.7 1.8L12 15l-1.8-4.2L5.5 9l4.7-1.3L12 3z" fill="currentColor" /></svg></span>매칭률 67% <span style={{ fontSize: 12.5, fontWeight: 600, color: C.faint }}>· 기준 3행 중 2행</span></div>
+
+                        <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1fr 1.4fr", fontSize: 12.5, fontWeight: 700, color: C.faint, background: "#FAFAFB", padding: "11px 16px", borderBottom: `1px solid ${C.border}` }}><span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: C.purple }}>{keyIcon}고객 ID</span><span>이름</span><span>상품</span></div>
+                          {RES.map(([id, nm, prod, ok], i) => (
+                            <div key={i} style={{ display: "grid", gridTemplateColumns: "0.8fr 1fr 1.4fr", fontSize: 13.5, borderTop: i ? `1px solid ${C.borderSoft}` : "none", alignItems: "center" }}>
+                              <span style={{ color: C.sub, padding: "13px 16px" }}>{id}</span>
+                              <span style={{ padding: "13px 16px" }}>{nm}</span>
+                              <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", background: ok ? "#EAF1FF" : "repeating-linear-gradient(45deg,#F7F8FA,#F7F8FA 6px,#ECEEF1 6px,#ECEEF1 7px)" }}>
+                                {ok ? <><span>{prod}</span><span style={{ fontSize: 11, fontWeight: 700, color: C.purple, background: "#D8E6FE", borderRadius: 6, padding: "2px 9px" }}>매칭</span></>
+                                    : <span style={{ color: C.faint, fontStyle: "italic" }}>null</span>}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: 7, fontSize: 12.5, color: C.sub, lineHeight: 1.5, background: "#F7F8FA", borderRadius: 10, padding: "13px 15px", marginTop: 14 }}>
+                          <span><b style={{ color: C.purple }}>● 매칭</b> &nbsp;고객 1·2 → 주문에 같은 ID가 있어 값이 채워져요.</span>
+                          <span><b style={{ color: "#9CA3AF" }}>◌ 미매칭</b> &nbsp;고객 3(한영희) → 주문에 없어 빈칸(null).</span>
+                          <span><b style={{ color: "#9CA3AF" }}>– 제외</b> &nbsp;주문 4(모니터) → 기준(고객)에 없어 결과에서 빠져요.</span>
+                        </div>
+                        <div style={{ marginTop: 14, padding: "13px 15px", borderRadius: 10, background: "#EEF3FE", color: "#3A63C0", fontSize: 13, lineHeight: 1.55 }}>기준 <b>3행 중 2행</b>이 연결돼요 → <b>매칭률 67%</b>. 나머지 1행(한영희)은 붙는 칼럼이 빈칸이 돼요.</div>
+
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
+                          <button onClick={() => setMatchPop(false)} style={{ fontSize: 14, fontWeight: 700, fontFamily: FONT, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 22px", cursor: "pointer" }}>취소</button>
+                          <button onClick={() => setMatchPop(false)} style={{ fontSize: 14, fontWeight: 700, fontFamily: FONT, color: "#fff", background: C.dark, border: "none", borderRadius: 10, padding: "10px 26px", cursor: "pointer" }}>확인</button>
+                        </div>
+                      </div>
                     </div>
                     ); })()}
                   {joinModal && (() => { const vz = JOIN_VIZ.left; const lite = "#E4EEFC", med = "#9DC0F7", dark = "#4F86E8"; const aFill = med, bFill = lite; return (
