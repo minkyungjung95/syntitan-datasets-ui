@@ -2122,6 +2122,9 @@ const JOIN_VIZ = {
   full: { label: "FULL OUTER JOIN", desc: "A, B 전부 포함하는 합집합, 매칭 안 되면 양쪽 다 NULL", a: true, b: true, rows: [["1", "민경", "노트북"], ["1", "민경", "마우스"], ["2", "철수", "키보드"], ["3", "영희", null], ["4", null, "모니터"]] },
 };
 const JOIN_VIZ_ORDER = ["inner", "left", "right", "full"];
+const KEY_POOL = [{ a: "user_ID", b: "user_ID", au: 90, bu: 90 }, { a: "날짜", b: "date", au: 95, bu: 95 }, { a: "region_cd", b: "region_cd", au: 88, bu: 88 }, { a: "channel", b: "channel", au: 72, bu: 72 }];
+const A_COLS = [{ name: "user_ID", t: "String", u: 90 }, { name: "날짜", t: "Datetime", u: 95 }, { name: "region_cd", t: "String", u: 88 }, { name: "channel", t: "String", u: 72 }];
+const B_COLS = [{ name: "user_ID", t: "String", u: 90 }, { name: "date", t: "Datetime", u: 95 }, { name: "region_cd", t: "String", u: 88 }, { name: "channel", t: "String", u: 72 }];
 function CombinePage({ selected, onRun }) {
   const pool = useMemo(() => Array.from({ length: 14 }, (_, i) => poolLabel(i)), []);
   const came = selected && selected.length >= 2;
@@ -2154,6 +2157,8 @@ function CombinePage({ selected, onRun }) {
   const [joinViz, setJoinViz] = useState("left"); // 결과 형태 학습용 익스플레이너 선택 종류
   const [joinModal, setJoinModal] = useState(false); // JOIN 종류 비교 모달
   const [matchPop, setMatchPop] = useState(false); // 매칭률 설명 팝업
+  const [joinKeys, setJoinKeys] = useState([{ a: "user_ID", b: "user_ID", au: 90, bu: 90, at: "String", bt: "String" }]); // 복합 조인 키 (키 쌍 배열)
+  const [keyMenu, setKeyMenu] = useState(null); // {i, side:'a'|'b'} 열린 키 컬럼 드롭다운
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
   const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
@@ -2658,31 +2663,55 @@ function CombinePage({ selected, onRun }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                     {joinMode && <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 7a4 4 0 1 0-3.9 5L8 15v3h3v-2h2v-2h1.1A4 4 0 0 0 15 7z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
                     <span style={{ fontSize: 14.5, fontWeight: 700 }}>{joinMode ? "Join key" : "Column mapping"}</span>
-                    <span style={{ fontSize: 12.5, color: C.faint, fontWeight: 600 }}>{joinMode ? "· 1 common key linking both" : `${matchRows.length} total`}</span>
+                    <span style={{ fontSize: 12.5, color: C.faint, fontWeight: 600 }}>{joinMode ? `· 키 ${joinKeys.length}개로 연결` : `${matchRows.length} total`}</span>
+                    {joinMode && <button onClick={() => { setJoinKeys((ks) => [...ks, { a: null, b: null, au: 0, bu: 0, at: null, bt: null }]); setKeyMenu({ i: joinKeys.length, side: "a" }); }} style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 3, fontSize: 13, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>+ 키 추가</button>}
                   </div>
-                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-                    <div style={{ display: "flex", alignItems: "center", background: "#FAFAFB", borderBottom: `1px solid ${C.border}`, height: 50 }}>
+                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: joinMode ? "visible" : "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", background: "#FAFAFB", borderBottom: `1px solid ${C.border}`, height: 50, borderRadius: "12px 12px 0 0" }}>
                       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[0])} <span style={{ fontSize: 12, fontWeight: 600, color: C.faint }}>(base)</span></div>
                       <button onClick={doSwap} title={joinMode ? "Swap base ↔ target (Left ↔ Right join)" : "Swap base ↔ target"} style={{ width: 44, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: joinMode ? C.purple : C.sub }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 10l-3 3 3 3M4 13h12M17 14l3-3-3-3M20 11H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
                       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[1])}</div>
                     </div>
-                    {(joinMode ? [matchRows.find(([l, rr]) => l && rr) || matchRows[0]] : matchRows).map(([l, rr], i) => (
-                      joinMode ? (
-                      <div key={i} style={{ display: "flex", alignItems: "center", height: 56, borderTop: `1px solid ${C.borderSoft}` }}>
-                        <div style={{ flex: 1, padding: "0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ display: "flex", color: C.purple }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 7a4 4 0 1 0-3.9 5L8 15v3h3v-2h2v-2h1.1A4 4 0 0 0 15 7z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                          <span style={{ fontSize: 14, fontWeight: 600 }}>{l}</span>
-                          <span style={{ fontSize: 12.5, color: C.faint }}>String</span>
-                          <span style={{ display: "flex", color: C.faint, marginLeft: 1 }} title="조인 키 변경"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                        </div>
-                        <span style={{ width: 44, display: "flex", justifyContent: "center", color: C.purple }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
-                        <div style={{ flex: 1, padding: "0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 14 }}>{rr}</span>
-                          <span style={{ fontSize: 12.5, color: C.faint }}>String</span>
-                        </div>
-                        <span style={{ marginRight: 16, fontSize: 11, fontWeight: 700, color: C.purple, border: `1px solid ${ERD_TONE.purple.line}`, borderRadius: 6, padding: "3px 9px" }}>키</span>
+                    {joinMode ? joinKeys.map((k, i) => {
+                      const cell = (side) => {
+                        const val = side === "a" ? k.a : k.b;
+                        const typ = side === "a" ? k.at : k.bt;
+                        const cols = side === "a" ? A_COLS : B_COLS;
+                        const open = keyMenu && keyMenu.i === i && keyMenu.side === side;
+                        return (
+                          <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+                            <button onClick={() => setKeyMenu(open ? null : { i, side })} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, padding: "0 16px", height: 56, color: val ? C.text : C.faint }}>
+                              {side === "a" && <span style={{ display: "flex", color: val ? C.purple : C.border, flexShrink: 0 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 7a4 4 0 1 0-3.9 5L8 15v3h3v-2h2v-2h1.1A4 4 0 0 0 15 7z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
+                              <span style={{ fontSize: 14, fontWeight: val ? 600 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{val || "컬럼 선택"}</span>
+                              {val && <span style={{ fontSize: 12.5, color: C.faint, flexShrink: 0 }}>{typ}</span>}
+                              <span style={{ display: "flex", color: C.faint, marginLeft: "auto", flexShrink: 0, opacity: !val || hoverRow === i || open ? 1 : 0, transition: "opacity .12s" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                            </button>
+                            {open && <>
+                              <div onClick={() => setKeyMenu(null)} style={{ position: "fixed", inset: 0, zIndex: 19 }} />
+                              <div style={{ position: "absolute", top: "100%", left: 12, right: 12, zIndex: 20, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.13)", overflow: "hidden", marginTop: 2 }}>
+                                {cols.map((c, ci) => (
+                                  <button key={c.name} onClick={() => { setJoinKeys((ks) => ks.map((x, j) => j === i ? (side === "a" ? { ...x, a: c.name, au: c.u, at: c.t } : { ...x, b: c.name, bu: c.u, bt: c.t }) : x)); setKeyMenu(null); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: val === c.name ? "#F5F3FF" : "#fff", border: "none", borderTop: ci ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer", fontFamily: FONT, fontSize: 13.5, color: C.text }}>
+                                    <span>{c.name}</span>
+                                    <span style={{ fontSize: 12, color: C.faint }}>{c.t}</span>
+                                    <span style={{ marginLeft: "auto", fontSize: 11, color: c.u < 90 ? "#B45309" : C.faint, background: c.u < 90 ? "#FEF6EC" : "#F3F4F6", borderRadius: 5, padding: "1px 7px" }}>고유 {c.u}%</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </>}
+                          </div>
+                        );
+                      };
+                      return (
+                      <div key={i} onMouseEnter={() => setHoverRow(i)} onMouseLeave={() => setHoverRow(-1)} style={{ display: "flex", alignItems: "center", minHeight: 56, borderTop: `1px solid ${C.borderSoft}`, background: hoverRow === i ? "#FAFAFB" : "#fff" }}>
+                        {cell("a")}
+                        <span style={{ width: 44, display: "flex", justifyContent: "center", color: k.a && k.b ? C.purple : C.border, flexShrink: 0 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                        {cell("b")}
+                        {joinKeys.length > 1
+                          ? <button onClick={() => { setJoinKeys((ks) => ks.filter((_, j) => j !== i)); setKeyMenu(null); }} title="이 키 쌍 삭제" style={{ width: 40, flexShrink: 0, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: C.faint }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></button>
+                          : <span style={{ width: 40, flexShrink: 0 }} />}
                       </div>
-                      ) : (
+                      );
+                    }) : matchRows.map(([l, rr], i) => (
                       <div key={i} onMouseEnter={() => setHoverRow(i)} onMouseLeave={() => setHoverRow(-1)} style={{ display: "flex", alignItems: "center", height: 52, borderTop: `1px solid ${C.borderSoft}`, background: editRow === i ? "#FAF8FF" : hoverRow === i ? "#FAFAFB" : "#fff" }}>
                         <div style={{ flex: 1, padding: "0 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>{l ? <><span style={{ color: C.faint }}>#</span>{l} <span style={{ color: C.faint, fontSize: 12.5 }}>String</span></> : <span style={{ color: C.faint }}>—</span>}</div>
                         <span style={{ width: 44, display: "flex", justifyContent: "center", color: rr ? C.purple : C.border }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
@@ -2714,9 +2743,9 @@ function CombinePage({ selected, onRun }) {
                           )}
                         </div>
                       </div>
-                      )
                     ))}
                   </div>
+                  {joinMode && joinKeys.length > 1 && <p style={{ fontSize: 12, color: C.sub, margin: "10px 0 0", display: "flex", alignItems: "flex-start", gap: 5, lineHeight: 1.5 }}><span style={{ display: "flex", flexShrink: 0, marginTop: 1, color: C.faint }}><Icon.infoCircle width={13} height={13} /></span>키를 추가하면 둘 다 일치하는 행만 매칭돼요. 매칭이 줄 수 있어요.</p>}
                   {joinMode && (() => {
                     const med = "#9DC0F7", light = "#E4EEFC", empty = "#F3F4F6";
                     const VZ = {
