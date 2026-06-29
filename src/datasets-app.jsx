@@ -1930,7 +1930,7 @@ function WbSelect({ label, value, options, onChange }) {
   return (
     <div style={{ marginBottom: 16, position: "relative" }}>
       <div style={{ fontSize: 13, fontWeight: 600, color: C.sub, marginBottom: 7 }}>{label}</div>
-      <div onClick={() => setOpen((o) => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: `1px solid ${open ? WB_BLUE : C.border}`, borderRadius: 10, padding: "12px 14px", fontSize: 14, fontWeight: 500, background: C.panel, cursor: "pointer", color: C.text }}>{value}<span style={{ color: C.faint, display: "flex", transition: "transform .15s", transform: open ? "rotate(180deg)" : "none" }}><Icon.chevD /></span></div>
+      <div onClick={() => setOpen((o) => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: `1px solid ${open ? WB_BLUE : "#EFF1F4"}`, borderRadius: 12, padding: "13px 15px", fontSize: 14, fontWeight: 600, background: open ? "#fff" : "#F5F6F8", cursor: "pointer", color: C.text }}>{value}<span style={{ color: C.faint, display: "flex", transition: "transform .15s", transform: open ? "rotate(180deg)" : "none" }}><Icon.chevD /></span></div>
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 19 }} />
@@ -2022,7 +2022,7 @@ function AnomalyResults({ before, after }) {
       {/* 헤더 + 전/후 토글 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
         <div><div style={{ fontSize: 15, fontWeight: 700 }}>시뮬레이션 결과</div><div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>{before} → {after} · 모델 동일, 데이터만 변경</div></div>
-        <div style={{ display: "inline-flex", background: "#F1F3F5", borderRadius: 9, padding: 3 }}>
+        <div style={{ display: "inline-flex", background: "#F2F4F6", borderRadius: 11, padding: 4 }}>
           {[["before", "정제 전"], ["after", "정제 후"]].map(([k, lab]) => (
             <button key={k} onClick={() => setView(k)} style={{ border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT, background: view === k ? "#fff" : "transparent", color: view === k ? C.text : C.sub, boxShadow: view === k ? "0 1px 2px rgba(0,0,0,0.06)" : "none" }}>{lab}</button>
           ))}
@@ -2034,8 +2034,8 @@ function AnomalyResults({ before, after }) {
           <div key={m.k} style={{ padding: `${i >= 3 ? 16 : 0}px 18px ${i < 3 ? 16 : 0}px`, borderLeft: i % 3 === 0 ? "none" : `1px solid ${C.borderSoft}`, borderTop: i >= 3 ? `1px solid ${C.borderSoft}` : "none" }}>
             <div style={{ fontSize: 12, color: C.sub, marginBottom: 6 }}>{m.k}</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <span style={{ fontSize: 21, fontWeight: 800 }}>{m.v}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: m.good ? "#15803D" : "#B91C1C" }}>{m.d}</span>
+              <span style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em" }}>{m.v}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: m.good ? "#16A34A" : "#E5484D" }}>{m.d.startsWith("+") ? "▲" : "▼"} {m.d.replace(/^[+−]/, "")}</span>
             </div>
             <div style={{ fontSize: 11.5, color: C.faint, marginTop: 3 }}>{m.sub}</div>
           </div>
@@ -2083,7 +2083,7 @@ function AnomalyResults({ before, after }) {
 }
 const VER_OPTS = VERSIONS.map((v) => `${v.badge ? v.badge + " · " : ""}${v.title}`);
 function PerfWorkbench() {
-  const cardBox = { background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24 };
+  const cardBox = { background: "#fff", border: "1px solid #EFF1F4", borderRadius: 20, padding: 26, boxShadow: "0 1px 3px rgba(17,24,39,0.04)" };
   const [ran, setRan] = useState(false);
   const [model, setModel] = useState("XGBoost · 지도학습");
   const [task, setTask] = useState("이상탐지 (Anomaly Detection)");
@@ -2167,7 +2167,7 @@ function DetailTab() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ fontSize: 18, fontWeight: 700 }}>Sample ._voc_data.csvta.csv <span style={{ color: C.faint, fontWeight: 500, fontSize: 15 }}>(99.8MB)</span></div><button style={{ width: 36, height: 36, borderRadius: 9, border: `1px solid ${C.border}`, background: C.panel, color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.download /></button></div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>{["Snapshot - 238fkj", "247 columns · 47 rows", "Updated Mar 25, 10:01 AM"].map((t) => <span key={t} style={{ fontSize: 13, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px" }}>{t}</span>)}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}>
-            <div style={{ display: "inline-flex", background: "#F1F3F5", borderRadius: 9, padding: 3 }}>
+            <div style={{ display: "inline-flex", background: "#F2F4F6", borderRadius: 11, padding: 4 }}>
               {[["schema", "스키마 · 247컬럼"], ["data", "데이터 미리보기"]].map(([k, lab]) => (
                 <button key={k} onClick={() => setView(k)} style={{ border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT, background: view === k ? "#fff" : "transparent", color: view === k ? C.text : C.sub, boxShadow: view === k ? "0 1px 2px rgba(0,0,0,0.06)" : "none" }}>{lab}</button>
               ))}
