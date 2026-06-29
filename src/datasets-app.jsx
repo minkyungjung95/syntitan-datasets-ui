@@ -1744,7 +1744,47 @@ const tgl = (active) => ({ width: 40, height: 36, borderRadius: 8, border: "none
  * ========================================================= */
 const btnGhost = { display: "flex", alignItems: "center", gap: 6, background: C.panel, color: C.text, border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 14px", fontSize: 13.5, fontWeight: 500, cursor: "pointer", fontFamily: FONT };
 
-function DetailHeader({ tab, setTab, onBack, onRefine }) {
+const VERSIONS = [
+  { ts: "Mar 25, 10:05 AM", badge: "v2", current: true, title: "Released as v2", bullets: ["릴리즈 노트 내용 노출"], hash: null },
+  { ts: "Mar 25, 10:03 AM", title: "Missing Value Treatment", bullets: ["N null values imputed — {컬럼명} N개, {컬럼명} N개"], hash: "a3f8c2d" },
+  { ts: "Mar 25, 10:02 AM", title: "Outlier & Skew Correction", bullets: ["이상값 클리핑·로그 변환 — {컬럼명} N개"], hash: "b71e9f4" },
+  { ts: "Mar 25, 10:01 AM", badge: "v1", title: "Initial upload", bullets: ["원본 데이터 업로드"], hash: "c4f8c2c" },
+];
+function VersionHistory({ onClose }) {
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,18,22,0.28)", zIndex: 200, display: "flex", justifyContent: "flex-end" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: 380, maxWidth: "92vw", height: "100%", background: C.panel, borderLeft: `1px solid ${C.border}`, boxShadow: "-12px 0 40px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column", fontFamily: FONT }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: `1px solid ${C.border}` }}>
+          <span style={{ fontSize: 16, fontWeight: 700 }}>Version History</span>
+          <button onClick={onClose} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", color: C.faint, padding: 2 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: "4px 0" }}>
+          {VERSIONS.map((v, i) => (
+            <div key={i} style={{ padding: "16px 22px", borderBottom: i === VERSIONS.length - 1 ? "none" : `1px solid ${C.borderSoft}`, background: v.current ? "#F5FAF6" : "transparent" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 13, color: C.sub }}>{v.ts}</span>
+                <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  {v.current && <span style={{ fontSize: 11, fontWeight: 700, color: C.blue, border: `1px solid ${C.blue}`, borderRadius: 20, padding: "1px 9px" }}>Current</span>}
+                  {v.badge && <span style={{ fontSize: 12, fontWeight: 700, color: C.sub }}>{v.badge}</span>}
+                </span>
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: v.bullets.length ? 6 : 0 }}>{v.title}</div>
+              {v.bullets.map((b, j) => (<div key={j} style={{ display: "flex", gap: 7, fontSize: 12.5, color: C.sub, lineHeight: 1.5, marginBottom: 3 }}><span style={{ color: C.faint }}>·</span>{b}</div>))}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <span style={{ width: 20, height: 20, borderRadius: "50%", background: "#34C77B", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>H</span>
+                  <span style={{ fontSize: 12.5, color: C.sub }}>Hamilton</span>
+                </span>
+                {v.hash && <span style={{ fontSize: 11.5, fontFamily: "ui-monospace, monospace", color: C.faint }}>{v.hash}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+function DetailHeader({ tab, setTab, onBack, onRefine, onHistory }) {
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 32px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
@@ -1754,7 +1794,7 @@ function DetailHeader({ tab, setTab, onBack, onRefine }) {
           <span style={{ fontWeight: 600 }}>Sample ._voc_data</span>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button style={btnGhost}>History</button><button style={btnGhost}>Share</button>
+          <button onClick={onHistory} style={btnGhost}>History</button><button style={btnGhost}>Share</button>
           <button style={{ ...btnGhost, background: C.dark, color: "#fff", border: "none" }}>Release</button>
         </div>
       </div>
@@ -1904,39 +1944,56 @@ function WbResultCard({ tag, title, rows, accent }) {
 
 function PerfWorkbench() {
   const cardBox = { background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24 };
+  const [ran, setRan] = useState(false);
+  const verLabel = (b) => { const v = VERSIONS.find((x) => x.badge === b); return v ? `${b} · ${v.title}` : b; };
   return (
     <div style={{ flex: 1, minHeight: 0, overflow: "auto", background: C.bg }}>
       <div style={{ padding: "32px 40px 60px" }}>
         <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", color: C.purple, textTransform: "uppercase" }}>AI 성능 워크벤치</div>
         <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>효과 미리보기</div>
-        <div style={{ fontSize: 14, color: C.sub, marginTop: 8, lineHeight: 1.55, marginBottom: 28 }}>정제 전/후 데이터를 기준 모델에 넣어 AI 준비의 예상 효과를 미리 확인합니다. 표시 수치는 기준 추정치이며, 실제 영향은 자체 모델로 검증해 보세요.</div>
+        <div style={{ fontSize: 14, color: C.sub, marginTop: 8, lineHeight: 1.55, marginBottom: 28 }}>버전 히스토리에서 정제 전·후를 골라 기준 모델에 넣고, AI 준비의 예상 효과를 미리 확인합니다. 표시 수치는 기준 추정치이며, 실제 영향은 자체 모델로 검증해 보세요.</div>
         <div style={{ display: "grid", gridTemplateColumns: "minmax(340px, 400px) 1fr", gap: 24, alignItems: "start" }}>
           <div style={cardBox}>
             <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 18 }}>미리 보기 설정</div>
             <WbField label="검증 모델" value="XGBoost 기준선" />
             <WbField label="작업 유형" value="이상탐지 (Anomaly Detection)" />
             <WbField label="목표 지표" value="고정 정밀도에서의 재현율 · PR-AUC" />
-            <WbField label="데이터 상태" value="스냅샷 vs. AI 준비 릴리스" />
+            <div style={{ borderTop: `1px solid ${C.borderSoft}`, margin: "6px 0 16px" }} />
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: C.sub, marginBottom: 10 }}>비교할 데이터 · 버전 히스토리에서 선택</div>
+            <WbField label="정제 전 (기준)" value={verLabel("v1")} />
+            <WbField label="정제 후 (비교)" value={verLabel("v2")} />
+            <button onClick={() => setRan(true)} style={{ width: "100%", marginTop: 4, padding: "12px 0", borderRadius: 11, border: "none", background: C.dark, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Icon.spark /> 시뮬레이션 실행</button>
+            <div style={{ fontSize: 12, color: C.faint, textAlign: "center", marginTop: 14, lineHeight: 1.55 }}>이상탐지 데이터가 없으신가요?<br /><span style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }}>이상탐지 샘플 데이터로 시작 →</span></div>
           </div>
-          <div style={cardBox}>
-            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 18 }}>시뮬레이션 결과</div>
-            <div style={{ display: "flex", gap: 14 }}>
-              <WbResultCard tag="이전 · 원본 데이터" title="정제 전" rows={[["재현율", "61%"], ["F1", "0.64"], ["오탐", "18%"]]} />
-              <WbResultCard tag="이후 · AI 준비 완료" title="정제 후" rows={[["재현율", "89%"], ["F1", "0.78"], ["오탐", "11%"]]} accent />
-            </div>
-            <div style={{ background: C.dark, borderRadius: 14, padding: 18, marginTop: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#C9CACE", marginBottom: 12 }}>예상되는 상승폭</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                {[["재현율", "+28%p"], ["F1", "+0.14"], ["오탐", "−31%"]].map(([k, v]) => (
-                  <div key={k} style={{ background: "#27272A", borderRadius: 10, padding: "14px 10px", textAlign: "center" }}><div style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 6 }}>{k}</div><div style={{ fontSize: 22, fontWeight: 800, color: "#A78BFA" }}>{v}</div></div>
-                ))}
+          {ran ? (
+            <div style={cardBox}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>시뮬레이션 결과</div>
+                <span style={{ fontSize: 12, color: C.faint }}>{verLabel("v1")} → {verLabel("v2")} · 모델 동일, 데이터만 변경</span>
+              </div>
+              <div style={{ display: "flex", gap: 14 }}>
+                <WbResultCard tag="이전 · 원본 데이터" title="정제 전" rows={[["재현율", "61%"], ["F1", "0.64"], ["오탐", "18%"]]} />
+                <WbResultCard tag="이후 · AI 준비 완료" title="정제 후" rows={[["재현율", "89%"], ["F1", "0.78"], ["오탐", "11%"]]} accent />
+              </div>
+              <div style={{ background: C.dark, borderRadius: 14, padding: 18, marginTop: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#C9CACE", marginBottom: 12 }}>예상되는 상승폭</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                  {[["재현율", "+28%p"], ["F1", "+0.14"], ["오탐", "−31%"]].map(([k, v]) => (
+                    <div key={k} style={{ background: "#27272A", borderRadius: 10, padding: "14px 10px", textAlign: "center" }}><div style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 6 }}>{k}</div><div style={{ fontSize: 22, fontWeight: 800, color: "#A78BFA" }}>{v}</div></div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ ...cardBox, minHeight: 392, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 14 }}>
+              <span style={{ width: 52, height: 52, borderRadius: 14, background: "#F3F0FC", color: C.purple, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.spark width={24} height={24} /></span>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>전 · 후 버전을 선택하고 실행하세요</div>
+              <div style={{ fontSize: 13, color: C.faint, lineHeight: 1.6, maxWidth: 380 }}>왼쪽에서 비교할 정제 전·후 버전을 고른 뒤 <b>시뮬레이션 실행</b>을 누르면, 기준 모델 기준 예상 효과가 여기에 표시됩니다.</div>
+            </div>
+          )}
         </div>
         <div style={{ textAlign: "center", marginTop: 28 }}>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>아직 모델이 없으신가요?</div>
-          <div style={{ fontSize: 13, color: C.faint, marginTop: 5, lineHeight: 1.55 }}>표준 기준 모델로 즉시 결과를 확인하세요. 표시 수치는 <b>기준 추정치</b>이며, 실제 영향은 자체 모델·데이터로 검증해 보시기 바랍니다.</div>
+          <div style={{ fontSize: 13, color: C.faint, lineHeight: 1.55 }}>표시 수치는 <b>기준 추정치</b>입니다. 실제 영향은 자체 모델·데이터로 검증해 보시기 바랍니다.</div>
         </div>
       </div>
     </div>
@@ -3218,6 +3275,7 @@ function CombinePage({ selected, onRun }) {
 export default function DatasetsApp() {
   const [screen, setScreen] = useState("list"); // list | detail | merge | merging | result
   const [tab, setTab] = useState("AI Readiness");
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [selected, setSelected] = useState([]);
   const [combineNav, setCombineNav] = useState(0); // Combine 재진입 시 빈 화면 리셋용
   const [mergeJob, setMergeJob] = useState(null); // { names, done } – 백그라운드에서도 유지
@@ -3280,8 +3338,9 @@ export default function DatasetsApp() {
         )}
         {screen === "detail" && (
           <>
-            <DetailHeader tab={tab} setTab={setTab} onBack={() => setScreen("list")} onRefine={() => setScreen("refine")} />
+            <DetailHeader tab={tab} setTab={setTab} onBack={() => setScreen("list")} onRefine={() => setScreen("refine")} onHistory={() => setHistoryOpen(true)} />
             <div style={scrollArea}>{tab === "AI Readiness" ? <AIReadinessTab /> : <DetailTab />}</div>
+            {historyOpen && <VersionHistory onClose={() => setHistoryOpen(false)} />}
           </>
         )}
         {screen === "refine" && <RefinePage onBack={() => setScreen("detail")} />}
