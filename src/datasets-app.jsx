@@ -1743,7 +1743,7 @@ const tgl = (active) => ({ width: 40, height: 36, borderRadius: 8, border: "none
  * ========================================================= */
 const btnGhost = { display: "flex", alignItems: "center", gap: 6, background: C.panel, color: C.text, border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 14px", fontSize: 13.5, fontWeight: 500, cursor: "pointer", fontFamily: FONT };
 
-function DetailHeader({ tab, setTab, onBack }) {
+function DetailHeader({ tab, setTab, onBack, onRefine }) {
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 32px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
@@ -1763,7 +1763,7 @@ function DetailHeader({ tab, setTab, onBack }) {
             <button key={t} onClick={() => setTab(t)} style={{ border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT, background: tab === t ? C.panel : "transparent", color: tab === t ? C.text : C.sub, boxShadow: tab === t ? "0 1px 2px rgba(0,0,0,0.06)" : "none" }}>{t}</button>
           ))}
         </div>
-        {tab === "AI Readiness" && <button style={{ ...btnGhost, background: C.dark, color: "#fff", border: "none", fontWeight: 600 }}><Icon.spark /> Get AI-Ready</button>}
+        {tab === "AI Readiness" && <button onClick={onRefine} style={{ ...btnGhost, background: C.dark, color: "#fff", border: "none", fontWeight: 600 }}><Icon.spark /> Get AI-Ready</button>}
       </div>
     </>
   );
@@ -1787,9 +1787,9 @@ function RadarChart() {
     </svg>
   );
 }
-function MetricCard({ title, pct, children }) {
+function MetricCard({ title, pct, desc, children }) {
   const color = pct >= 90 ? C.greenText : pct >= 40 ? C.yellowText : C.red;
-  return (<div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, background: C.panel }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}><span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 16, fontWeight: 700 }}>{title} <span style={{ color: C.faint, display: "flex" }}><Icon.infoCircle width={14} height={14} /></span></span><span style={{ fontSize: 16, fontWeight: 700, color }}>{pct}%</span></div>{children}</div>);
+  return (<div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, background: C.panel }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: desc ? 6 : 18 }}><span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 16, fontWeight: 700 }}>{title} <span style={{ color: C.faint, display: "flex" }}><Icon.infoCircle width={14} height={14} /></span></span><span style={{ fontSize: 16, fontWeight: 700, color }}>{pct}%</span></div>{desc && <div style={{ fontSize: 13, color: C.faint, marginBottom: 16, lineHeight: 1.55 }}>{desc}</div>}{children}</div>);
 }
 function KVTable({ rows, highlight }) {
   return (<div style={{ border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>{rows.map(([k, v], i) => (<div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: i === rows.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}><div style={{ padding: "11px 14px", fontSize: 13.5, color: C.sub, borderRight: `1px solid ${C.borderSoft}` }}>{k}</div><div style={{ padding: "11px 14px", fontSize: 13.5, color: highlight ? C.faint : C.text }}>{v}</div></div>))}</div>);
@@ -1809,12 +1809,73 @@ function AIReadinessTab() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}><RadarChart /></div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 22 }}>
-        <MetricCard title="Privacy" pct={100}><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>[감지된 민감 컬럼 수_받아올 값 by AI] N sensitive columns detected and processed.</div><KVTable highlight rows={[["Full Name", "칼럼명"], ["Phone Number", "칼럼명"], ["National ID", "칼럼명"], ["Passport Number", "칼럼명"], ["Email Address", "칼럼명"], ["Bank Account Number", "칼럼명"], ["Credit Card Number", "칼럼명"], ["Address", "칼럼명"]]} /></MetricCard>
-        <MetricCard title="Integrity" pct={50}><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>Data quality issues detected.</div><KVTable rows={[["Missing Values", "N cases"], ["Duplicate Records", "N cases"], ["Type Errors", "N cases"], ["Distribution Skew", "N cases"]]} /><Chips title="Recommended AI-Readiness Actions" items={["Missing Pattern Imputation", "Outlier & Skew Correction"]} /></MetricCard>
-        <MetricCard title="Contextuality" pct={80}><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>N columns lack descriptions.</div><KVTable rows={[["Column Description Coverage", "N%"], ["Columns Missing for Stated Intent", "N cases"]]} /><Chips title="Recommended AI-Readiness Actions" items={["Semantic Context Enrichment enrichment"]} /></MetricCard>
-        <MetricCard title="Conciseness" pct={99}><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>Low-signal columns detected.</div><KVTable rows={[["Low-Contribution Columns", "N cases"], ["High-Cardinality Columns", "N cases"], ["Redundant Text Fields", "N cases"]]} /><Chips title="Recommended AI-Readiness Actions" items={["Low-Signal Column Removal"]} /></MetricCard>
+        <MetricCard title="Privacy" pct={100} desc="Logs of PII detection and protection handling status"><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>[감지된 민감 컬럼 수_받아올 값 by AI] N sensitive columns detected and processed.</div><KVTable highlight rows={[["Full Name", "칼럼명"], ["Phone Number", "칼럼명"], ["National ID", "칼럼명"], ["Passport Number", "칼럼명"], ["Email Address", "칼럼명"], ["Bank Account Number", "칼럼명"], ["Credit Card Number", "칼럼명"], ["Address", "칼럼명"]]} /></MetricCard>
+        <MetricCard title="Integrity" pct={50} desc="Diagnostics covering missing values, duplicates, outliers, and skew"><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>Data quality issues detected.</div><KVTable rows={[["Missing Values", "N cases"], ["Duplicate Records", "N cases"], ["Type Errors", "N cases"], ["Distribution Skew", "N cases"]]} /><Chips title="Recommended AI-Readiness Actions" items={["Missing Pattern Imputation", "Outlier & Skew Correction"]} /></MetricCard>
+        <MetricCard title="Contextuality" pct={80} desc="Records of column semantics and alignment with analysis intent"><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>N columns lack descriptions.</div><KVTable rows={[["Column Description Coverage", "N%"], ["Columns Missing for Stated Intent", "N cases"]]} /><Chips title="Recommended AI-Readiness Actions" items={["Semantic Context Enrichment enrichment"]} /></MetricCard>
+        <MetricCard title="Conciseness" pct={99} desc="Column contribution and noise diagnostics relative to stated intent"><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>Low-signal columns detected.</div><KVTable rows={[["Low-Contribution Columns", "N cases"], ["High-Cardinality Columns", "N cases"], ["Redundant Text Fields", "N cases"]]} /><Chips title="Recommended AI-Readiness Actions" items={["Low-Signal Column Removal"]} /></MetricCard>
         <MetricCard title="Operational Reliability" pct={100}><div style={{ fontSize: 12.5, color: C.faint, marginTop: -8, marginBottom: 16 }}>*Automatically fulfilled by SynTitan — no action required</div><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Your dataset is being managed in a reliable and consistent state.</div><Chips title="Platform-Provided Features" items={["Preprocessing Result Validation", "AI Readiness Achievement Tracking", "Standard Consistency"]} /></MetricCard>
         <MetricCard title="Traceability" pct={100}><div style={{ fontSize: 12.5, color: C.faint, marginTop: -8, marginBottom: 16 }}>*Automatically fulfilled by SynTitan — no action required</div><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>All changes are being recorded and are fully traceable.</div><Chips title="Platform-Provided Features" items={["Auto Snapshot Generation", "Release Version Labeling", "Author & Timestamp Logging"]} /></MetricCard>
+      </div>
+    </div>
+  );
+}
+const REFINE_MODULES = [
+  { rec: true, on: false, title: "민감 데이터 탐지 및 마스킹", status: "감지된 민감 데이터가 없습니다.", how: ["민감 데이터를 식별 불가능한 데이터로 대체합니다.", "커스텀 필터: 민감 데이터 유형을 직접 지정할 수 있습니다. (출시 예정)"], meta: "PII 감지·마스킹 처리 및 변경 이력 기록" },
+  { rec: false, on: false, title: "결측값 처리", status: "AI 추천 항목이 없습니다.", how: ["의미 있는 결측 패턴은 신호로 보존하고, 나머지 결측값은 통계적 방법으로 채웁니다. AI가 데이터에 맞는 처리 방식을 자동으로 결정합니다."], meta: "컬럼별 결측 처리 결과 및 보정 이력 기록" },
+  { rec: false, on: false, title: "이상값·분포·범주 정제", status: "AI 추천 항목이 없습니다.", how: ["이상값 제거: 정상 범위를 벗어난 값을 잘라냅니다.", "분포 안정화: 심하게 왜곡된 컬럼을 변환합니다.", "희소 범주 통합: 빈도가 낮은 범주를 \"기타\"로 묶습니다.", "수치 범위가 크게 차이 나는 컬럼을 정규화합니다."], meta: "정제 전후 분포 상태 변화 및 처리 이력 기록" },
+  { rec: true, on: true, title: "저신호 컬럼 제거", status: "기여도·신뢰도가 낮은 컬럼이 감지되었습니다.", how: ["중요도가 낮은 컬럼을 선별적으로 제거합니다.", "예측 결과를 오염시킬 수 있는 컬럼을 제거합니다."], meta: "컬럼별 중요도 판정 결과 및 제거 이력 기록" },
+  { rec: false, on: false, title: "행 증강 및 클래스 밸런싱", status: "AI 추천 항목이 없습니다.", how: ["소수 클래스를 보강하는 합성 샘플을 생성합니다.", "다수 클래스의 비율을 줄입니다."], meta: "증강 전후 클래스 분포 및 행 수 변화 기록" },
+  { rec: true, on: true, title: "피처 파생 및 증강", status: "범주형 컬럼에서 추가 신호를 도출할 수 있습니다.", how: ["구간화와 범주화로 새 컬럼을 만듭니다.", "컬럼 간 연산으로 복합 신호를 추가합니다."], meta: "파생 컬럼 목록·원본 컬럼 관계 및 생성 이력 기록" },
+];
+function RefineToggle({ on, onChange }) {
+  return (<button onClick={onChange} style={{ width: 44, height: 26, borderRadius: 999, border: "none", cursor: "pointer", background: on ? "#3182F6" : "#D1D5DB", position: "relative", flexShrink: 0, transition: "background .15s", padding: 0 }}><span style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left .15s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} /></button>);
+}
+function RefineCard({ mod }) {
+  const [on, setOn] = useState(mod.on);
+  return (
+    <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 24px" }}>
+      {mod.rec && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: C.purple, marginBottom: 8 }}><Icon.spark width={13} height={13} /> AI 추천</div>}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div><div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{mod.title}</div><div style={{ fontSize: 13.5, color: C.sub }}>{mod.status}</div></div>
+        <RefineToggle on={on} onChange={() => setOn(!on)} />
+      </div>
+      <div style={{ borderTop: `1px solid ${C.borderSoft}`, margin: "16px 0 14px" }} />
+      <div style={{ fontSize: 12.5, color: C.faint, marginBottom: 10 }}>작동 방식</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+        {mod.how.map((h, i) => (<div key={i} style={{ display: "flex", gap: 8, fontSize: 13.5, color: C.sub, lineHeight: 1.5 }}><span style={{ display: "flex", flexShrink: 0, color: C.faint, marginTop: 2 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>{h}</div>))}
+      </div>
+      <div style={{ borderTop: `1px solid ${C.borderSoft}`, marginTop: 16, paddingTop: 14, display: "flex", alignItems: "flex-start", gap: 9 }}>
+        <span style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 700, color: "#0F6E56", background: "#E1F5EE", borderRadius: 7, padding: "4px 9px" }}>보완 메타데이터</span>
+        <span style={{ fontSize: 13, color: C.sub, lineHeight: 1.5 }}>{mod.meta}</span>
+      </div>
+    </div>
+  );
+}
+function RefinePage({ onBack }) {
+  return (
+    <div style={{ flex: 1, minHeight: 0, overflow: "auto", background: C.bg }}>
+      <div style={{ padding: "16px 32px", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${C.border}`, background: C.panel }}>
+        <span onClick={onBack} style={{ display: "flex", color: C.sub, cursor: "pointer" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+        <span style={{ fontSize: 15, fontWeight: 600 }}>Sample ._voc_data (1).csv</span>
+        <span style={{ marginLeft: "auto", fontSize: 12, color: C.faint }}>*30분 미사용 시 자동 종료</span>
+      </div>
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 32px 60px" }}>
+        <div style={{ background: C.dark, borderRadius: 16, padding: "20px 24px", color: "#fff", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ display: "flex", width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.spark width={20} height={20} /></span>
+            <div style={{ flex: 1 }}><div style={{ fontSize: 17, fontWeight: 700 }}>데이터 품질 정제</div><div style={{ fontSize: 13.5, color: "#C9CACE", marginTop: 2 }}>AI 추천 전처리 단계를 적용해 데이터 품질을 개선하세요.</div></div>
+            <button style={{ fontSize: 14, fontWeight: 700, fontFamily: FONT, color: C.text, background: "#fff", border: "none", borderRadius: 10, padding: "10px 22px", cursor: "pointer" }}>다음</button>
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 14px", marginTop: 16 }}>
+            <span style={{ display: "flex", flexShrink: 0, color: "#9CA3AF", marginTop: 1 }}><Icon.db width={15} height={15} /></span>
+            <div style={{ flex: 1, fontSize: 13.5, color: "#fff", lineHeight: 1.55 }}>정제 과정에서 데이터 품질 상태, 처리 결과, 변경 이력 등 AI 활용에 필요한 <b>메타 데이터</b>가 보완됩니다.</div>
+            <span title="메타 데이터는 AI가 데이터의 상태와 처리 과정을 이해하고, 이후 Release 및 Agent 분석 결과를 재현할 수 있도록 돕는 기준 정보입니다." style={{ display: "flex", flexShrink: 0, color: "#9CA3AF", cursor: "help" }}><Icon.infoCircle width={15} height={15} /></span>
+          </div>
+        </div>
+        <div style={{ marginBottom: 16 }}><RefineCard mod={REFINE_MODULES[0]} /></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+          {REFINE_MODULES.slice(1).map((m, i) => <RefineCard key={i} mod={m} />)}
+        </div>
       </div>
     </div>
   );
@@ -2157,8 +2218,11 @@ function CombinePage({ selected, onRun }) {
   const [joinViz, setJoinViz] = useState("left"); // 결과 형태 학습용 익스플레이너 선택 종류
   const [joinModal, setJoinModal] = useState(false); // JOIN 종류 비교 모달
   const [matchPop, setMatchPop] = useState(false); // 매칭률 설명 팝업
+  const [methodChoice, setMethodChoice] = useState(false); // 둘 다 가능 → 방식 선택 모달
+  const [methodPick, setMethodPick] = useState(null); // 모달에서 고른 방식 (union|join|null)
   const [joinKeys, setJoinKeys] = useState([{ a: "user_ID", b: "user_ID", au: 90, bu: 90, at: "String", bt: "String" }]); // 복합 조인 키 (키 쌍 배열)
   const [keyMenu, setKeyMenu] = useState(null); // {i, side:'a'|'b'} 열린 키 컬럼 드롭다운
+  const [editKeyRow, setEditKeyRow] = useState(-1); // 편집 중인 키 행 (펜슬 → A·B 둘 다 드롭다운)
   const [openFolders, setOpenFolders] = useState({ DataGalaxy: true }); // 좌측 폴더 트리 펼침
   const [hoverRow, setHoverRow] = useState(-1);   // 매칭 행 hover
   const [editRow, setEditRow] = useState(-1);     // 매칭 행 편집(드롭다운)
@@ -2184,7 +2248,7 @@ function CombinePage({ selected, onRun }) {
   useEffect(() => { setLoading(false); }, [done]);
   // 데이터 2개 채워지면 AI가 방식 자동 결정 → 즉시 매칭+미리보기 (별도 단계 없음)
   useEffect(() => { if (picked.length < MAX_MERGE) { setDone(false); setMethodSrc("none"); } }, [picked.length]);
-  useEffect(() => { if (done) { setMethod(caseDef.method); setMethodSrc("ai"); const cr = buildCaseRows(caseDef.k, swapped); setMatchRows(cr); setAppliedRows(cr); setLoading(true); const t = setTimeout(() => setLoading(false), 850); return () => clearTimeout(t); } }, [done]);
+  useEffect(() => { if (done) { if (methodSrc !== "user") { setMethod(caseDef.method); setMethodSrc("ai"); } const cr = buildCaseRows(caseDef.k, swapped); setMatchRows(cr); setAppliedRows(cr); setLoading(true); const t = setTimeout(() => setLoading(false), 850); return () => clearTimeout(t); } }, [done]);
 
   // 좌측 행 → 우측 드롭존 마우스 드래그앤드랍 (위치 무관, 담기만 함 — 방식은 AI 자동)
   useEffect(() => {
@@ -2388,8 +2452,51 @@ function CombinePage({ selected, onRun }) {
             })()}
           </div>
           <div style={{ padding: 12, borderTop: `1px solid ${C.border}`, background: "#fff" }}>
-            <button disabled={picked.length !== MAX_MERGE} onClick={() => { if (picked.length === MAX_MERGE) setDone(true); }} style={{ width: "100%", padding: "13px 0", borderRadius: 11, border: "none", background: picked.length === MAX_MERGE ? C.dark : "#EEF0F3", color: picked.length === MAX_MERGE ? "#fff" : C.faint, fontSize: 14, fontWeight: 700, cursor: picked.length === MAX_MERGE ? "pointer" : "default", fontFamily: FONT }}>{picked.length === MAX_MERGE ? "다음 →" : `데이터셋 선택 (${picked.length}/${MAX_MERGE})`}</button>
+            <button disabled={picked.length !== MAX_MERGE} onClick={() => { if (picked.length === MAX_MERGE) setMethodChoice(true); }} style={{ width: "100%", padding: "13px 0", borderRadius: 11, border: "none", background: picked.length === MAX_MERGE ? C.dark : "#EEF0F3", color: picked.length === MAX_MERGE ? "#fff" : C.faint, fontSize: 14, fontWeight: 700, cursor: picked.length === MAX_MERGE ? "pointer" : "default", fontFamily: FONT }}>{picked.length === MAX_MERGE ? "다음 →" : `데이터셋 선택 (${picked.length}/${MAX_MERGE})`}</button>
           </div>
+          {methodChoice && (() => {
+            const closeM = () => { setMethodChoice(false); setMethodPick(null); };
+            const goNext = () => { if (!methodPick) return; setMethod(methodPick); setMethodSrc("user"); setMethodChoice(false); setMethodPick(null); setDone(true); };
+            const unionTable = (
+              <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden", fontSize: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", padding: "8px 12px", color: C.faint, fontWeight: 600, background: "#FAFAFB" }}><span>날짜</span><span>이름</span><span>등급</span></div>
+                {[["5/3", "김아민", "일반", false], ["5/18", "한석원", "VIP", false], ["6/10", "정현아", "일반", true], ["6/20", "김민수", "VIP", true]].map((r, i) => (<div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", padding: "8px 12px", borderTop: `1px solid ${C.borderSoft}`, background: r[3] ? "#EAF1FF" : "#fff", color: C.text }}><span>{r[0]}</span><span>{r[1]}</span><span>{r[2]}</span></div>))}
+              </div>
+            );
+            const joinTable = (
+              <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden", fontSize: 11.5 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr 1fr", padding: "8px 10px", color: C.faint, fontWeight: 600, background: "#FAFAFB" }}><span>고객 ID</span><span>구매 이력</span><span>CS 문의</span><span>포인트</span></div>
+                {[["user_001", "12만", "2건", "4,200P"], ["user_002", "34만", "3건", "8,900P"], ["user_003", "52만", "0건", "900P"], ["user_004", "-", "1건", "-"]].map((r, i) => (<div key={i} style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr 1fr", padding: "8px 10px", borderTop: `1px solid ${C.borderSoft}` }}>{r.map((c, j) => <span key={j} style={{ color: c === "-" ? C.faint : C.text }}>{c}</span>)}</div>))}
+              </div>
+            );
+            const card = (m, name, desc, ex, table) => (
+              <button onClick={() => setMethodPick(m)} style={{ textAlign: "center", background: "#fff", border: methodPick === m ? `2px solid ${C.purple}` : `1px solid ${C.border}`, borderRadius: 16, padding: 18, cursor: "pointer", fontFamily: FONT }}>
+                {table}
+                <div style={{ fontSize: 16, fontWeight: 700, margin: "14px 0 6px" }}>{name}</div>
+                <div style={{ fontSize: 12.5, color: C.sub, lineHeight: 1.55 }}>{desc}</div>
+                <div style={{ fontSize: 12, color: C.faint, marginTop: 10, lineHeight: 1.5 }}>{ex}</div>
+              </button>
+            );
+            return (
+            <div onClick={closeM} style={{ position: "fixed", inset: 0, background: "rgba(17,18,22,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 24 }}>
+              <div onClick={(e) => e.stopPropagation()} style={{ width: 880, maxWidth: "94vw", maxHeight: "90vh", overflow: "auto", background: "#fff", borderRadius: 18, padding: "26px 28px", boxShadow: "0 24px 64px rgba(0,0,0,0.32)", fontFamily: FONT }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
+                  <div style={{ fontSize: 18, fontWeight: 800 }}>두 데이터를 Union과 Join 모두 가능합니다.</div>
+                  <button onClick={closeM} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", color: C.faint, padding: 2 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></button>
+                </div>
+                <div style={{ fontSize: 13.5, color: C.sub, marginBottom: 20 }}>목적에 맞는 방식을 골라주세요.</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  {card("union", "Union", "같은 형태의 데이터를 위아래로 이어 붙여 행을 늘려요.", "예시) 월별 데이터를 하나로 합치고 싶어요", unionTable)}
+                  {card("join", "Join", "공통 키 (예: 고객 ID)를 기준으로 옆에 붙여 열을 늘려요.", "예시) 고객 ID를 기준으로 구매 이력과 CS 문의를 함께 보고 싶어요", joinTable)}
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
+                  <button onClick={closeM} style={{ fontSize: 14, fontWeight: 700, fontFamily: FONT, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 22px", cursor: "pointer" }}>취소</button>
+                  <button onClick={goNext} disabled={!methodPick} style={{ fontSize: 14, fontWeight: 700, fontFamily: FONT, color: "#fff", background: methodPick ? C.dark : "#C7CBD1", border: "none", borderRadius: 10, padding: "10px 26px", cursor: methodPick ? "pointer" : "default" }}>다음</button>
+                </div>
+              </div>
+            </div>
+            );
+          })()}
           {false && (
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 28px" }}>
               {/* 헤더 — 방식 + ⓘ 설명 툴팁 */}
@@ -2664,7 +2771,7 @@ function CombinePage({ selected, onRun }) {
                     {joinMode && <span style={{ display: "flex", color: C.sub }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 7a4 4 0 1 0-3.9 5L8 15v3h3v-2h2v-2h1.1A4 4 0 0 0 15 7z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
                     <span style={{ fontSize: 14.5, fontWeight: 700 }}>{joinMode ? "Join key" : "Column mapping"}</span>
                     <span style={{ fontSize: 12.5, color: C.faint, fontWeight: 600 }}>{joinMode ? `· 키 ${joinKeys.length}개로 연결` : `${matchRows.length} total`}</span>
-                    {joinMode && <button onClick={() => { setJoinKeys((ks) => [...ks, { a: null, b: null, au: 0, bu: 0, at: null, bt: null }]); setKeyMenu({ i: joinKeys.length, side: "a" }); }} style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 3, fontSize: 13, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>+ 키 추가</button>}
+                    {joinMode && <button onClick={() => { setJoinKeys((ks) => [{ a: null, b: null, au: 0, bu: 0, at: null, bt: null }, ...ks]); setEditKeyRow(0); setKeyMenu({ i: 0, side: "a" }); }} style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 3, fontSize: 13, fontWeight: 600, fontFamily: FONT, color: C.purple, background: "none", border: "none", cursor: "pointer", padding: 0 }}>+ 키 추가</button>}
                   </div>
                   <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: joinMode ? "visible" : "hidden" }}>
                     <div style={{ display: "flex", alignItems: "center", background: "#FAFAFB", borderBottom: `1px solid ${C.border}`, height: 50, borderRadius: "12px 12px 0 0" }}>
@@ -2673,22 +2780,31 @@ function CombinePage({ selected, onRun }) {
                       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "0 16px", fontSize: 14, fontWeight: 700 }}><span style={{ display: "flex", color: C.sub }}><Icon.db width={15} height={15} /></span>{dsName(picked[1])}</div>
                     </div>
                     {joinMode ? joinKeys.map((k, i) => {
+                      const editing = editKeyRow === i;
                       const cell = (side) => {
                         const val = side === "a" ? k.a : k.b;
                         const typ = side === "a" ? k.at : k.bt;
                         const cols = side === "a" ? A_COLS : B_COLS;
                         const open = keyMenu && keyMenu.i === i && keyMenu.side === side;
-                        return (
-                          <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
-                            <button onClick={() => setKeyMenu(open ? null : { i, side })} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, padding: "0 16px", height: 56, color: val ? C.text : C.faint }}>
+                        if (!editing) {
+                          return (
+                            <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, padding: "0 16px", height: 56 }}>
                               {side === "a" && <span style={{ display: "flex", color: val ? C.purple : C.border, flexShrink: 0 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 7a4 4 0 1 0-3.9 5L8 15v3h3v-2h2v-2h1.1A4 4 0 0 0 15 7z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
-                              <span style={{ fontSize: 14, fontWeight: val ? 600 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{val || "컬럼 선택"}</span>
+                              <span style={{ fontSize: 14, fontWeight: val ? 600 : 500, color: val ? C.text : C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{val || "컬럼 선택"}</span>
                               {val && <span style={{ fontSize: 12.5, color: C.faint, flexShrink: 0 }}>{typ}</span>}
-                              <span style={{ display: "flex", color: C.faint, marginLeft: "auto", flexShrink: 0, opacity: !val || hoverRow === i || open ? 1 : 0, transition: "opacity .12s" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div style={{ flex: 1, minWidth: 0, position: "relative", padding: "0 12px" }}>
+                            <button onClick={() => setKeyMenu(open ? null : { i, side })} style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, background: "#fff", border: `1px solid ${open ? C.purple : C.border}`, borderRadius: 8, cursor: "pointer", fontFamily: FONT, padding: "0 11px", height: 38, color: val ? C.text : C.faint }}>
+                              <span style={{ fontSize: 13.5, fontWeight: val ? 600 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{val || "컬럼 선택"}</span>
+                              {val && <span style={{ fontSize: 12, color: C.faint, flexShrink: 0 }}>{typ}</span>}
+                              <span style={{ display: "flex", color: C.faint, marginLeft: "auto", flexShrink: 0 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
                             </button>
                             {open && <>
-                              <div onClick={() => setKeyMenu(null)} style={{ position: "fixed", inset: 0, zIndex: 19 }} />
-                              <div style={{ position: "absolute", top: "100%", left: 12, right: 12, zIndex: 20, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.13)", overflow: "hidden", marginTop: 2 }}>
+                              <div onClick={() => setKeyMenu(null)} style={{ position: "fixed", inset: 0, zIndex: 21 }} />
+                              <div style={{ position: "absolute", top: "100%", left: 12, right: 12, zIndex: 22, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.13)", overflow: "hidden", marginTop: 2 }}>
                                 {cols.map((c, ci) => (
                                   <button key={c.name} onClick={() => { setJoinKeys((ks) => ks.map((x, j) => j === i ? (side === "a" ? { ...x, a: c.name, au: c.u, at: c.t } : { ...x, b: c.name, bu: c.u, bt: c.t }) : x)); setKeyMenu(null); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: val === c.name ? "#F5F3FF" : "#fff", border: "none", borderTop: ci ? `1px solid ${C.borderSoft}` : "none", cursor: "pointer", fontFamily: FONT, fontSize: 13.5, color: C.text }}>
                                     <span>{c.name}</span>
@@ -2702,12 +2818,15 @@ function CombinePage({ selected, onRun }) {
                         );
                       };
                       return (
-                      <div key={i} onMouseEnter={() => setHoverRow(i)} onMouseLeave={() => setHoverRow(-1)} style={{ display: "flex", alignItems: "center", minHeight: 56, borderTop: `1px solid ${C.borderSoft}`, background: hoverRow === i ? "#FAFAFB" : "#fff" }}>
+                      <div key={i} onMouseEnter={() => setHoverRow(i)} onMouseLeave={() => setHoverRow(-1)} style={{ display: "flex", alignItems: "center", minHeight: 56, borderTop: `1px solid ${C.borderSoft}`, background: editing ? "#FAFAFF" : hoverRow === i ? "#FAFAFB" : "#fff" }}>
                         {cell("a")}
                         <span style={{ width: 44, display: "flex", justifyContent: "center", color: k.a && k.b ? C.purple : C.border, flexShrink: 0 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
                         {cell("b")}
+                        {editing
+                          ? <button onClick={() => { setEditKeyRow(-1); setKeyMenu(null); }} title="완료" style={{ width: 48, flexShrink: 0, background: "none", border: "none", cursor: "pointer", color: C.purple, fontWeight: 700, fontSize: 12.5, fontFamily: FONT }}>완료</button>
+                          : <button onClick={() => { setEditKeyRow(i); setKeyMenu(null); }} title="키 수정" style={{ width: 40, flexShrink: 0, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: C.faint, opacity: hoverRow === i ? 1 : 0, transition: "opacity .12s" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18.5 9.5l-4-4L4 16v4zM13.5 6.5l4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></button>}
                         {joinKeys.length > 1
-                          ? <button onClick={() => { setJoinKeys((ks) => ks.filter((_, j) => j !== i)); setKeyMenu(null); }} title="이 키 쌍 삭제" style={{ width: 40, flexShrink: 0, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: C.faint }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></button>
+                          ? <button onClick={() => { setJoinKeys((ks) => ks.filter((_, j) => j !== i)); setKeyMenu(null); setEditKeyRow(-1); }} title="이 키 쌍 삭제" style={{ width: 40, flexShrink: 0, display: "flex", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: C.faint }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></button>
                           : <span style={{ width: 40, flexShrink: 0 }} />}
                       </div>
                       );
@@ -3050,10 +3169,11 @@ export default function DatasetsApp() {
         )}
         {screen === "detail" && (
           <>
-            <DetailHeader tab={tab} setTab={setTab} onBack={() => setScreen("list")} />
+            <DetailHeader tab={tab} setTab={setTab} onBack={() => setScreen("list")} onRefine={() => setScreen("refine")} />
             <div style={scrollArea}>{tab === "AI Readiness" ? <AIReadinessTab /> : <DetailTab />}</div>
           </>
         )}
+        {screen === "refine" && <RefinePage onBack={() => setScreen("detail")} />}
         {screen === "combine" && <CombinePage key={`combine-${combineNav}-${selected.join("-")}`} selected={selected} onRun={startMerge} />}
         {screen === "merge" && <MergePage key={`merge-${selected.join("-")}`} selected={selected} onBack={() => { setSelected([]); setScreen("list"); }} onRun={startMerge} />}
         {screen === "merging" && <MergingPage names={mergeJob?.names || DEFAULT_NAMES} onLeave={() => setScreen("list")} />}
