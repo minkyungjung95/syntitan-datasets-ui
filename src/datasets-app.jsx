@@ -1924,18 +1924,19 @@ function RefinePage({ onBack }) {
 /* =========================================================
  *  AI 성능 워크벤치 — Proof (정제 효과 입증)
  * ========================================================= */
+const WB_BLUE = "#2F6FED", WB_BLUE_BG = "#EAF1FF";
 function WbSelect({ label, value, options, onChange }) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ marginBottom: 16, position: "relative" }}>
       <div style={{ fontSize: 13, fontWeight: 600, color: C.sub, marginBottom: 7 }}>{label}</div>
-      <div onClick={() => setOpen((o) => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: `1px solid ${open ? C.purple : C.border}`, borderRadius: 10, padding: "12px 14px", fontSize: 14, fontWeight: 500, background: C.panel, cursor: "pointer", color: C.text }}>{value}<span style={{ color: C.faint, display: "flex", transition: "transform .15s", transform: open ? "rotate(180deg)" : "none" }}><Icon.chevD /></span></div>
+      <div onClick={() => setOpen((o) => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: `1px solid ${open ? WB_BLUE : C.border}`, borderRadius: 10, padding: "12px 14px", fontSize: 14, fontWeight: 500, background: C.panel, cursor: "pointer", color: C.text }}>{value}<span style={{ color: C.faint, display: "flex", transition: "transform .15s", transform: open ? "rotate(180deg)" : "none" }}><Icon.chevD /></span></div>
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 19 }} />
           <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 6, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: "0 12px 32px rgba(0,0,0,0.14)", zIndex: 20, overflow: "hidden", maxHeight: 240, overflowY: "auto" }}>
             {options.map((o) => (
-              <div key={o} onClick={() => { onChange && onChange(o); setOpen(false); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", fontSize: 13.5, cursor: "pointer", background: o === value ? "#F5F3FF" : "transparent", color: o === value ? C.purple : C.text, fontWeight: o === value ? 600 : 400 }}
+              <div key={o} onClick={() => { onChange && onChange(o); setOpen(false); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", fontSize: 13.5, cursor: "pointer", background: o === value ? WB_BLUE_BG : "transparent", color: o === value ? WB_BLUE : C.text, fontWeight: o === value ? 600 : 400 }}
                 onMouseEnter={(e) => { if (o !== value) e.currentTarget.style.background = "#F7F7F8"; }} onMouseLeave={(e) => { if (o !== value) e.currentTarget.style.background = "transparent"; }}>
                 {o}{o === value && <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
               </div>
@@ -2056,10 +2057,10 @@ function AnomalyResults({ before, after }) {
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${(anom[i] / maxA) * 100}%`, background: "#EF4444", opacity: 0.72, borderRadius: "2px 2px 0 0" }} />
           </div>
         ))}
-        <div style={{ position: "absolute", top: 0, bottom: 0, left: `${t}%`, right: 0, background: "rgba(106,84,216,0.07)", borderLeft: `2px solid ${C.purple}` }} />
-        <div style={{ position: "absolute", top: -6, left: `${t}%`, transform: "translateX(-50%)", fontSize: 10.5, fontWeight: 700, color: C.purple, background: "#F3F0FC", borderRadius: 5, padding: "1px 6px", whiteSpace: "nowrap" }}>임계값 {t}</div>
+        <div style={{ position: "absolute", top: 0, bottom: 0, left: `${t}%`, right: 0, background: "rgba(47,111,237,0.07)", borderLeft: `2px solid ${WB_BLUE}` }} />
+        <div style={{ position: "absolute", top: -6, left: `${t}%`, transform: "translateX(-50%)", fontSize: 10.5, fontWeight: 700, color: WB_BLUE, background: WB_BLUE_BG, borderRadius: 5, padding: "1px 6px", whiteSpace: "nowrap" }}>임계값 {t}</div>
       </div>
-      <input type="range" min="0" max="100" value={t} onChange={(e) => setT(+e.target.value)} style={{ width: "100%", marginTop: 12, accentColor: C.purple }} />
+      <input type="range" min="0" max="100" value={t} onChange={(e) => setT(+e.target.value)} style={{ width: "100%", marginTop: 12, accentColor: WB_BLUE }} />
       <div style={{ display: "flex", marginTop: 14 }}>
         {[["정밀도", `${Math.round(s.precision * 100)}%`], ["재현율", `${Math.round(s.recall * 100)}%`], ["알림/일", `${s.alerts}건`]].map(([k, v], i) => (
           <div key={k} style={{ flex: 1, textAlign: "center", borderLeft: i ? `1px solid ${C.borderSoft}` : "none" }}><div style={{ fontSize: 11.5, color: C.faint, marginBottom: 4 }}>{k}</div><div style={{ fontSize: 18, fontWeight: 800 }}>{v}</div></div>
@@ -2073,7 +2074,7 @@ function AnomalyResults({ before, after }) {
         {[["실제 이상 · 잡음 (TP)", s.TP, true], ["놓침 (FN)", s.FN], ["거짓 경보 (FP)", s.FP], ["정상 통과 (TN)", s.TN]].map(([label, v, accent], i) => (
           <div key={label} style={{ flex: 1, textAlign: "center", padding: "2px 8px", borderLeft: i ? `1px solid ${C.borderSoft}` : "none" }}>
             <div style={{ fontSize: 11, color: C.faint, marginBottom: 5, lineHeight: 1.35 }}>{label}</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: accent ? C.purple : C.text }}>{v}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: accent ? WB_BLUE : C.text }}>{v}</div>
           </div>
         ))}
       </div>
@@ -2092,7 +2093,7 @@ function PerfWorkbench() {
   return (
     <div style={{ flex: 1, minHeight: 0, overflow: "auto", background: C.bg }}>
       <div style={{ padding: "32px 40px 60px" }}>
-        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", color: C.purple, textTransform: "uppercase" }}>AI 성능 워크벤치</div>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", color: WB_BLUE, textTransform: "uppercase" }}>AI 성능 워크벤치</div>
         <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>효과 미리보기</div>
         <div style={{ fontSize: 14, color: C.sub, marginTop: 8, lineHeight: 1.55, marginBottom: 28 }}>버전 히스토리에서 정제 전·후를 골라 기준 모델에 넣고, AI 준비의 예상 효과를 미리 확인합니다. 표시 수치는 기준 추정치이며, 실제 영향은 자체 모델로 검증해 보세요.</div>
         <div style={{ display: "grid", gridTemplateColumns: "minmax(340px, 400px) 1fr", gap: 24, alignItems: "start" }}>
@@ -2105,14 +2106,14 @@ function PerfWorkbench() {
             <div style={{ fontSize: 12.5, fontWeight: 700, color: C.sub, marginBottom: 10 }}>비교할 데이터 · 버전 히스토리에서 선택</div>
             <WbSelect label="정제 전 (기준)" value={before} onChange={setBefore} options={VER_OPTS} />
             <WbSelect label="정제 후 (비교)" value={after} onChange={setAfter} options={VER_OPTS} />
-            <button onClick={() => setRan(true)} style={{ width: "100%", marginTop: 4, padding: "12px 0", borderRadius: 11, border: "none", background: C.dark, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Icon.spark /> 시뮬레이션 실행</button>
-            <div style={{ fontSize: 12, color: C.faint, textAlign: "center", marginTop: 14, lineHeight: 1.55 }}>이상탐지 데이터가 없으신가요?<br /><span style={{ color: C.purple, fontWeight: 600, cursor: "pointer" }}>이상탐지 샘플 데이터로 시작 →</span></div>
+            <button onClick={() => setRan(true)} style={{ width: "100%", marginTop: 4, padding: "12px 0", borderRadius: 11, border: "none", background: C.dark, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>시뮬레이션 실행</button>
+            <div style={{ fontSize: 12, color: C.faint, textAlign: "center", marginTop: 14, lineHeight: 1.55 }}>이상탐지 데이터가 없으신가요?<br /><span style={{ color: WB_BLUE, fontWeight: 600, cursor: "pointer" }}>이상탐지 샘플 데이터로 시작 →</span></div>
           </div>
           {ran ? (
             <div style={cardBox}><AnomalyResults before={before} after={after} /></div>
           ) : (
             <div style={{ ...cardBox, minHeight: 392, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 14 }}>
-              <span style={{ width: 52, height: 52, borderRadius: 14, background: "#F3F0FC", color: C.purple, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.spark width={24} height={24} /></span>
+              <span style={{ width: 52, height: 52, borderRadius: 14, background: WB_BLUE_BG, color: WB_BLUE, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.trend width={24} height={24} /></span>
               <div style={{ fontSize: 15, fontWeight: 700 }}>전 · 후 버전을 선택하고 실행하세요</div>
               <div style={{ fontSize: 13, color: C.faint, lineHeight: 1.6, maxWidth: 380 }}>왼쪽에서 비교할 정제 전·후 버전을 고른 뒤 <b>시뮬레이션 실행</b>을 누르면, 기준 모델 기준 예상 효과가 여기에 표시됩니다.</div>
             </div>
