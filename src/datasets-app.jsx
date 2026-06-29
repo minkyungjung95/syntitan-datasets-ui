@@ -1961,14 +1961,26 @@ const AN_NORMAL_A = [3, 12, 40, 110, 170, 180, 140, 80, 40, 18, 8, 4, 2, 1, 0, 0
 const AN_NORMAL_B = [2, 8, 25, 70, 120, 150, 140, 110, 80, 50, 30, 18, 10, 6, 3, 2, 1, 0, 0, 0];
 const AN_ANOM_A = [0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3, 5, 7, 9, 8, 5, 3, 1, 0, 0];
 const AN_ANOM_B = [0, 0, 0, 1, 2, 3, 5, 7, 8, 8, 7, 5, 3, 2, 1, 1, 0, 0, 0, 0];
-const AN_TILES = [
-  { k: "재현율", b: "61%", a: "89%", d: "+28%p", good: true },
-  { k: "정밀도", b: "57%", a: "82%", d: "+25%p", good: true },
-  { k: "PR-AUC", b: "0.52", a: "0.81", d: "+0.29", good: true },
-  { k: "Precision@100", b: "0.47", a: "0.79", d: "+0.32", good: true },
-  { k: "오탐률 (FPR)", b: "18%", a: "11%", d: "−7%p", good: true },
-  { k: "탐지 지연 (MTTD)", b: "14분", a: "6분", d: "−8분", good: true },
-];
+function anAP(normal, anom) { // Average Precision ≈ PR-AUC (점수 높은 bin부터 스윕)
+  const totalA = anom.reduce((a, b) => a + b, 0);
+  let TP = 0, FP = 0, ap = 0, prevR = 0;
+  for (let i = normal.length - 1; i >= 0; i--) {
+    TP += anom[i]; FP += normal[i];
+    const r = totalA ? TP / totalA : 0;
+    const p = TP + FP ? TP / (TP + FP) : 0;
+    ap += (r - prevR) * p; prevR = r;
+  }
+  return ap;
+}
+function anPrecAtK(normal, anom, k) { // 상위 k건 중 실제 이상 비율
+  let cum = 0, cumA = 0;
+  for (let i = normal.length - 1; i >= 0; i--) {
+    const tot = normal[i] + anom[i];
+    if (cum + tot >= k) { const frac = tot ? (k - cum) / tot : 0; cumA += anom[i] * frac; cum = k; break; }
+    cum += tot; cumA += anom[i];
+  }
+  return cum ? cumA / cum : 0;
+}
 function anStats(t, normal, anom) {
   let TP = 0, FP = 0, FN = 0, TN = 0;
   for (let i = 0; i < normal.length; i++) {
@@ -1986,12 +1998,28 @@ function AnomalyResults({ before, after }) {
   const anom = view === "after" ? AN_ANOM_A : AN_ANOM_B;
   const maxN = Math.max(...normal), maxA = Math.max(...anom);
   const s = anStats(t, normal, anom);
-  const tile = { background: C.panel, border: `1px solid ${C.border}`, borderRadius: 12, padding: "13px 15px" };
-  const cm = (label, v, accent) => <div style={{ background: accent ? "#F5F3FF" : "#FAFAFB", borderRadius: 8, padding: "10px 8px", textAlign: "center" }}><div style={{ fontSize: 11, color: C.faint }}>{label}</div><div style={{ fontSize: 18, fontWeight: 800, color: accent ? C.purple : C.text }}>{v}</div></div>;
+  // 타일 = 현재 임계값 기준 정제 후 vs 전 (분포에서 도출 → 슬라이더와 일관)
+  const aff = anStats(t, AN_NORMAL_A, AN_ANOM_A), bef = anStats(t, AN_NORMAL_B, AN_ANOM_B);
+  const f1 = (x) => (x.precision + x.recall ? 2 * x.precision * x.recall / (x.precision + x.recall) : 0);
+  const praA = anAP(AN_NORMAL_A, AN_ANOM_A), praB = anAP(AN_NORMAL_B, AN_ANOM_B);
+  const pkA = anPrecAtK(AN_NORMAL_A, AN_ANOM_A, 100), pkB = anPrecAtK(AN_NORMAL_B, AN_ANOM_B, 100);
+  const pct = (x) => Math.round(x * 100) + "%";
+  const dpp = (a, b) => { const d = Math.round((a - b) * 100); return (d >= 0 ? "+" : "−") + Math.abs(d) + "%p"; };
+  const d2 = (a, b) => { const d = a - b; return (d >= 0 ? "+" : "−") + Math.abs(d).toFixed(2); };
+  const tiles = [
+    { k: "재현율", v: pct(aff.recall), d: dpp(aff.recall, bef.recall), good: aff.recall >= bef.recall, sub: `정제 전 ${pct(bef.recall)}` },
+    { k: "정밀도", v: pct(aff.precision), d: dpp(aff.precision, bef.precision), good: aff.precision >= bef.precision, sub: `정제 전 ${pct(bef.precision)}` },
+    { k: "F1", v: f1(aff).toFixed(2), d: d2(f1(aff), f1(bef)), good: f1(aff) >= f1(bef), sub: `정제 전 ${f1(bef).toFixed(2)}` },
+    { k: "PR-AUC", v: praA.toFixed(2), d: d2(praA, praB), good: praA >= praB, sub: `정제 전 ${praB.toFixed(2)}` },
+    { k: "Precision@100", v: pkA.toFixed(2), d: d2(pkA, pkB), good: pkA >= pkB, sub: `정제 전 ${pkB.toFixed(2)}` },
+    { k: "알림/일", v: `${aff.alerts}건`, d: `${aff.alerts - bef.alerts >= 0 ? "+" : "−"}${Math.abs(aff.alerts - bef.alerts)}건`, good: aff.alerts <= bef.alerts, sub: `정제 전 ${bef.alerts}건` },
+  ];
+  const divider = { borderTop: `1px solid ${C.borderSoft}`, margin: "22px 0" };
+  const secTitle = { fontSize: 13, fontWeight: 700, color: C.sub, marginBottom: 14 };
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+    <div>
       {/* 헤더 + 전/후 토글 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
         <div><div style={{ fontSize: 15, fontWeight: 700 }}>시뮬레이션 결과</div><div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>{before} → {after} · 모델 동일, 데이터만 변경</div></div>
         <div style={{ display: "inline-flex", background: "#F1F3F5", borderRadius: 9, padding: 3 }}>
           {[["before", "정제 전"], ["after", "정제 후"]].map(([k, lab]) => (
@@ -1999,64 +2027,55 @@ function AnomalyResults({ before, after }) {
           ))}
         </div>
       </div>
-      {/* 지표 타일 6종 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-        {AN_TILES.map((m) => (
-          <div key={m.k} style={tile}>
+      {/* 지표 6종 — 구분선 그리드 (박스 없음) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
+        {tiles.map((m, i) => (
+          <div key={m.k} style={{ padding: `${i >= 3 ? 16 : 0}px 18px ${i < 3 ? 16 : 0}px`, borderLeft: i % 3 === 0 ? "none" : `1px solid ${C.borderSoft}`, borderTop: i >= 3 ? `1px solid ${C.borderSoft}` : "none" }}>
             <div style={{ fontSize: 12, color: C.sub, marginBottom: 6 }}>{m.k}</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <span style={{ fontSize: 20, fontWeight: 800 }}>{m.a}</span>
-              <span style={{ fontSize: 11.5, fontWeight: 700, color: m.good ? "#15803D" : "#B91C1C", background: m.good ? "#E7F7ED" : "#FDECEC", borderRadius: 6, padding: "1px 6px" }}>{m.d}</span>
+              <span style={{ fontSize: 21, fontWeight: 800 }}>{m.v}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: m.good ? "#15803D" : "#B91C1C" }}>{m.d}</span>
             </div>
-            <div style={{ fontSize: 11.5, color: C.faint, marginTop: 3 }}>정제 전 {m.b}</div>
+            <div style={{ fontSize: 11.5, color: C.faint, marginTop: 3 }}>{m.sub}</div>
           </div>
         ))}
       </div>
-      {/* 점수 분리도 히스토그램 + 임계값 슬라이더 */}
-      <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 20px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>이상 점수 분리도</div>
-          <div style={{ display: "flex", gap: 16, fontSize: 12, color: C.sub }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 11, height: 11, borderRadius: 3, background: "#CBD5E1" }} /> 정상</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 11, height: 11, borderRadius: 3, background: "#EF4444" }} /> 이상</span>
-          </div>
+      <div style={divider} />
+      {/* 점수 분리도 + 임계값 슬라이더 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={secTitle}>이상 점수 분리도</div>
+        <div style={{ display: "flex", gap: 16, fontSize: 12, color: C.sub }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 11, height: 11, borderRadius: 3, background: "#CBD5E1" }} /> 정상</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 11, height: 11, borderRadius: 3, background: "#EF4444" }} /> 이상</span>
         </div>
-        <div style={{ position: "relative", height: 150, display: "flex", alignItems: "flex-end", gap: 2 }}>
-          {normal.map((_, i) => (
-            <div key={i} style={{ position: "relative", flex: 1, height: "100%" }}>
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${(normal[i] / maxN) * 100}%`, background: "#CBD5E1", opacity: 0.6, borderRadius: "2px 2px 0 0" }} />
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${(anom[i] / maxA) * 100}%`, background: "#EF4444", opacity: 0.72, borderRadius: "2px 2px 0 0" }} />
-            </div>
-          ))}
-          <div style={{ position: "absolute", top: 0, bottom: 0, left: `${t}%`, right: 0, background: "rgba(106,84,216,0.07)", borderLeft: `2px solid ${C.purple}` }} />
-          <div style={{ position: "absolute", top: -6, left: `${t}%`, transform: "translateX(-50%)", fontSize: 10.5, fontWeight: 700, color: C.purple, background: "#F3F0FC", borderRadius: 5, padding: "1px 6px", whiteSpace: "nowrap" }}>임계값 {t}</div>
-        </div>
-        <input type="range" min="0" max="100" value={t} onChange={(e) => setT(+e.target.value)} style={{ width: "100%", marginTop: 12, accentColor: C.purple }} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 12 }}>
-          {[["정밀도", `${Math.round(s.precision * 100)}%`], ["재현율", `${Math.round(s.recall * 100)}%`], ["알림/일", `${s.alerts}건`]].map(([k, v]) => (
-            <div key={k} style={{ background: "#FAFAFB", borderRadius: 10, padding: "10px 12px", textAlign: "center" }}><div style={{ fontSize: 11.5, color: C.faint, marginBottom: 4 }}>{k}</div><div style={{ fontSize: 17, fontWeight: 800 }}>{v}</div></div>
-          ))}
-        </div>
-        <div style={{ fontSize: 11.5, color: C.faint, marginTop: 10, lineHeight: 1.5 }}>임계값을 움직여 정밀도↔재현율, 하루 알림량의 트레이드오프를 확인하세요. <b>{view === "after" ? "정제 후" : "정제 전"}</b> 분포 기준.</div>
       </div>
-      {/* 혼동행렬 (임계값 기준) + 상승폭 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 20px" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>혼동행렬 <span style={{ fontSize: 11.5, fontWeight: 400, color: C.faint }}>· 임계값 {t} 기준</span></div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {cm("실제 이상 · 잡음 (TP)", s.TP, true)}{cm("놓침 (FN)", s.FN)}
-            {cm("거짓 경보 (FP)", s.FP)}{cm("정상 통과 (TN)", s.TN)}
+      <div style={{ position: "relative", height: 150, display: "flex", alignItems: "flex-end", gap: 2 }}>
+        {normal.map((_, i) => (
+          <div key={i} style={{ position: "relative", flex: 1, height: "100%" }}>
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${(normal[i] / maxN) * 100}%`, background: "#CBD5E1", opacity: 0.6, borderRadius: "2px 2px 0 0" }} />
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${(anom[i] / maxA) * 100}%`, background: "#EF4444", opacity: 0.72, borderRadius: "2px 2px 0 0" }} />
           </div>
-        </div>
-        <div style={{ background: C.dark, borderRadius: 14, padding: "18px 20px" }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#C9CACE", marginBottom: 12 }}>정제 전 → 후 상승폭</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-            {[["재현율", "+28%p"], ["PR-AUC", "+0.29"], ["오탐", "−31%"]].map(([k, v]) => (
-              <div key={k} style={{ background: "#27272A", borderRadius: 10, padding: "14px 8px", textAlign: "center" }}><div style={{ fontSize: 11.5, color: "#9CA3AF", marginBottom: 6 }}>{k}</div><div style={{ fontSize: 20, fontWeight: 800, color: "#A78BFA" }}>{v}</div></div>
-            ))}
+        ))}
+        <div style={{ position: "absolute", top: 0, bottom: 0, left: `${t}%`, right: 0, background: "rgba(106,84,216,0.07)", borderLeft: `2px solid ${C.purple}` }} />
+        <div style={{ position: "absolute", top: -6, left: `${t}%`, transform: "translateX(-50%)", fontSize: 10.5, fontWeight: 700, color: C.purple, background: "#F3F0FC", borderRadius: 5, padding: "1px 6px", whiteSpace: "nowrap" }}>임계값 {t}</div>
+      </div>
+      <input type="range" min="0" max="100" value={t} onChange={(e) => setT(+e.target.value)} style={{ width: "100%", marginTop: 12, accentColor: C.purple }} />
+      <div style={{ display: "flex", marginTop: 14 }}>
+        {[["정밀도", `${Math.round(s.precision * 100)}%`], ["재현율", `${Math.round(s.recall * 100)}%`], ["알림/일", `${s.alerts}건`]].map(([k, v], i) => (
+          <div key={k} style={{ flex: 1, textAlign: "center", borderLeft: i ? `1px solid ${C.borderSoft}` : "none" }}><div style={{ fontSize: 11.5, color: C.faint, marginBottom: 4 }}>{k}</div><div style={{ fontSize: 18, fontWeight: 800 }}>{v}</div></div>
+        ))}
+      </div>
+      <div style={{ fontSize: 11.5, color: C.faint, marginTop: 12, lineHeight: 1.5 }}>임계값을 움직여 정밀도↔재현율, 하루 알림량의 트레이드오프를 확인하세요. 정제로 정상/이상 분포가 벌어져 같은 알림량에서 더 많이 잡고 거짓 경보는 줄어요. <b>{view === "after" ? "정제 후" : "정제 전"}</b> 분포 기준.</div>
+      <div style={divider} />
+      {/* 혼동행렬 — 인라인 4칸 (박스 없음) */}
+      <div style={secTitle}>혼동행렬 <span style={{ fontSize: 11.5, fontWeight: 400, color: C.faint }}>· 임계값 {t} 기준</span></div>
+      <div style={{ display: "flex" }}>
+        {[["실제 이상 · 잡음 (TP)", s.TP, true], ["놓침 (FN)", s.FN], ["거짓 경보 (FP)", s.FP], ["정상 통과 (TN)", s.TN]].map(([label, v, accent], i) => (
+          <div key={label} style={{ flex: 1, textAlign: "center", padding: "2px 8px", borderLeft: i ? `1px solid ${C.borderSoft}` : "none" }}>
+            <div style={{ fontSize: 11, color: C.faint, marginBottom: 5, lineHeight: 1.35 }}>{label}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: accent ? C.purple : C.text }}>{v}</div>
           </div>
-          <div style={{ fontSize: 11.5, color: "#9CA3AF", marginTop: 12, lineHeight: 1.5 }}>정제로 정상/이상 점수 분포가 더 벌어져, 같은 알림량에서 더 많이 잡고 거짓 경보는 줄어요.</div>
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -2065,7 +2084,7 @@ const VER_OPTS = VERSIONS.map((v) => `${v.badge ? v.badge + " · " : ""}${v.titl
 function PerfWorkbench() {
   const cardBox = { background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24 };
   const [ran, setRan] = useState(false);
-  const [model, setModel] = useState("XGBoost 기준선");
+  const [model, setModel] = useState("XGBoost · 지도학습");
   const [task, setTask] = useState("이상탐지 (Anomaly Detection)");
   const [metric, setMetric] = useState("고정 정밀도에서의 재현율 · PR-AUC");
   const [before, setBefore] = useState(VER_OPTS[VER_OPTS.length - 1]);
@@ -2079,7 +2098,7 @@ function PerfWorkbench() {
         <div style={{ display: "grid", gridTemplateColumns: "minmax(340px, 400px) 1fr", gap: 24, alignItems: "start" }}>
           <div style={cardBox}>
             <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 18 }}>미리 보기 설정</div>
-            <WbSelect label="검증 모델" value={model} onChange={setModel} options={["XGBoost 기준선", "Isolation Forest", "LOF (Local Outlier Factor)", "AutoEncoder", "내 모델 (MCP 연결)"]} />
+            <WbSelect label="검증 모델" value={model} onChange={setModel} options={["XGBoost · 지도학습", "Isolation Forest · 비지도", "LOF · 비지도", "AutoEncoder · 비지도", "내 모델 (MCP 연결)"]} />
             <WbSelect label="작업 유형" value={task} onChange={setTask} options={["이상탐지 (Anomaly Detection)", "이진 분류 (Classification)", "회귀 (Regression)"]} />
             <WbSelect label="목표 지표" value={metric} onChange={setMetric} options={["고정 정밀도에서의 재현율 · PR-AUC", "PR-AUC", "ROC-AUC", "F1 점수", "Precision@k", "오탐률 (FPR)"]} />
             <div style={{ borderTop: `1px solid ${C.borderSoft}`, margin: "6px 0 16px" }} />
