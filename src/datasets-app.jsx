@@ -176,6 +176,7 @@ function Sidebar({ active = "Home", onNav = () => {} }) {
       <NavItem icon={<Icon.home />} label="Home" active={active === "Home"} onClick={() => onNav("Home")} />
       <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Edit dataset</div>
       <NavItem icon={<Icon.db />} label="Dataset" active={active === "Dataset"} onClick={() => onNav("Dataset")} />
+      <NavItem icon={<Icon.trend />} label="Performance Proof" active={active === "Performance Proof"} onClick={() => onNav("Performance Proof")} />
       <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Analyze</div>
       <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} />
       <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} />
@@ -1810,9 +1811,9 @@ function AIReadinessTab() {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 22 }}>
         <MetricCard title="Privacy" pct={100} desc="Logs of PII detection and protection handling status"><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>[감지된 민감 컬럼 수_받아올 값 by AI] N sensitive columns detected and processed.</div><KVTable highlight rows={[["Full Name", "칼럼명"], ["Phone Number", "칼럼명"], ["National ID", "칼럼명"], ["Passport Number", "칼럼명"], ["Email Address", "칼럼명"], ["Bank Account Number", "칼럼명"], ["Credit Card Number", "칼럼명"], ["Address", "칼럼명"]]} /></MetricCard>
-        <MetricCard title="Integrity" pct={50} desc="Diagnostics covering missing values, duplicates, outliers, and skew"><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>Data quality issues detected.</div><KVTable rows={[["Missing Values", "N cases"], ["Duplicate Records", "N cases"], ["Type Errors", "N cases"], ["Distribution Skew", "N cases"]]} /><Chips title="Recommended AI-Readiness Actions" items={["Missing Pattern Imputation", "Outlier & Skew Correction"]} /></MetricCard>
-        <MetricCard title="Contextuality" pct={80} desc="Records of column semantics and alignment with analysis intent"><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>N columns lack descriptions.</div><KVTable rows={[["Column Description Coverage", "N%"], ["Columns Missing for Stated Intent", "N cases"]]} /><Chips title="Recommended AI-Readiness Actions" items={["Semantic Context Enrichment enrichment"]} /></MetricCard>
-        <MetricCard title="Conciseness" pct={99} desc="Column contribution and noise diagnostics relative to stated intent"><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>Low-signal columns detected.</div><KVTable rows={[["Low-Contribution Columns", "N cases"], ["High-Cardinality Columns", "N cases"], ["Redundant Text Fields", "N cases"]]} /><Chips title="Recommended AI-Readiness Actions" items={["Low-Signal Column Removal"]} /></MetricCard>
+        <MetricCard title="Integrity" pct={50} desc="Diagnostics covering missing values, duplicates, outliers, and skew"><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>Data quality issues detected.</div><KVTable rows={[["Missing Values", "N cases"], ["Duplicate Records", "N cases"], ["Type Errors", "N cases"], ["Distribution Skew", "N cases"]]} /></MetricCard>
+        <MetricCard title="Contextuality" pct={80} desc="Records of column semantics and alignment with analysis intent"><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>N columns lack descriptions.</div><KVTable rows={[["Column Description Coverage", "N%"], ["Columns Missing for Stated Intent", "N cases"]]} /></MetricCard>
+        <MetricCard title="Conciseness" pct={99} desc="Column contribution and noise diagnostics relative to stated intent"><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>Low-signal columns detected.</div><KVTable rows={[["Low-Contribution Columns", "N cases"], ["High-Cardinality Columns", "N cases"], ["Redundant Text Fields", "N cases"]]} /></MetricCard>
         <MetricCard title="Operational Reliability" pct={100}><div style={{ fontSize: 12.5, color: C.faint, marginTop: -8, marginBottom: 16 }}>*Automatically fulfilled by SynTitan — no action required</div><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Your dataset is being managed in a reliable and consistent state.</div><Chips title="Platform-Provided Features" items={["Preprocessing Result Validation", "AI Readiness Achievement Tracking", "Standard Consistency"]} /></MetricCard>
         <MetricCard title="Traceability" pct={100}><div style={{ fontSize: 12.5, color: C.faint, marginTop: -8, marginBottom: 16 }}>*Automatically fulfilled by SynTitan — no action required</div><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>All changes are being recorded and are fully traceable.</div><Chips title="Platform-Provided Features" items={["Auto Snapshot Generation", "Release Version Labeling", "Author & Timestamp Logging"]} /></MetricCard>
       </div>
@@ -1880,6 +1881,68 @@ function RefinePage({ onBack }) {
     </div>
   );
 }
+/* =========================================================
+ *  AI 성능 워크벤치 — Proof (정제 효과 입증)
+ * ========================================================= */
+function WbField({ label, value }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: C.sub, marginBottom: 7 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", fontSize: 14, fontWeight: 500, background: C.panel, cursor: "pointer", color: C.text }}>{value}<span style={{ color: C.faint, display: "flex" }}><Icon.chevD /></span></div>
+    </div>
+  );
+}
+function WbResultCard({ tag, title, rows, accent }) {
+  return (
+    <div style={{ flex: 1, minWidth: 0, border: `1px solid ${accent ? C.purple : C.border}`, borderRadius: 12, padding: 16, background: accent ? "#FAF9FF" : C.panel }}>
+      <div style={{ fontSize: 12, color: accent ? C.purple : C.faint, fontWeight: 600, marginBottom: 4 }}>{tag}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>{title}</div>
+      {rows.map(([k, v]) => <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, padding: "7px 0", borderTop: `1px solid ${C.borderSoft}` }}><span style={{ color: C.sub }}>{k}</span><span style={{ fontWeight: 700 }}>{v}</span></div>)}
+    </div>
+  );
+}
+
+function PerfWorkbench() {
+  const cardBox = { background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24 };
+  return (
+    <div style={{ flex: 1, minHeight: 0, overflow: "auto", background: C.bg }}>
+      <div style={{ padding: "32px 40px 60px" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", color: C.purple, textTransform: "uppercase" }}>AI 성능 워크벤치</div>
+        <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>효과 미리보기</div>
+        <div style={{ fontSize: 14, color: C.sub, marginTop: 8, lineHeight: 1.55, marginBottom: 28 }}>정제 전/후 데이터를 기준 모델에 넣어 AI 준비의 예상 효과를 미리 확인합니다. 표시 수치는 기준 추정치이며, 실제 영향은 자체 모델로 검증해 보세요.</div>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(340px, 400px) 1fr", gap: 24, alignItems: "start" }}>
+          <div style={cardBox}>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 18 }}>미리 보기 설정</div>
+            <WbField label="검증 모델" value="XGBoost 기준선" />
+            <WbField label="작업 유형" value="이상탐지 (Anomaly Detection)" />
+            <WbField label="목표 지표" value="고정 정밀도에서의 재현율 · PR-AUC" />
+            <WbField label="데이터 상태" value="스냅샷 vs. AI 준비 릴리스" />
+          </div>
+          <div style={cardBox}>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 18 }}>시뮬레이션 결과</div>
+            <div style={{ display: "flex", gap: 14 }}>
+              <WbResultCard tag="이전 · 원본 데이터" title="정제 전" rows={[["재현율", "61%"], ["F1", "0.64"], ["오탐", "18%"]]} />
+              <WbResultCard tag="이후 · AI 준비 완료" title="정제 후" rows={[["재현율", "89%"], ["F1", "0.78"], ["오탐", "11%"]]} accent />
+            </div>
+            <div style={{ background: C.dark, borderRadius: 14, padding: 18, marginTop: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#C9CACE", marginBottom: 12 }}>예상되는 상승폭</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                {[["재현율", "+28%p"], ["F1", "+0.14"], ["오탐", "−31%"]].map(([k, v]) => (
+                  <div key={k} style={{ background: "#27272A", borderRadius: 10, padding: "14px 10px", textAlign: "center" }}><div style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 6 }}>{k}</div><div style={{ fontSize: 22, fontWeight: 800, color: "#A78BFA" }}>{v}</div></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ textAlign: "center", marginTop: 28 }}>
+          <div style={{ fontSize: 14, fontWeight: 700 }}>아직 모델이 없으신가요?</div>
+          <div style={{ fontSize: 13, color: C.faint, marginTop: 5, lineHeight: 1.55 }}>표준 기준 모델로 즉시 결과를 확인하세요. 표시 수치는 <b>기준 추정치</b>이며, 실제 영향은 자체 모델·데이터로 검증해 보시기 바랍니다.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Histogram({ heights }) {
   return (<div style={{ display: "flex", alignItems: "flex-end", gap: 1, height: 46 }}>{heights.map((h, i) => <div key={i} style={{ flex: 1, height: `${h}%`, background: C.blue, borderRadius: "1px 1px 0 0" }} />)}</div>);
 }
@@ -1887,24 +1950,68 @@ const H1 = [30, 45, 60, 80, 95, 70, 50, 40, 30, 25, 35, 55, 75, 60, 45, 30], H2 
 const D_NAMES = Array.from({ length: 22 }, (_, i) => `[이름${i + 8}]`);
 const D_SIZES = ["500-1000", "1000-2000", "1000-2000", "1000-2000", "5000-10000", "5000-10000", "5000-10000", "5000-10000", "5000-10000", "5000-100005000-10000", "5000-10000", "5000-10000", "5000-10000", "5000-10000", "5000-10000", "5000-10000", "5000-10000", "5000-10000", "5000-10000", "5000-10000", "5000-10000", "5000-10000"];
 const D_SESS = ["2.5", "2.5", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6", "3.6"];
+// 컬럼 레벨 메타데이터 — 메타데이터가 "붙는" 곳 (Databricks Unity Catalog 스타일)
+const TAG_C = { id: ["#EAF1FF", "#1D4ED8"], pii: ["#FEE2E2", "#B91C1C"], warn: ["#FEF3C7", "#B45309"], low: ["#F1F3F5", "#6B7280"], target: ["#F3F0FC", "#6A54D8"] };
+const COL_META = [
+  { icon: <Icon.key />, name: "customer_id", type: "String", desc: "고객을 구분하는 고유 식별자", tags: [["식별자", "id"]], mask: "해시", nullp: "0%", uniq: "100%" },
+  { icon: <Icon.typeA />, name: "customer_name", type: "String", desc: "고객 이름 (개인정보)", tags: [["민감 · PII", "pii"]], mask: "부분 마스킹", nullp: "0%", uniq: "98%" },
+  { icon: <Icon.clock />, name: "time_zone", type: "Category", desc: "고객 접속 타임존", tags: [], mask: "—", nullp: "2%", uniq: "24" },
+  { icon: <Icon.hash />, name: "company_size", type: "Category", desc: "회사 규모 구간 · 일부 값 형식 오류", tags: [["품질 이슈", "warn"]], mask: "—", nullp: "5%", uniq: "6" },
+  { icon: <Icon.typeA />, name: "device_os", type: "Category", desc: "접속 기기 운영체제", tags: [], mask: "—", nullp: "0%", uniq: "4" },
+  { icon: <Icon.calendar />, name: "signup_date", type: "Date", desc: "서비스 가입일", tags: [], mask: "—", nullp: "0%", uniq: "—" },
+  { icon: <Icon.hash />, name: "avg_session_min", type: "Float", desc: "평균 세션 길이(분)", tags: [], mask: "—", nullp: "8%", uniq: "—" },
+  { icon: <Icon.hash />, name: "purchase_count", type: "Int", desc: "누적 구매 횟수 · 타겟 기여 낮음", tags: [["저기여", "low"]], mask: "—", nullp: "0%", uniq: "—" },
+];
+
 function DetailTab() {
+  const [view, setView] = useState("schema"); // schema(컬럼 메타데이터) | data(행 미리보기)
   const cols = [
     { icon: <Icon.key />, name: "customer_id", special: "unique" },
     { icon: <Icon.clock />, name: "time_zone", hist: H1, axis: ["UTC+01:00", "UTC+23:59"] },
     { icon: <Icon.hash />, name: "company_size", hist: H2, axis: ["0", "10,000"] },
     { icon: <Icon.typeA />, name: "device_os", dist: true },
-    { icon: <Icon.cal2 />, name: "signup_date", hist: H3, axis: ["2024", "2026"] },
+    { icon: <Icon.calendar />, name: "signup_date", hist: H3, axis: ["2024", "2026"] },
     { icon: <Icon.hash />, name: "avg_session_min", hist: H4, axis: ["0", "1000"] },
     { icon: <Icon.hash />, name: "purchase_count", hist: H1, axis: ["1", "10"] },
   ];
   const cellD = (error, first, last) => ({ padding: "11px 14px", borderRight: last ? "none" : `1px solid ${C.borderSoft}`, background: error ? "#FEE2E2" : "transparent", color: error ? "#B91C1C" : first ? C.sub : C.text });
+  const GRID = "1.6fr 0.8fr 2fr 1.3fr 1fr";
   return (
     <div style={{ padding: "20px 32px 60px" }}>
       <div style={{ border: `1px solid ${C.border}`, borderRadius: 16, background: C.panel, overflow: "hidden" }}>
         <div style={{ padding: "20px 24px", borderBottom: `1px solid ${C.border}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ fontSize: 18, fontWeight: 700 }}>Sample ._voc_data.csvta.csv <span style={{ color: C.faint, fontWeight: 500, fontSize: 15 }}>(99.8MB)</span></div><button style={{ width: 36, height: 36, borderRadius: 9, border: `1px solid ${C.border}`, background: C.panel, color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.download /></button></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>{["Snapshot - 238fkj", "247 columns · 47 rows", "Updated Mar 25, 10:01 AM"].map((t) => <span key={t} style={{ fontSize: 13, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px" }}>{t}</span>)}<span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 12px", cursor: "pointer" }}>15 Columns <Icon.chevD /></span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>{["Snapshot - 238fkj", "247 columns · 47 rows", "Updated Mar 25, 10:01 AM"].map((t) => <span key={t} style={{ fontSize: 13, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px" }}>{t}</span>)}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}>
+            <div style={{ display: "inline-flex", background: "#F1F3F5", borderRadius: 9, padding: 3 }}>
+              {[["schema", "스키마 · 247컬럼"], ["data", "데이터 미리보기"]].map(([k, lab]) => (
+                <button key={k} onClick={() => setView(k)} style={{ border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT, background: view === k ? "#fff" : "transparent", color: view === k ? C.text : C.sub, boxShadow: view === k ? "0 1px 2px rgba(0,0,0,0.06)" : "none" }}>{lab}</button>
+              ))}
+            </div>
+            {view === "schema"
+              ? <button style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.purple, background: "#F3F0FC", border: "none", borderRadius: 8, padding: "7px 13px", cursor: "pointer", fontFamily: FONT }}><Icon.spark /> AI가 설명·태그 생성</button>
+              : <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 12px", cursor: "pointer" }}>15 Columns <Icon.chevD /></span>}
+          </div>
         </div>
+        {view === "schema" ? (
+          <div>
+            <div style={{ display: "grid", gridTemplateColumns: GRID, padding: "11px 24px", background: "#FCFCFD", borderBottom: `1px solid ${C.border}`, fontSize: 12.5, fontWeight: 600, color: C.faint }}>
+              <span>컬럼</span><span>타입</span><span>설명</span><span>태그</span><span>컬럼 마스킹</span>
+            </div>
+            {COL_META.map((m, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: GRID, padding: "13px 24px", borderBottom: i === COL_META.length - 1 ? "none" : `1px solid ${C.borderSoft}`, fontSize: 13.5, alignItems: "center" }}>
+                <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600 }}><span style={{ color: C.faint, display: "flex" }}>{m.icon}</span>{m.name}</span>
+                  <span style={{ fontSize: 11, color: C.faint, marginLeft: 24 }}>결측 {m.nullp} · 고유 {m.uniq}</span>
+                </span>
+                <span style={{ color: C.sub, fontSize: 12.5 }}>{m.type}</span>
+                <span style={{ color: C.sub, fontSize: 13, lineHeight: 1.45 }}>{m.desc}</span>
+                <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{m.tags.length ? m.tags.map(([lab, k]) => (<span key={lab} style={{ fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 20, background: TAG_C[k][0], color: TAG_C[k][1] }}>{lab}</span>)) : <span style={{ color: C.faint }}>—</span>}</span>
+                <span style={{ fontSize: 12.5, color: m.mask === "—" ? C.faint : C.text, fontWeight: m.mask === "—" ? 400 : 600 }}>{m.mask}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div style={{ overflowX: "auto" }}>
           <div style={{ minWidth: 1100 }}>
             <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
@@ -1926,6 +2033,7 @@ function DetailTab() {
             ))}
           </div>
         </div>
+        )}
       </div>
     </div>
   );
@@ -2487,7 +2595,7 @@ function CombinePage({ selected, onRun }) {
                 <div style={{ fontSize: 13.5, color: C.sub, marginBottom: 20 }}>목적에 맞는 방식을 골라주세요.</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                   {card("union", "Union", "같은 형태의 데이터를 위아래로 이어 붙여 행을 늘려요.", "예시) 월별 데이터를 하나로 합치고 싶어요", unionTable)}
-                  {card("join", "Join", "공통 키 (예: 고객 ID)를 기준으로 옆에 붙여 열을 늘려요.", "예시) 고객 ID를 기준으로 구매 이력과 CS 문의를 함께 보고 싶어요", joinTable)}
+                  {card("join", "Join", "공통 키 (예: 고객 ID)를 기준으로 옆에 붙여 열을 늘려요.", "예시) 고객별 정보를 하나로 모으고 싶어요", joinTable)}
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
                   <button onClick={closeM} style={{ fontSize: 14, fontWeight: 700, fontFamily: FONT, color: C.sub, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 22px", cursor: "pointer" }}>취소</button>
@@ -3130,11 +3238,13 @@ export default function DatasetsApp() {
   }, [screen, mergeJob?.done]);
 
   const sidebarActive = screen === "agent" ? "Agent Analysis"
+    : screen === "workbench" ? "Performance Proof"
     : (screen === "combine" || screen === "merge" || screen === "merging" || screen === "result") ? "Combine"
     : "Dataset";
 
   const handleNav = (label) => {
     if (label === "Agent Analysis") setScreen("agent");
+    else if (label === "Performance Proof") setScreen("workbench");
     else if (label === "Combine") { setSelected([]); setCombineNav((n) => n + 1); setScreen("combine"); }
     else if (label === "Home" || label === "Dataset") { setSelected([]); setScreen("list"); }
   };
@@ -3162,6 +3272,7 @@ export default function DatasetsApp() {
       <Sidebar active={sidebarActive} onNav={handleNav} />
       <main style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
         {screen === "agent" && <div style={scrollArea}><AgentAnalysisPage /></div>}
+        {screen === "workbench" && <PerfWorkbench />}
         {screen === "list" && (
           <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", background: "#fff" }}>
             <DatasetsPage datasets={datasets} setDatasets={setDatasets} folders={folders} setFolders={setFolders} activeFolder={activeFolder} setActiveFolder={setActiveFolder} selected={selected} setSelected={setSelected} onOpen={() => { setScreen("detail"); setTab("AI Readiness"); }} onMerge={() => setScreen("combine")} onMergeDirect={() => { setSelected(datasets.slice(0, 2).map((d) => d.id)); setScreen("combine"); }} />
