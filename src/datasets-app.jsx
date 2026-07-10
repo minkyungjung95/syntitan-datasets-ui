@@ -3533,10 +3533,17 @@ function AskAIPanel({ onClose }) {
     </div>
   );
 }
+const UPLOAD_POOL = [
+  { size: "CSV · 58.2KB · 8,432행", est: "~40초" },
+  { size: "CSV · 1.2MB · 96,120행", est: "~2분" },
+  { size: "CSV · 340KB · 24,900행", est: "~1분" },
+  { size: "CSV · 4.8MB · 412,000행", est: "~5분" },
+  { size: "CSV · 88KB · 3,100행", est: "~50초" },
+];
 function UploadModal({ onClose, onStart }) {
   const [files, setFiles] = useState([]);
   const [tip, setTip] = useState(false);
-  const add = () => setFiles((f) => (f.length >= 5 ? f : [...f, { name: "CUBIG Data.csv", size: "CSV · 58.2KB", purpose: "" }]));
+  const add = () => setFiles((f) => (f.length >= 5 ? f : [...f, { name: "CUBIG Data.csv", size: UPLOAD_POOL[f.length].size, est: UPLOAD_POOL[f.length].est, purpose: "" }]));
   const setP = (i, v) => setFiles((f) => f.map((x, j) => (j === i ? { ...x, purpose: v } : x)));
   const rm = (i) => setFiles((f) => f.filter((_, j) => j !== i));
   const canStart = files.length > 0 && files.every((x) => x.purpose.trim());
@@ -3570,7 +3577,7 @@ function UploadModal({ onClose, onStart }) {
                 <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "center", border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 16px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                     <span style={{ width: 34, height: 34, borderRadius: 9, background: "#E7F7EE", color: "#1D9E75", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.sheet width={17} height={17} /></span>
-                    <div style={{ minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</div><div style={{ fontSize: 12, color: C.faint }}>{f.size} · <span style={{ color: WB_BLUE, fontWeight: 500 }}>진단 예상 ~1분</span></div></div>
+                    <div style={{ minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</div><div style={{ fontSize: 12, color: C.faint }}>{f.size} · <span style={{ color: WB_BLUE, fontWeight: 500 }}>진단 예상 {f.est}</span></div></div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <input value={f.purpose} onChange={(e) => setP(i, e.target.value)} placeholder="예: 회귀 예측 / AB Test" style={{ flex: 1, minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 10, padding: "11px 13px", fontSize: 14, fontFamily: FONT, outline: "none", background: "#FCFCFD" }} />
@@ -3585,7 +3592,7 @@ function UploadModal({ onClose, onStart }) {
         {files.length > 0 && (
           <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: "#F6F7F9", borderRadius: 12, padding: "13px 15px", marginTop: 16 }}>
             <span style={{ width: 28, height: 28, borderRadius: 8, background: "#EAEDF1", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.clock width={15} height={15} /></span>
-            <div><div style={{ fontSize: 13, fontWeight: 600 }}>각 파일을 개별로 진단해요 · 파일당 약 1분 정도 걸려요.</div><div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>여러 파일은 병렬로 처리되고, 파일이 크면 더 걸릴 수 있어요.</div></div>
+            <div><div style={{ fontSize: 13, fontWeight: 600 }}>파일 크기에 따라 진단 시간이 달라요 — 각 파일 예상 시간을 확인하세요.</div><div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>파일이 크면 더 오래 걸릴 수 있어요.</div></div>
           </div>
         )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
@@ -3601,47 +3608,43 @@ function UploadModal({ onClose, onStart }) {
 }
 function ProfilingTray({ files, onClose }) {
   const STAGES = ["파일 읽는 중", "스키마 분석", "결측·이상 점검", "분포 계산", "컨텍스트 요약"];
+  const estSec = (est) => { const n = parseFloat(String(est || "1분").replace(/[^0-9.]/g, "")) || 1; return String(est).includes("초") ? n : n * 60; };
   const [elapsed, setElapsed] = useState(0);
   const [stage, setStage] = useState(0);
-  const [done, setDone] = useState(0);
+  const [doneList, setDoneList] = useState([]);
   useEffect(() => {
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
     const s = setInterval(() => setStage((x) => (x + 1) % STAGES.length), 2200);
-    const d = setInterval(() => setDone((x) => (x < files.length ? x + 1 : x)), 2600);
-    return () => { clearInterval(t); clearInterval(s); clearInterval(d); };
+    const timers = files.map((f, i) => setTimeout(() => setDoneList((d) => (d.includes(i) ? d : [...d, i])), Math.max(1200, (estSec(f.est) / 30) * 1000)));
+    return () => { clearInterval(t); clearInterval(s); timers.forEach(clearTimeout); };
   }, [files.length]);
-  const allDone = done >= files.length;
+  const doneCount = doneList.length;
+  const allDone = doneCount >= files.length;
   const mmss = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`;
-  const pct = Math.round((done / files.length) * 100);
   return (
     <div style={{ position: "fixed", bottom: 0, right: 24, width: 330, background: "#fff", border: `1px solid ${C.border}`, borderBottom: "none", borderRadius: "14px 14px 0 0", boxShadow: "0 -8px 32px rgba(0,0,0,0.12)", zIndex: 260, fontFamily: FONT, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 15px" }}>
         {allDone ? <span style={{ color: "#1D9E75", display: "flex" }}><Icon.checkCircle /></span> : <span style={{ display: "flex", alignItems: "flex-end", gap: 2, width: 24, height: 20, flexShrink: 0 }}>{[13, 19, 15, 20, 12].map((h, b) => <span key={b} style={{ width: 3, height: h, borderRadius: 1.5, background: WB_BLUE, transformOrigin: "bottom", animation: `scanBar 1.1s ease-in-out ${b * 0.12}s infinite` }} />)}</span>}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allDone ? "데이터 프로파일링 완료" : "데이터 프로파일링 중"}</div>
-          <div style={{ fontSize: 12, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allDone ? `${files.length} files 진단 완료 · 총 ${mmss} 소요` : `${STAGES[stage]} · ${done}/${files.length} 완료 · ${mmss} 경과`}</div>
+          <div style={{ fontSize: 12, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allDone ? `${files.length} files 진단 완료 · 총 ${mmss} 소요` : `${STAGES[stage]} · ${doneCount}/${files.length} 완료 · ${mmss} 경과`}</div>
         </div>
-        {!allDone && <span style={{ width: 15, height: 15, border: `2px solid ${C.border}`, borderTopColor: WB_BLUE, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} />}
         <span onClick={onClose} style={{ display: "flex", cursor: "pointer", color: C.faint }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span>
       </div>
-      <div style={{ height: 4, background: "#EEF0F3", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, width: `${pct}%`, background: allDone ? "#22C55E" : WB_BLUE, transition: "width .5s" }} />
-        {!allDone && <div style={{ position: "absolute", top: 0, bottom: 0, width: "30%", background: "rgba(255,255,255,0.5)", animation: "trayIndet 1.3s ease-in-out infinite" }} />}
-      </div>
-      <div style={{ padding: "8px 8px 6px" }}>
+      <div style={{ padding: "6px 8px", borderTop: `1px solid ${C.borderSoft}` }}>
         {files.map((f, i) => {
-          const st = i < done ? "done" : (i === done ? "active" : "wait");
+          const isDone = doneList.includes(i);
           return (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 8px", opacity: st === "wait" ? 0.5 : 1 }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 8px" }}>
               <span style={{ width: 26, height: 26, borderRadius: 6, background: "#E7F7EE", color: "#1D9E75", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.sheet width={14} height={14} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</div>
-                {st === "active" && <div style={{ height: 4, borderRadius: 999, background: "#EEF0F3", overflow: "hidden", marginTop: 5, position: "relative" }}><div style={{ position: "absolute", top: 0, bottom: 0, width: "45%", background: WB_BLUE, borderRadius: 999, animation: "trayIndet 1.2s ease-in-out infinite" }} /></div>}
+                {!isDone && <div style={{ height: 4, borderRadius: 999, background: "#EEF0F3", overflow: "hidden", marginTop: 5, position: "relative" }}><div style={{ position: "absolute", top: 0, bottom: 0, width: "45%", background: WB_BLUE, borderRadius: 999, animation: "trayIndet 1.2s ease-in-out infinite" }} /></div>}
+                {isDone && <div style={{ fontSize: 11.5, color: "#1D9E75", marginTop: 3 }}>진단 완료</div>}
               </div>
-              {st === "done" && <span style={{ display: "flex" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#22C55E" /><path d="M8 12l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
-              {st === "active" && <span style={{ width: 13, height: 13, border: `2px solid ${C.border}`, borderTopColor: WB_BLUE, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} />}
-              {st === "wait" && <span style={{ fontSize: 11.5, color: C.faint }}>예상 ~1분</span>}
-              {st === "active" && <span style={{ fontSize: 11.5, color: WB_BLUE, fontWeight: 500 }}>진단 중</span>}
+              {isDone
+                ? <span style={{ display: "flex", flexShrink: 0 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#22C55E" /><path d="M8 12l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                : <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, color: WB_BLUE, fontWeight: 500, flexShrink: 0 }}><Icon.clock width={11} height={11} /> {f.est || "~1분"}</span>}
             </div>
           );
         })}
