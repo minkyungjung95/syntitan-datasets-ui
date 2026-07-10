@@ -3594,7 +3594,7 @@ function UploadModal({ onClose, onStart }) {
         {files.length > 0 && (
           <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: "#F6F7F9", borderRadius: 12, padding: "13px 15px", marginTop: 16 }}>
             <span style={{ width: 28, height: 28, borderRadius: 8, background: "#EAEDF1", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.clock width={15} height={15} /></span>
-            <div><div style={{ fontSize: 13, fontWeight: 600 }}>시작하면 백그라운드에서 진행돼요 — 창을 닫아도 계속돼요.</div><div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>여러 파일을 함께 진단해서 <b style={{ color: C.sub, fontWeight: 600 }}>가장 큰 파일 기준 약 {maxEst}</b> 걸리고, 끝나면 목록에서 알려드릴게요.</div></div>
+            <div><div style={{ fontSize: 13, fontWeight: 600 }}>진단은 <b style={{ color: WB_BLUE }}>가장 큰 파일 기준 약 {maxEst}</b> 걸려요.</div><div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>단순 업로드가 아니라 품질·결측·이상치·분포를 한 줄씩 점검하기 때문에, 데이터가 클수록 더 걸려요.</div></div>
           </div>
         )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
