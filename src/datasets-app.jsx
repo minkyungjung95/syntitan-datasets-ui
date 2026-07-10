@@ -334,7 +334,7 @@ function FolderTree({ folders, setFolders, activeFolder, setActiveFolder, datase
   );
 }
 
-function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder, setActiveFolder, onOpen, selected, setSelected, onMerge, onMergeDirect }) {
+function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder, setActiveFolder, onOpen, selected, setSelected, onMerge, onMergeDirect, onAsk, onUpload }) {
   const [q, setQ] = useState("");
   const [hover, setHover] = useState(null);
   const [moveOpen, setMoveOpen] = useState(false);
@@ -398,12 +398,14 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
             <span style={{ color: C.faint, display: "flex" }}><Icon.search /></span>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" style={{ border: "none", outline: "none", flex: 1, fontSize: 14, fontFamily: FONT, background: "transparent" }} />
           </div>
-          <button onClick={() => onMerge()} style={{ display: "flex", alignItems: "center", gap: 7, height: 44, padding: "0 18px", background: "#fff", color: C.text, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
-            <Icon.plus /> Combine
-          </button>
-          <button style={{ display: "flex", alignItems: "center", gap: 7, height: 44, padding: "0 18px", background: C.dark, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
-            <Icon.plus /> Upload Data
-          </button>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => onMerge()} style={{ display: "flex", alignItems: "center", gap: 7, height: 44, padding: "0 18px", background: "#fff", color: C.text, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
+              <Icon.plus /> Combine
+            </button>
+            <button onClick={() => onUpload && onUpload()} style={{ display: "flex", alignItems: "center", gap: 7, height: 44, padding: "0 18px", background: C.dark, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
+              <Icon.plus /> Upload Data
+            </button>
+          </div>
         </div>
       ) : (
         <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#F1F4F9", borderRadius: 12, padding: "0 16px", height: "100%" }}>
@@ -1784,7 +1786,7 @@ function VersionHistory({ onClose }) {
     </div>
   );
 }
-function DetailHeader({ tab, setTab, onBack, onRefine, onHistory }) {
+function DetailHeader({ tab, setTab, onBack, onRefine, onHistory, onAsk }) {
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 32px", borderBottom: `1px solid ${C.border}`, background: C.panel }}>
@@ -1793,7 +1795,8 @@ function DetailHeader({ tab, setTab, onBack, onRefine, onHistory }) {
           <span style={{ color: C.faint, display: "flex" }}><Icon.chevR width={14} height={14} /></span>
           <span style={{ fontWeight: 600 }}>Sample ._voc_data</span>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <AskAIBtn onClick={onAsk} />
           <button onClick={onHistory} style={btnGhost}>History</button><button style={btnGhost}>Share</button>
           <button style={{ ...btnGhost, background: C.dark, color: "#fff", border: "none" }}>Release</button>
         </div>
@@ -2093,8 +2096,8 @@ function PerfWorkbench() {
   return (
     <div style={{ flex: 1, minHeight: 0, overflow: "auto", background: C.bg }}>
       <div style={{ padding: "32px 40px 60px" }}>
-        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", color: WB_BLUE, textTransform: "uppercase" }}>AI 성능 워크벤치</div>
-        <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>효과 미리보기</div>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", color: WB_BLUE, textTransform: "uppercase" }}>Proof run</div>
+        <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>모델 성능 평가 미리보기</div>
         <div style={{ fontSize: 14, color: C.sub, marginTop: 8, lineHeight: 1.55, marginBottom: 28 }}>버전 히스토리에서 정제 전·후를 골라 기준 모델에 넣고, AI 준비의 예상 효과를 미리 확인합니다. 표시 수치는 기준 추정치이며, 실제 영향은 자체 모델로 검증해 보세요.</div>
         <div style={{ display: "grid", gridTemplateColumns: "minmax(340px, 400px) 1fr", gap: 24, alignItems: "start" }}>
           <div style={cardBox}>
@@ -2149,6 +2152,7 @@ const COL_META = [
 
 function DetailTab() {
   const [view, setView] = useState("schema"); // schema(컬럼 메타데이터) | data(행 미리보기)
+  const [dataView, setDataView] = useState("graph"); // graph(스켈레톤·그래프형) | plain(스켈레톤·막대형) | real
   const cols = [
     { icon: <Icon.key />, name: "customer_id", special: "unique" },
     { icon: <Icon.clock />, name: "time_zone", hist: H1, axis: ["UTC+01:00", "UTC+23:59"] },
@@ -2196,26 +2200,63 @@ function DetailTab() {
             ))}
           </div>
         ) : (
-        <div style={{ overflowX: "auto" }}>
-          <div style={{ minWidth: 1100 }}>
-            <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
-              {cols.map((c, i) => (
-                <div key={i} style={{ padding: "12px 14px 14px", borderRight: i === cols.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600 }}><span style={{ color: C.faint, display: "flex" }}>{c.icon}</span> {c.name}</div>
-                  <div style={{ marginTop: 12, height: 64 }}>
-                    {c.special === "unique" && <div style={{ textAlign: "center", paddingTop: 8 }}><div style={{ fontSize: 22, fontWeight: 700 }}>893건</div><div style={{ fontSize: 12, color: C.faint }}>unique values</div></div>}
-                    {c.dist && <div style={{ fontSize: 12 }}>{[["Korean", "20%"], ["En", "15%"], ["Jap", "5%"], ["Other", "60%"]].map(([k, v]) => <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}><span style={{ color: C.sub }}>{k}</span><span style={{ fontWeight: 600 }}>{v}</span></div>)}</div>}
-                    {c.hist && <div><Histogram heights={c.hist} /><div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: C.faint, marginTop: 3 }}><span>{c.axis[0]}</span><span>{c.axis[1]}</span></div></div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {D_NAMES.map((nm, r) => (
-              <div key={r} style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.borderSoft}`, fontSize: 13.5 }}>
-                <div style={cellD(false, true)}>{nm}</div><div style={cellD()}>UTC+12:00</div><div style={cellD(D_SIZES[r].length > 14)}>{D_SIZES[r]}</div><div style={cellD()}>Android</div><div style={cellD()}>2026.11.12</div><div style={cellD()}>{D_SESS[r]}</div><div style={cellD(false, false, true)}>{D_SESS[r]}</div>
-              </div>
+        <div>
+          <div style={{ display: "flex", gap: 6, padding: "12px 24px", borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
+            {[["graph", "스켈레톤 · 그래프형"], ["plain", "스켈레톤 · 막대형"], ["real", "실제 데이터"]].map(([k, lab]) => (
+              <button key={k} onClick={() => setDataView(k)} style={{ border: `1px solid ${dataView === k ? WB_BLUE : C.border}`, background: dataView === k ? WB_BLUE_BG : "#fff", color: dataView === k ? WB_BLUE : C.sub, borderRadius: 8, padding: "6px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>{lab}</button>
             ))}
           </div>
+          <div style={{ overflowX: "auto" }}>
+            <div style={{ minWidth: 1100 }}>
+              {dataView === "real" ? (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
+                    {cols.map((c, i) => (
+                      <div key={i} style={{ padding: "12px 14px 14px", borderRight: i === cols.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600 }}><span style={{ color: C.faint, display: "flex" }}>{c.icon}</span> {c.name}</div>
+                        <div style={{ marginTop: 12, height: 64 }}>
+                          {c.special === "unique" && <div style={{ textAlign: "center", paddingTop: 8 }}><div style={{ fontSize: 22, fontWeight: 700 }}>893건</div><div style={{ fontSize: 12, color: C.faint }}>unique values</div></div>}
+                          {c.dist && <div style={{ fontSize: 12 }}>{[["Korean", "20%"], ["En", "15%"], ["Jap", "5%"], ["Other", "60%"]].map(([k, v]) => <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}><span style={{ color: C.sub }}>{k}</span><span style={{ fontWeight: 600 }}>{v}</span></div>)}</div>}
+                          {c.hist && <div><Histogram heights={c.hist} /><div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: C.faint, marginTop: 3 }}><span>{c.axis[0]}</span><span>{c.axis[1]}</span></div></div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {D_NAMES.map((nm, r) => (
+                    <div key={r} style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.borderSoft}`, fontSize: 13.5 }}>
+                      <div style={cellD(false, true)}>{nm}</div><div style={cellD()}>UTC+12:00</div><div style={cellD(D_SIZES[r].length > 14)}>{D_SIZES[r]}</div><div style={cellD()}>Android</div><div style={cellD()}>2026.11.12</div><div style={cellD()}>{D_SESS[r]}</div><div style={cellD(false, false, true)}>{D_SESS[r]}</div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div style={{ animation: "skelPulse 1.4s ease-in-out infinite" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
+                    {cols.map((c, i) => (
+                      <div key={i} style={{ padding: "12px 14px 14px", borderRight: i === cols.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
+                        <div style={{ height: 9, width: `${46 + (i * 11) % 34}%`, borderRadius: 5, background: "#E4E7EB", marginBottom: dataView === "graph" ? 14 : 0 }} />
+                        {dataView === "graph" && (
+                          <div style={{ height: 64 }}>
+                            <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 46 }}>
+                              {Array.from({ length: 7 }).map((_, b) => <div key={b} style={{ flex: 1, height: `${26 + ((i * 13 + b * 19) % 66)}%`, background: "#E4E7EB", borderRadius: "2px 2px 0 0" }} />)}
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}><div style={{ height: 7, width: 24, borderRadius: 4, background: "#EDEFF2" }} /><div style={{ height: 7, width: 24, borderRadius: 4, background: "#EDEFF2" }} /></div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {Array.from({ length: 16 }).map((_, r) => (
+                    <div key={r} style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.borderSoft}` }}>
+                      {cols.map((_, ci) => (
+                        <div key={ci} style={{ padding: "13px 14px", borderRight: ci === cols.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}><div style={{ height: 11, borderRadius: 6, background: "#EDEFF2", width: `${42 + ((r * 7 + ci * 13) % 46)}%` }} /></div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <style>{`@keyframes skelPulse{0%,100%{opacity:1}50%{opacity:.55}}`}</style>
         </div>
         )}
       </div>
@@ -2253,7 +2294,6 @@ const AGENTS = [
     icon: <Icon.trend />, title: "이탈 예측",
     desc: "행동 신호로 이탈 위험이 있는 고객을 찾아내고 리텐션 액션을 제안합니다.",
     chips: ["CUBIG"],
-    tip: { text: "분석 전, 데이터를 정제하면 탐지율이 ", em: "+28%p", tail: " 올라요!" },
     sectionLabel: "이탈 탐지율",
     before: { label: "데이터 정제 전", value: "탐지율 61%" },
     after: { label: "데이터 정제 후", value: "탐지율 89% ↑" },
@@ -2264,7 +2304,6 @@ const AGENTS = [
     icon: <Icon.group />, title: "전략 제안",
     desc: "고객을 행동 및 인구 통계에 따라 세분화하고 ROI 기반 전략을 시뮬레이션합니다.",
     chips: ["CUBIG"],
-    tip: { text: "분석 전, 데이터를 정제하면 적중률이 ", em: "+35%p", tail: " 올라요!" },
     sectionLabel: "핵심 타겟 적중률",
     before: { label: "데이터 정제 전", value: "적중률 47%" },
     after: { label: "데이터 정제 후", value: "적중률 82% ↑" },
@@ -2275,7 +2314,6 @@ const AGENTS = [
     icon: <Icon.warn />, title: "이상 거래 탐지",
     desc: "비정상 거래 패턴을 탐지해 주의가 필요한 거래를 찾아냅니다.",
     chips: ["Coming Soon"], comingSoon: true,
-    tip: { text: "분석 전, 데이터를 정제하면 오탐률이 ", em: "-9%p", tail: " 내려가요!" },
     sectionLabel: "이상 거래 탐지 오탐률",
     before: { label: "데이터 정제 전", value: "오탐률 12%" },
     after: { label: "데이터 정제 후", value: "오탐률 3% ↓" },
@@ -2286,7 +2324,6 @@ const AGENTS = [
     icon: <Icon.cursor />, title: "리드 스코어링",
     desc: "CRM 데이터로 구매 가능성을 예측해 리드에 점수를 매기고 영업 우선순위를 정합니다.",
     chips: ["Coming Soon"], comingSoon: true,
-    tip: { text: "분석 전, 데이터를 정제하면 적중률이 ", em: "+26%p", tail: " 올라요!" },
     sectionLabel: "상위 리드 적중률",
     before: { label: "데이터 정제 전", value: "적중률 52%" },
     after: { label: "데이터 정제 후", value: "적중률 78% ↑" },
@@ -2326,15 +2363,6 @@ function AgentCard({ a }) {
       </div>
 
       <div style={{ height: 1, background: C.borderSoft, margin: "22px 0 18px" }} />
-
-      {a.tip && (
-        <div style={{ fontSize: 13.5, marginBottom: 16 }}>
-          <span style={{ color: C.greenText, fontWeight: 700 }}>Tip</span>{" "}
-          <span style={{ color: C.text }}>{a.tip.text}</span>
-          <span style={{ color: C.greenText, fontWeight: 700 }}>{a.tip.em}</span>
-          <span style={{ color: C.text }}>{a.tip.tail}</span>
-        </div>
-      )}
 
       <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 12 }}>{a.sectionLabel}</div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -3399,10 +3427,240 @@ function CombinePage({ selected, onRun }) {
 /* =========================================================
  *  Root
  * ========================================================= */
+function AskAIBtn({ onClick }) {
+  return (
+    <button onClick={onClick} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, fontFamily: FONT, color: C.text, background: "transparent", border: "none", cursor: "pointer", padding: "6px 8px", whiteSpace: "nowrap" }}>
+      <span style={{ color: WB_BLUE, display: "flex" }}><Icon.spark /></span> Ask AI
+    </button>
+  );
+}
+function TopBar({ crumb, onAsk }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 32px", borderBottom: `1px solid ${C.border}`, background: C.panel, flexShrink: 0 }}>
+      <span style={{ fontSize: 15, fontWeight: 600, color: C.text }}>{crumb}</span>
+      <AskAIBtn onClick={onAsk} />
+    </div>
+  );
+}
+const ASK_CONVOS = [
+  { id: 1, title: "내 데이터셋 목록", time: "42분 전", group: "current", messages: [
+    { role: "user", text: "내 데이터셋 목록 보여줘" },
+    { role: "ai", text: "현재 6개 데이터셋이 있어요. AI Ready 2 · Caution 2 · Critical 1. 가장 최근 업데이트는 CUBIG Data v2예요." },
+  ] },
+  { id: 2, title: "이상탐지 데이터 추천", time: "3일 전", group: "recent", messages: [
+    { role: "user", text: "이상탐지에 쓸 만한 데이터 알려줘" },
+    { role: "ai", text: "customers_clean_dataset.csv가 적합해요. 결측 0%이고 라벨이 포함돼 있어 바로 학습·평가에 쓸 수 있어요." },
+  ] },
+  { id: 3, title: "정제 효과 요약", time: "1주 전", group: "recent", messages: [
+    { role: "user", text: "정제하면 뭐가 좋아져?" },
+    { role: "ai", text: "정제 후 재현율 +28%p, PR-AUC +0.29 개선이 예상돼요. 정상/이상 점수 분포가 더 벌어집니다." },
+  ] },
+];
+const ASK_PROMPTS = ["내 데이터셋 목록 보여줘", "2024분기 데이터셋 찾아줘", "AI Readiness 낮은 데이터 알려줘"];
+function AskAIPanel({ onClose }) {
+  const [active, setActive] = useState(null); // 선택된 대화 객체 (null = New chat)
+  const [histOpen, setHistOpen] = useState(false);
+  const open = (c) => { setActive(c); setHistOpen(false); };
+  const startPrompt = (p) => setActive({ id: "tmp", title: p, messages: [{ role: "user", text: p }, { role: "ai", text: "(데모) 요청을 분석하고 있어요…" }] });
+  const inputBox = (
+    <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 14px 11px" }}>
+      <div style={{ fontSize: 14, color: C.faint }}>무엇을 도와드릴까요?</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 20 }}>
+        <span onClick={() => setActive(null)} title="새 채팅" style={{ width: 28, height: 28, borderRadius: 8, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub, cursor: "pointer", fontSize: 16 }}>+</span>
+        <span style={{ width: 30, height: 30, borderRadius: 9, background: WB_BLUE, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+      </div>
+    </div>
+  );
+  const convoRow = (c) => (
+    <div key={c.id} onClick={() => open(c)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 10px", borderRadius: 8, cursor: "pointer" }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "#F5F6F8")} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+      <span style={{ fontSize: 13.5, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>
+      <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <span style={{ fontSize: 12, color: C.faint }}>{c.time}</span>
+        <span title="삭제" style={{ display: "flex", color: C.faint, cursor: "pointer" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 7h14M9 7V5h6v2m-8 0 1 13h8l1-13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+      </span>
+    </div>
+  );
+  return (
+    <div style={{ width: 360, flexShrink: 0, height: "100%", background: "#fff", borderLeft: `1px solid ${C.border}`, display: "flex", flexDirection: "column", fontFamily: FONT, position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderBottom: `1px solid ${C.border}` }}>
+        <span style={{ fontSize: 15, fontWeight: 700 }}>Ask AI</span>
+        <span style={{ display: "flex", gap: 14, alignItems: "center", color: C.faint }}>
+          <span onClick={() => setHistOpen((o) => !o)} title="대화 목록" style={{ display: "flex", cursor: "pointer", color: histOpen ? WB_BLUE : C.faint }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span>
+          <span onClick={onClose} style={{ display: "flex", cursor: "pointer" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span>
+        </span>
+      </div>
+
+      {histOpen && (
+        <>
+          <div onClick={() => setHistOpen(false)} style={{ position: "absolute", inset: 0, top: 53, zIndex: 4 }} />
+          <div style={{ position: "absolute", top: 50, left: 12, right: 12, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: "0 14px 36px rgba(0,0,0,0.14)", zIndex: 5, padding: 10, maxHeight: "70%", overflowY: "auto" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 11px", marginBottom: 10 }}>
+              <span style={{ color: C.faint, display: "flex" }}><Icon.search /></span>
+              <input placeholder="대화 검색…" style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, fontFamily: FONT, background: "transparent" }} />
+            </div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: C.faint, padding: "4px 10px" }}>Current</div>
+            {ASK_CONVOS.filter((c) => c.group === "current").map(convoRow)}
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: C.faint, padding: "10px 10px 4px" }}>Recent</div>
+            {ASK_CONVOS.filter((c) => c.group === "recent").map(convoRow)}
+          </div>
+        </>
+      )}
+
+      {active ? (
+        <>
+          <div style={{ flex: 1, overflowY: "auto", padding: "18px" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.faint, marginBottom: 14 }}>{active.title}</div>
+            {active.messages.map((m, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 10 }}>
+                <div style={{ maxWidth: "82%", background: m.role === "user" ? WB_BLUE_BG : "#F2F4F6", color: C.text, borderRadius: 12, padding: "10px 13px", fontSize: 13.5, lineHeight: 1.55 }}>{m.text}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: "0 18px 18px" }}>{inputBox}</div>
+        </>
+      ) : (
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", padding: "22px 18px" }}>
+          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>New chat</div>
+          {inputBox}
+          <div style={{ marginTop: 8 }}>
+            {ASK_PROMPTS.map((p, i) => (
+              <div key={i} onClick={() => startPrompt(p)} style={{ fontSize: 14, color: C.text, padding: "14px 4px", borderTop: `1px solid ${C.borderSoft}`, cursor: "pointer" }}>{p}</div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+function UploadModal({ onClose, onStart }) {
+  const [files, setFiles] = useState([]);
+  const [tip, setTip] = useState(false);
+  const add = () => setFiles((f) => (f.length >= 5 ? f : [...f, { name: "CUBIG Data.csv", size: "CSV · 58.2KB", purpose: "" }]));
+  const setP = (i, v) => setFiles((f) => f.map((x, j) => (j === i ? { ...x, purpose: v } : x)));
+  const rm = (i) => setFiles((f) => f.filter((_, j) => j !== i));
+  const canStart = files.length > 0 && files.every((x) => x.purpose.trim());
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,18,22,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 24 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: 720, maxWidth: "94vw", maxHeight: "90vh", overflow: "auto", background: "#fff", borderRadius: 18, padding: "24px 28px", boxShadow: "0 24px 64px rgba(0,0,0,0.32)", fontFamily: FONT }}>
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9 }}><span style={{ fontSize: 18, fontWeight: 800 }}>Upload data</span>{files.length > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: C.sub, background: "#F2F4F6", borderRadius: 20, padding: "3px 10px" }}>{files.length}/5</span>}</div>
+            <button onClick={onClose} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", color: C.faint }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></button>
+          </div>
+          <div style={{ fontSize: 13, color: C.sub, marginTop: 7, lineHeight: 1.5 }}>업로드하면 품질·결측·이상치·컨텍스트를 점검하는 <b style={{ fontWeight: 600, color: C.text }}>프로파일링</b>을 해요.</div>
+        </div>
+        {files.length === 0 ? (
+          <div onClick={add} style={{ border: `1.5px dashed ${C.border}`, borderRadius: 14, minHeight: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer" }}>
+            <span style={{ width: 46, height: 46, borderRadius: 12, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.6" /><path d="M12 11v6M9 14h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg></span>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.text }}>Click or drag files to upload</div>
+            <div style={{ fontSize: 12.5, color: C.faint }}>Up to 100MB · 100–10,000 rows / 100 columns</div>
+            <div style={{ display: "flex", gap: 6, marginTop: 4 }}>{["CSV", "XLSX", "XLS"].map((t) => <span key={t} style={{ fontSize: 11, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 6, padding: "2px 8px" }}>{t}</span>)}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 26, flexWrap: "wrap", justifyContent: "center" }}>
+              <span style={{ fontSize: 12, color: C.faint }}>업로드하면</span>
+              {["품질·결측 점검", "이상치 탐지", "컨텍스트 요약"].map((t) => <span key={t} style={{ fontSize: 11.5, fontWeight: 500, color: WB_BLUE, background: WB_BLUE_BG, borderRadius: 20, padding: "3px 10px" }}>{t}</span>)}
+              <span style={{ fontSize: 12, color: C.faint }}>을 자동 진단해요</span>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, padding: "0 4px 8px", fontSize: 12.5, color: C.faint, fontWeight: 600 }}><span>Uploaded Data</span><span style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 4, width: "fit-content" }}>Data purpose <span style={{ color: "#E5484D" }}>*</span><span onMouseEnter={() => setTip(true)} onMouseLeave={() => setTip(false)} style={{ display: "flex", cursor: "help", color: C.faint }}><Icon.infoCircle width={13} height={13} /></span>{tip && <div style={{ position: "absolute", top: "150%", left: 0, width: 280, background: "#18181B", color: "#fff", fontSize: 12, fontWeight: 400, lineHeight: 1.55, borderRadius: 10, padding: "10px 12px", zIndex: 5, boxShadow: "0 12px 30px rgba(0,0,0,0.3)" }}>이 데이터를 어떻게 사용할 계획인지 알려주세요. 보다 정확한 프로파일링에 도움이 돼요. 용도가 데이터와 맞지 않으면 다시 입력을 요청할 수 있어요.</div>}</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {files.map((f, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "center", border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                    <span style={{ width: 34, height: 34, borderRadius: 9, background: "#E7F7EE", color: "#1D9E75", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.sheet width={17} height={17} /></span>
+                    <div style={{ minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</div><div style={{ fontSize: 12, color: C.faint }}>{f.size} · <span style={{ color: WB_BLUE, fontWeight: 500 }}>진단 예상 ~1분</span></div></div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input value={f.purpose} onChange={(e) => setP(i, e.target.value)} placeholder="예: 회귀 예측 / AB Test" style={{ flex: 1, minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 10, padding: "11px 13px", fontSize: 14, fontFamily: FONT, outline: "none", background: "#FCFCFD" }} />
+                    <span onClick={() => rm(i)} title="삭제" onMouseEnter={(e) => { e.currentTarget.style.background = "#F2F4F6"; e.currentTarget.style.color = C.sub; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.faint; }} style={{ display: "flex", flexShrink: 0, width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center", color: C.faint, cursor: "pointer" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span>
+                  </div>
+                </div>
+              ))}
+              {files.length < 5 && <button onClick={add} style={{ border: `1px dashed ${C.border}`, borderRadius: 10, padding: "10px 0", fontSize: 13, fontWeight: 600, color: C.sub, background: "#fff", cursor: "pointer", fontFamily: FONT }}>+ 파일 추가</button>}
+            </div>
+          </div>
+        )}
+        {files.length > 0 && (
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: "#F6F7F9", borderRadius: 12, padding: "13px 15px", marginTop: 16 }}>
+            <span style={{ width: 28, height: 28, borderRadius: 8, background: "#EAEDF1", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.clock width={15} height={15} /></span>
+            <div><div style={{ fontSize: 13, fontWeight: 600 }}>각 파일을 개별로 진단해요 · 파일당 약 1분 정도 걸려요.</div><div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>여러 파일은 병렬로 처리되고, 파일이 크면 더 걸릴 수 있어요.</div></div>
+          </div>
+        )}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
+          <span style={{ fontSize: 12.5, color: C.faint }}>Maximum 5 files</span>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 600, color: C.text, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 16px", cursor: "pointer", fontFamily: FONT }}>Upload guide</button>
+            <button onClick={() => canStart && onStart(files)} disabled={!canStart} style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", background: canStart ? C.dark : "#C7CBD1", border: "none", borderRadius: 10, padding: "9px 18px", cursor: canStart ? "pointer" : "default", fontFamily: FONT }}>Start Data Profiling</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+function ProfilingTray({ files, onClose }) {
+  const STAGES = ["파일 읽는 중", "스키마 분석", "결측·이상 점검", "분포 계산", "컨텍스트 요약"];
+  const [elapsed, setElapsed] = useState(0);
+  const [stage, setStage] = useState(0);
+  const [done, setDone] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    const s = setInterval(() => setStage((x) => (x + 1) % STAGES.length), 2200);
+    const d = setInterval(() => setDone((x) => (x < files.length ? x + 1 : x)), 2600);
+    return () => { clearInterval(t); clearInterval(s); clearInterval(d); };
+  }, [files.length]);
+  const allDone = done >= files.length;
+  const mmss = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`;
+  const pct = Math.round((done / files.length) * 100);
+  return (
+    <div style={{ position: "fixed", bottom: 0, right: 24, width: 330, background: "#fff", border: `1px solid ${C.border}`, borderBottom: "none", borderRadius: "14px 14px 0 0", boxShadow: "0 -8px 32px rgba(0,0,0,0.12)", zIndex: 260, fontFamily: FONT, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 15px" }}>
+        {allDone ? <span style={{ color: "#1D9E75", display: "flex" }}><Icon.checkCircle /></span> : <span style={{ display: "flex", alignItems: "flex-end", gap: 2, width: 24, height: 20, flexShrink: 0 }}>{[13, 19, 15, 20, 12].map((h, b) => <span key={b} style={{ width: 3, height: h, borderRadius: 1.5, background: WB_BLUE, transformOrigin: "bottom", animation: `scanBar 1.1s ease-in-out ${b * 0.12}s infinite` }} />)}</span>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allDone ? "데이터 프로파일링 완료" : "데이터 프로파일링 중"}</div>
+          <div style={{ fontSize: 12, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allDone ? `${files.length} files 진단 완료 · 총 ${mmss} 소요` : `${STAGES[stage]} · ${done}/${files.length} 완료 · ${mmss} 경과`}</div>
+        </div>
+        {!allDone && <span style={{ width: 15, height: 15, border: `2px solid ${C.border}`, borderTopColor: WB_BLUE, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} />}
+        <span onClick={onClose} style={{ display: "flex", cursor: "pointer", color: C.faint }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span>
+      </div>
+      <div style={{ height: 4, background: "#EEF0F3", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, width: `${pct}%`, background: allDone ? "#22C55E" : WB_BLUE, transition: "width .5s" }} />
+        {!allDone && <div style={{ position: "absolute", top: 0, bottom: 0, width: "30%", background: "rgba(255,255,255,0.5)", animation: "trayIndet 1.3s ease-in-out infinite" }} />}
+      </div>
+      <div style={{ padding: "8px 8px 6px" }}>
+        {files.map((f, i) => {
+          const st = i < done ? "done" : (i === done ? "active" : "wait");
+          return (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 8px", opacity: st === "wait" ? 0.5 : 1 }}>
+              <span style={{ width: 26, height: 26, borderRadius: 6, background: "#E7F7EE", color: "#1D9E75", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.sheet width={14} height={14} /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</div>
+                {st === "active" && <div style={{ height: 4, borderRadius: 999, background: "#EEF0F3", overflow: "hidden", marginTop: 5, position: "relative" }}><div style={{ position: "absolute", top: 0, bottom: 0, width: "45%", background: WB_BLUE, borderRadius: 999, animation: "trayIndet 1.2s ease-in-out infinite" }} /></div>}
+              </div>
+              {st === "done" && <span style={{ display: "flex" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#22C55E" /><path d="M8 12l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
+              {st === "active" && <span style={{ width: 13, height: 13, border: `2px solid ${C.border}`, borderTopColor: WB_BLUE, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} />}
+              {st === "wait" && <span style={{ fontSize: 11.5, color: C.faint }}>예상 ~1분</span>}
+              {st === "active" && <span style={{ fontSize: 11.5, color: WB_BLUE, fontWeight: 500 }}>진단 중</span>}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", gap: 7, padding: "10px 14px", borderTop: `1px solid ${C.borderSoft}`, background: "#FAFAFB", fontSize: 12, color: C.sub, lineHeight: 1.5 }}>
+        <span style={{ display: "flex", flexShrink: 0, color: C.faint, marginTop: 1 }}><Icon.infoCircle width={13} height={13} /></span>
+        {allDone ? "진단이 끝났어요. 목록에서 확인하세요." : "창을 닫아도 백그라운드에서 계속돼요. 파일이 크면 더 걸릴 수 있어요."}
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes trayPulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes trayIndet{0%{transform:translateX(-120%)}100%{transform:translateX(360%)}}@keyframes scanBar{0%,100%{opacity:.35;transform:scaleY(.55)}50%{opacity:1;transform:scaleY(1)}}`}</style>
+    </div>
+  );
+}
 export default function DatasetsApp() {
   const [screen, setScreen] = useState("list"); // list | detail | merge | merging | result
   const [tab, setTab] = useState("AI Readiness");
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [profiling, setProfiling] = useState(null);
   const [selected, setSelected] = useState([]);
   const [combineNav, setCombineNav] = useState(0); // Combine 재진입 시 빈 화면 리셋용
   const [mergeJob, setMergeJob] = useState(null); // { names, done } – 백그라운드에서도 유지
@@ -3456,16 +3714,29 @@ export default function DatasetsApp() {
     <div style={{ width: "100%", minWidth: 1280, maxWidth: 1920, margin: "0 auto", display: "flex", height: "100vh", overflow: "hidden", background: C.bg, fontFamily: FONT, color: C.text }}>
       <Sidebar active={sidebarActive} onNav={handleNav} />
       <main style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
-        {screen === "agent" && <div style={scrollArea}><AgentAnalysisPage /></div>}
-        {screen === "workbench" && <PerfWorkbench />}
+        {screen === "agent" && (
+          <>
+            <TopBar crumb="Agent Analysis" onAsk={() => setAskOpen(true)} />
+            <div style={scrollArea}><AgentAnalysisPage /></div>
+          </>
+        )}
+        {screen === "workbench" && (
+          <>
+            <TopBar crumb="Performance Proof" onAsk={() => setAskOpen(true)} />
+            <PerfWorkbench />
+          </>
+        )}
         {screen === "list" && (
-          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", background: "#fff" }}>
-            <DatasetsPage datasets={datasets} setDatasets={setDatasets} folders={folders} setFolders={setFolders} activeFolder={activeFolder} setActiveFolder={setActiveFolder} selected={selected} setSelected={setSelected} onOpen={() => { setScreen("detail"); setTab("AI Readiness"); }} onMerge={() => setScreen("combine")} onMergeDirect={() => { setSelected(datasets.slice(0, 2).map((d) => d.id)); setScreen("combine"); }} />
-          </div>
+          <>
+            <TopBar crumb="Dataset" onAsk={() => setAskOpen(true)} />
+            <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", background: "#fff" }}>
+              <DatasetsPage datasets={datasets} setDatasets={setDatasets} folders={folders} setFolders={setFolders} activeFolder={activeFolder} setActiveFolder={setActiveFolder} selected={selected} setSelected={setSelected} onOpen={() => { setScreen("detail"); setTab("AI Readiness"); }} onMerge={() => setScreen("combine")} onMergeDirect={() => { setSelected(datasets.slice(0, 2).map((d) => d.id)); setScreen("combine"); }} onAsk={() => setAskOpen(true)} onUpload={() => setUploadOpen(true)} />
+            </div>
+          </>
         )}
         {screen === "detail" && (
           <>
-            <DetailHeader tab={tab} setTab={setTab} onBack={() => setScreen("list")} onRefine={() => setScreen("refine")} onHistory={() => setHistoryOpen(true)} />
+            <DetailHeader tab={tab} setTab={setTab} onBack={() => setScreen("list")} onRefine={() => setScreen("refine")} onHistory={() => setHistoryOpen(true)} onAsk={() => setAskOpen(true)} />
             <div style={scrollArea}>{tab === "AI Readiness" ? <AIReadinessTab /> : <DetailTab />}</div>
             {historyOpen && <VersionHistory onClose={() => setHistoryOpen(false)} />}
           </>
@@ -3480,7 +3751,15 @@ export default function DatasetsApp() {
         {screen === "list" && mergeJob && (
           <MergeTray job={mergeJob} onOpen={() => setScreen("result")} onClose={mergeJob.done ? () => setMergeJob(null) : undefined} />
         )}
+
+        {/* Ask AI — 헤더 없는 화면엔 우상단에 띄움 */}
+        {!askOpen && (screen === "refine" || screen === "combine") && (
+          <div style={{ position: "absolute", top: 14, right: 24, zIndex: 80 }}><AskAIBtn onClick={() => setAskOpen(true)} /></div>
+        )}
       </main>
+      {askOpen && <AskAIPanel onClose={() => setAskOpen(false)} />}
+      {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} onStart={(files) => { setUploadOpen(false); setProfiling(files); }} />}
+      {profiling && <ProfilingTray files={profiling} onClose={() => setProfiling(null)} />}
     </div>
   );
 }
