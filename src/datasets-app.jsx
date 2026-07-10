@@ -3547,6 +3547,8 @@ function UploadModal({ onClose, onStart }) {
   const setP = (i, v) => setFiles((f) => f.map((x, j) => (j === i ? { ...x, purpose: v } : x)));
   const rm = (i) => setFiles((f) => f.filter((_, j) => j !== i));
   const canStart = files.length > 0 && files.every((x) => x.purpose.trim());
+  const estSec = (est) => { const n = parseFloat(String(est || "1분").replace(/[^0-9.]/g, "")) || 1; return String(est).includes("초") ? n : n * 60; };
+  const maxEst = files.length ? files.reduce((a, b) => (estSec(a.est) >= estSec(b.est) ? a : b)).est : null;
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,18,22,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 24 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: 720, maxWidth: "94vw", maxHeight: "90vh", overflow: "auto", background: "#fff", borderRadius: 18, padding: "24px 28px", boxShadow: "0 24px 64px rgba(0,0,0,0.32)", fontFamily: FONT }}>
@@ -3592,7 +3594,7 @@ function UploadModal({ onClose, onStart }) {
         {files.length > 0 && (
           <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: "#F6F7F9", borderRadius: 12, padding: "13px 15px", marginTop: 16 }}>
             <span style={{ width: 28, height: 28, borderRadius: 8, background: "#EAEDF1", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.clock width={15} height={15} /></span>
-            <div><div style={{ fontSize: 13, fontWeight: 600 }}>파일 크기에 따라 진단 시간이 달라요 — 각 파일 예상 시간을 확인하세요.</div><div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>파일이 크면 더 오래 걸릴 수 있어요.</div></div>
+            <div><div style={{ fontSize: 13, fontWeight: 600 }}>시작하면 백그라운드에서 진행돼요 — 창을 닫아도 계속돼요.</div><div style={{ fontSize: 12, color: C.faint, marginTop: 2 }}>여러 파일을 함께 진단해서 <b style={{ color: C.sub, fontWeight: 600 }}>가장 큰 파일 기준 약 {maxEst}</b> 걸리고, 끝나면 목록에서 알려드릴게요.</div></div>
           </div>
         )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
