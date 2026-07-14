@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="786" height="250" viewBox="0 0 786 250" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <rect width="786" height="250" fill="#ffffff"/>
+
+  <!-- horizontal gridlines -->
+  <g stroke="#E7E9EC" stroke-width="1">
+    <line x1="42" y1="12"    x2="770" y2="12"/>
+    <line x1="42" y1="64.5"  x2="770" y2="64.5"/>
+    <line x1="42" y1="117"   x2="770" y2="117"/>
+    <line x1="42" y1="169.5" x2="770" y2="169.5"/>
+    <line x1="42" y1="222"   x2="770" y2="222"/>
+  </g>
+
+  <!-- vertical gridlines -->
+  <g stroke="#EEF0F2" stroke-width="1">
+    <line x1="42.0"  y1="12" x2="42.0"  y2="222"/>
+    <line x1="82.4"  y1="12" x2="82.4"  y2="222"/>
+    <line x1="122.9" y1="12" x2="122.9" y2="222"/>
+    <line x1="163.3" y1="12" x2="163.3" y2="222"/>
+    <line x1="203.8" y1="12" x2="203.8" y2="222"/>
+    <line x1="244.2" y1="12" x2="244.2" y2="222"/>
+    <line x1="284.7" y1="12" x2="284.7" y2="222"/>
+    <line x1="325.1" y1="12" x2="325.1" y2="222"/>
+    <line x1="365.6" y1="12" x2="365.6" y2="222"/>
+    <line x1="406.0" y1="12" x2="406.0" y2="222"/>
+    <line x1="446.4" y1="12" x2="446.4" y2="222"/>
+    <line x1="486.9" y1="12" x2="486.9" y2="222"/>
+    <line x1="527.3" y1="12" x2="527.3" y2="222"/>
+    <line x1="567.8" y1="12" x2="567.8" y2="222"/>
+    <line x1="608.2" y1="12" x2="608.2" y2="222"/>
+    <line x1="648.7" y1="12" x2="648.7" y2="222"/>
+    <line x1="689.1" y1="12" x2="689.1" y2="222"/>
+    <line x1="729.6" y1="12" x2="729.6" y2="222"/>
+    <line x1="770.0" y1="12" x2="770.0" y2="222"/>
+  </g>
+
+  <!-- y axis labels -->
+  <g fill="#9AA0A6" font-size="11" text-anchor="end">
+    <text x="34" y="15.5">100%</text>
+    <text x="34" y="68">75%</text>
+    <text x="34" y="120.5">50%</text>
+    <text x="34" y="173">25%</text>
+    <text x="34" y="225.5">0%</text>
+  </g>
+
+  <!-- x axis labels (every 200) -->
+  <g fill="#9AA0A6" font-size="11" text-anchor="middle">
+    <text x="42.0"  y="240">900</text>
+    <text x="122.9" y="240">1100</text>
+    <text x="203.8" y="240">1300</text>
+    <text x="284.7" y="240">1500</text>
+    <text x="365.6" y="240">1700</text>
+    <text x="446.4" y="240">1900</text>
+    <text x="527.3" y="240">2100</text>
+    <text x="608.2" y="240">2300</text>
+    <text x="689.1" y="240">2500</text>
+    <text x="770.0" y="240">2700</text>
+  </g>
+
+  <!-- green (solid, declining) -->
+  <polyline fill="none" stroke="#33A87C" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"
+    points="42.0,39.3 82.4,49.8 122.9,66.6 163.3,83.4 203.8,100.2 244.2,117.0 284.7,133.8 325.1,148.5 365.6,163.2 406.0,175.8 446.4,188.4 486.9,196.8 527.3,203.1 567.8,207.3 608.2,211.5 648.7,213.6 689.1,215.7 729.6,215.7 770.0,215.7"/>
+
+  <!-- yellow (dashed, declining) -->
+  <polyline fill="none" stroke="#E9B93C" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="6 4"
+    points="42.0,28.8 82.4,33.0 122.9,37.2 163.3,45.6 203.8,56.1 244.2,70.8 284.7,87.6 325.1,104.4 365.6,117.0 406.0,131.7 446.4,146.4 486.9,159.0 527.3,171.6 567.8,182.1 608.2,192.6 648.7,201.0 689.1,207.3 729.6,211.5 770.0,213.6"/>
+
+  <!-- purple (dashed, rising) -->
+  <polyline fill="none" stroke="#8479D6" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="6 4"
+    points="42.0,207.3 82.4,203.1 122.9,196.8 163.3,188.4 203.8,175.8 244.2,159.0 284.7,138.0 325.1,117.0 365.6,96.0 406.0,77.1 446.4,60.3 486.9,47.7 527.3,37.2 567.8,30.9 608.2,24.6 648.7,22.5 689.1,20.4 729.6,18.3 770.0,18.3"/>
+
+  <!-- pink (solid, rising) -->
+  <polyline fill="none" stroke="#E05A8E" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"
+    points="42.0,215.7 82.4,213.6 122.9,209.4 163.3,205.2 203.8,198.9 244.2,192.6 284.7,184.2 325.1,171.6 365.6,156.9 406.0,140.1 446.4,121.2 486.9,102.3 527.3,87.6 567.8,75.0 608.2,64.5 648.7,56.1 689.1,49.8 729.6,45.6 770.0,43.5"/>
+</svg>

@@ -426,7 +426,7 @@ function DatasetsPage({ datasets, setDatasets, folders, setFolders, activeFolder
       <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: C.panel }}>
         <div style={{ display: "grid", gridTemplateColumns: grid, alignItems: "center", padding: "13px 20px", fontSize: 13, color: C.sub, fontWeight: 600, borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
           <span>{selecting ? <Checkbox checked={allChecked} onChange={toggleAll} /> : ""}</span>
-          <span>Dataset</span><span>AI Readiness</span><span>Version</span><span>Owner</span><span>Created</span><span>Updated</span><span />
+          <span>Dataset</span><span>AI 준비도</span><span>Version</span><span>Owner</span><span>Created</span><span>Updated</span><span />
         </div>
         {rows.map((d, i) => {
           const checked = selected.includes(d.id);
@@ -1553,7 +1553,7 @@ function ReadinessCard({ phase, tag, scores, overall, level, color, allGreen }) 
         <span style={{ background: C.chipBg, color: C.sub, fontSize: 12, fontWeight: 600, borderRadius: 6, padding: "3px 8px" }}>{tag}</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 20 }}>
-        <span style={{ fontSize: 18, fontWeight: 700 }}>AI Readiness</span>
+        <span style={{ fontSize: 18, fontWeight: 700 }}>AI 준비도</span>
         <span style={{ marginLeft: "auto", fontSize: 24, fontWeight: 800 }}>{overall}%</span>
         <span style={{ marginLeft: 10, background: color === C.red ? "#FEE2E2" : "#DCFCE7", color: color === C.red ? "#DC2626" : C.greenText, fontSize: 12.5, fontWeight: 600, borderRadius: 7, padding: "4px 10px" }}>{level}</span>
       </div>
@@ -1582,7 +1582,7 @@ function ReadinessCompareModal({ name, onClose }) {
       <div style={{ width: 1080, maxWidth: "82vw", height: "100vh", background: "#fff", display: "flex", flexDirection: "column" }}>
         <div style={{ flex: 1, overflowY: "auto", padding: "32px 32px 28px" }}>
           <div style={{ fontSize: 22, fontWeight: 700 }}>데이터 병합 완료</div>
-          <div style={{ fontSize: 14, color: C.sub, margin: "8px 0 14px" }}>병합 전후의 AI Readiness 변화를 확인하세요.</div>
+          <div style={{ fontSize: 14, color: C.sub, margin: "8px 0 14px" }}>병합 전후의 AI 준비도 변화를 확인하세요.</div>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "12px 14px", marginBottom: 22, fontSize: 13, color: "#92400E", lineHeight: 1.55 }}>
             <Icon.infoCircle width={15} height={15} /> <span>데이터가 추가되면 <b>결측(Null)·중복이 늘어나 일부 항목 점수는 낮아질 수도</b> 있어요. 낮아진 항목은 전처리(Get AI-Ready)로 보완하세요.</span>
           </div>
@@ -1647,7 +1647,7 @@ function ResultSummary({ names, onCompare, onColumns, onClose }) {
       <Divider />
 
       {/* AI Readiness 변화 */}
-      <Title>AI Readiness 변화</Title>
+      <Title>AI 준비도 변화</Title>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <div style={{ flex: 1, textAlign: "center", border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 8px" }}>
           <div style={{ fontSize: 20, fontWeight: 800 }}>19%</div>
@@ -1660,7 +1660,7 @@ function ResultSummary({ names, onCompare, onColumns, onClose }) {
         </div>
       </div>
       <button onClick={onCompare} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: `1px solid ${C.border}`, borderRadius: 10, padding: "11px 0", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, background: "#fff" }}>
-        AI Readiness 변화 자세히 보기 <Icon.chevR width={14} height={14} />
+        AI 준비도 변화 자세히 보기 <Icon.chevR width={14} height={14} />
       </button>
 
       {/* 확인 → 하단 고정 (24 여백), 닫으면 목록에 새 스냅샷 추가 */}
@@ -1803,11 +1803,11 @@ function DetailHeader({ tab, setTab, onBack, onRefine, onHistory, onAsk }) {
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 32px 0" }}>
         <div style={{ display: "flex", gap: 4, background: "#F3F4F6", borderRadius: 10, padding: 4 }}>
-          {["AI Readiness", "Detail"].map((t) => (
+          {["AI 준비도", "Detail"].map((t) => (
             <button key={t} onClick={() => setTab(t)} style={{ border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT, background: tab === t ? C.panel : "transparent", color: tab === t ? C.text : C.sub, boxShadow: tab === t ? "0 1px 2px rgba(0,0,0,0.06)" : "none" }}>{t}</button>
           ))}
         </div>
-        {tab === "AI Readiness" && <button onClick={onRefine} style={{ ...btnGhost, background: C.dark, color: "#fff", border: "none", fontWeight: 600 }}><Icon.spark /> Get AI-Ready</button>}
+        {tab === "AI 준비도" && <button onClick={onRefine} style={{ ...btnGhost, background: C.dark, color: "#fff", border: "none", fontWeight: 600 }}><Icon.spark /> Get AI-Ready</button>}
       </div>
     </>
   );
@@ -1846,7 +1846,7 @@ function AIReadinessTab() {
     <div style={{ padding: "20px 32px 60px" }}>
       <div style={{ border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, background: C.panel, display: "grid", gridTemplateColumns: "1fr 360px", gap: 24 }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}><span style={{ fontSize: 18, fontWeight: 700 }}>AI Readiness</span><span style={{ marginLeft: "auto", fontSize: 26, fontWeight: 800 }}>99%</span><span style={{ background: "#DCFCE7", color: C.greenText, fontSize: 12.5, fontWeight: 600, borderRadius: 7, padding: "4px 10px" }}>AI Ready</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}><span style={{ fontSize: 18, fontWeight: 700 }}>AI 준비도</span><span style={{ marginLeft: "auto", fontSize: 26, fontWeight: 800 }}>99%</span><span style={{ background: "#DCFCE7", color: C.greenText, fontSize: 12.5, fontWeight: 600, borderRadius: 7, padding: "4px 10px" }}>AI Ready</span></div>
           {SCORES.map(([label, pct]) => (<div key={label} style={{ display: "grid", gridTemplateColumns: "200px 1fr 52px", alignItems: "center", gap: 14, marginBottom: 12 }}><span style={{ fontSize: 14, color: "#374151" }}>{label}</span><Bar pct={pct} color={C.green} w="100%" /><span style={{ fontSize: 14, fontWeight: 600, textAlign: "right" }}>{pct}%</span></div>))}
           <div style={{ display: "flex", gap: 10, background: C.greenBg, border: "1px solid #BBF7D0", borderRadius: 12, padding: "14px 16px", marginTop: 22 }}><span style={{ display: "flex", flexShrink: 0 }}><Icon.checkCircle /></span><div><div style={{ fontSize: 14, fontWeight: 600, color: C.greenText }}>AI analysis results</div><div style={{ fontSize: 13.5, color: "#4B5563", marginTop: 4 }}>The AI Readiness of the data is generally good, but three items are critically low at just 10%.</div></div></div>
         </div>
@@ -3493,7 +3493,7 @@ const ASK_CONVOS = [
     { role: "ai", text: "정제 후 재현율 +28%p, PR-AUC +0.29 개선이 예상돼요. 정상/이상 점수 분포가 더 벌어집니다." },
   ] },
 ];
-const ASK_PROMPTS = ["내 데이터셋 목록 보여줘", "2024분기 데이터셋 찾아줘", "AI Readiness 낮은 데이터 알려줘"];
+const ASK_PROMPTS = ["내 데이터셋 목록 보여줘", "2024분기 데이터셋 찾아줘", "AI 준비도 낮은 데이터 알려줘"];
 function AskAIPanel({ onClose }) {
   const [active, setActive] = useState(null); // 선택된 대화 객체 (null = New chat)
   const [histOpen, setHistOpen] = useState(false);
@@ -3861,7 +3861,7 @@ function UnionMatchPage({ onBack, onConfirm, err = false }) {
 
 export default function DatasetsApp() {
   const [screen, setScreen] = useState("list"); // list | detail | merge | merging | result
-  const [tab, setTab] = useState("AI Readiness");
+  const [tab, setTab] = useState("AI 준비도");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -3935,14 +3935,14 @@ export default function DatasetsApp() {
           <>
             <TopBar crumb="Dataset" onAsk={() => setAskOpen(true)} />
             <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", background: "#fff" }}>
-              <DatasetsPage datasets={datasets} setDatasets={setDatasets} folders={folders} setFolders={setFolders} activeFolder={activeFolder} setActiveFolder={setActiveFolder} selected={selected} setSelected={setSelected} onOpen={() => { setScreen("detail"); setTab("AI Readiness"); }} onMerge={() => setScreen("combine")} onMergeDirect={() => { setSelected(datasets.slice(0, 2).map((d) => d.id)); setScreen("combine"); }} onAsk={() => setAskOpen(true)} onUpload={() => setUploadOpen(true)} />
+              <DatasetsPage datasets={datasets} setDatasets={setDatasets} folders={folders} setFolders={setFolders} activeFolder={activeFolder} setActiveFolder={setActiveFolder} selected={selected} setSelected={setSelected} onOpen={() => { setScreen("detail"); setTab("AI 준비도"); }} onMerge={() => setScreen("combine")} onMergeDirect={() => { setSelected(datasets.slice(0, 2).map((d) => d.id)); setScreen("combine"); }} onAsk={() => setAskOpen(true)} onUpload={() => setUploadOpen(true)} />
             </div>
           </>
         )}
         {screen === "detail" && (
           <>
             <DetailHeader tab={tab} setTab={setTab} onBack={() => setScreen("list")} onRefine={() => setScreen("refine")} onHistory={() => setHistoryOpen(true)} onAsk={() => setAskOpen(true)} />
-            <div style={scrollArea}>{tab === "AI Readiness" ? <AIReadinessTab /> : <DetailTab />}</div>
+            <div style={scrollArea}>{tab === "AI 준비도" ? <AIReadinessTab /> : <DetailTab />}</div>
             {historyOpen && <VersionHistory onClose={() => setHistoryOpen(false)} />}
           </>
         )}
