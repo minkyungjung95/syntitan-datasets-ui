@@ -3659,6 +3659,141 @@ function ProfilingTray({ files, onClose }) {
     </div>
   );
 }
+
+/* ── Union 컬럼 매칭 확인 화면 (AI가 매칭 → 완료) ─────────────── */
+const UM_BASE_NAME = "Datset_name";
+const UM_ADD_NAME = "CUBIG Data_2025";
+const UM_COLS = ["time_period_01", "time_period_02", "time_period_03", "time_period_04", "time_period_05", "time_period_06"];
+const UM_PREVIEW_COLS = [
+  { name: "Source", kind: "src" },
+  { name: "time_period_02", kind: "#" },
+  { name: "time_period_03", kind: "#" },
+  { name: "time_period_04", kind: "#" },
+  { name: "time_period_05", kind: "A" },
+  { name: "time_period_06", kind: "A" },
+  { name: "time_period_07", kind: "A" },
+];
+function UnionMatchPage({ onBack, onConfirm }) {
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { const t = setTimeout(() => setLoading(false), 1900); return () => clearTimeout(t); }, []);
+  const sk = (w, h = 13) => ({ height: h, width: w, borderRadius: 6, background: "#EAECEF", animation: "umPulse 1.3s ease-in-out infinite" });
+
+  // 결과 미리보기 행 (Datset_1 5행 + Datset_2 나머지)
+  const rows = Array.from({ length: 13 }, (_, i) => ({ src: i < 5 ? "Datset_1" : "Datset_2", ds2: i >= 5 }));
+  const kindGlyph = (k) => k === "src" ? <Icon.db width={13} height={13} /> : k === "#" ? <Icon.hash width={12} height={12} /> : <span style={{ fontSize: 11, fontWeight: 700 }}>A</span>;
+
+  return (
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", alignSelf: "stretch", overflow: "hidden" }}>
+      {/* breadcrumb + 헤더 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 24px", fontSize: 13.5, color: C.faint }}>
+        <span onClick={onBack} style={{ cursor: "pointer" }}>Dataset</span>
+        <Icon.chevR width={14} height={14} />
+        <span onClick={onBack} style={{ cursor: "pointer" }}>데이터 결합</span>
+        <Icon.chevR width={14} height={14} />
+        <span style={{ color: C.text, fontWeight: 600 }}>Union</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "4px 24px 16px" }}>
+        <span style={{ width: 30, height: 30, borderRadius: 8, background: "#EEF2FF", color: C.purple, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800 }}>AI</span>
+        <span style={{ fontSize: 17, fontWeight: 700 }}>Union</span>
+        <span style={{ fontSize: 13.5, color: C.faint }}>같은 형태의 데이터를 위아래로 이어 붙여 행을 늘려요.</span>
+      </div>
+
+      {/* 스크롤 본문 */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 24px 28px" }}>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>컬럼 매칭 결과를 확인해주세요</div>
+
+        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+          {/* 매칭 카드 */}
+          <div style={{ flex: 1, minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", background: "#fff" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 44px minmax(0,1fr) 70px", alignItems: "center", padding: "15px 18px", borderBottom: `1px solid ${C.borderSoft}` }}>
+              <span style={{ fontSize: 13.5, fontWeight: 700 }}>{UM_BASE_NAME} <span style={{ color: C.faint, fontWeight: 500 }}>(기준)</span></span>
+              <span style={{ display: "flex", justifyContent: "center", color: C.faint }}><Icon.swap width={15} height={15} /></span>
+              <span style={{ fontSize: 13.5, fontWeight: 700 }}>{UM_ADD_NAME}</span>
+              <span />
+            </div>
+            {loading
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 44px minmax(0,1fr) 70px", alignItems: "center", padding: "14px 18px", borderBottom: i === 5 ? "none" : `1px solid ${C.borderSoft}` }}>
+                    <div style={sk("58%")} />
+                    <div style={{ display: "flex", justifyContent: "center", color: "#DDE0E4" }}><Icon.link width={14} height={14} /></div>
+                    <div style={sk("58%")} />
+                    <div />
+                  </div>
+                ))
+              : UM_COLS.map((c, i) => (
+                  <div key={c} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 44px minmax(0,1fr) 70px", alignItems: "center", padding: "14px 18px", borderBottom: i === UM_COLS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
+                    <span style={{ fontSize: 13.5 }}>{c} <span style={{ color: C.faint, fontSize: 12 }}>String</span></span>
+                    <span style={{ display: "flex", justifyContent: "center", color: C.purple }}><Icon.link width={14} height={14} /></span>
+                    <span style={{ fontSize: 13.5 }}>{c} <span style={{ color: C.faint, fontSize: 12 }}>String</span></span>
+                    <span style={{ display: "flex", justifyContent: "flex-end" }}><span style={{ fontSize: 11.5, fontWeight: 600, color: C.purple, border: `1px solid #D8D3F5`, background: "#F5F3FE", borderRadius: 6, padding: "3px 9px" }}>매칭</span></span>
+                  </div>
+                ))}
+          </div>
+
+          {/* 예상 결과 패널 */}
+          <div style={{ width: 300, flexShrink: 0, border: `1px solid ${C.border}`, borderRadius: 14, background: "#fff", padding: "18px 18px 20px" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>예상 결과</div>
+            {[["총 컬럼", loading ? null : "12"], ["총 행", loading ? null : "1,200"], ["총 용량", loading ? null : "120MB"], ["완전 중복행", loading ? null : "0", true]].map(([label, val, info], i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 0", borderLeft: `2px solid ${C.borderSoft}`, paddingLeft: 12, marginBottom: 2 }}>
+                <span style={{ fontSize: 13, color: C.sub, display: "flex", alignItems: "center", gap: 5 }}>{label}{info && <Icon.infoCircle width={13} height={13} />}</span>
+                {loading
+                  ? <span style={{ width: 13, height: 13, border: `2px solid ${C.border}`, borderTopColor: C.purple, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} />
+                  : <span style={{ fontSize: 16, fontWeight: 700 }}>{val}</span>}
+              </div>
+            ))}
+            <div style={{ marginTop: 14, background: "#F5F4FE", borderRadius: 10, padding: "12px 13px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: C.purple }}><Icon.spark width={14} height={14} /> 컬럼 {loading ? 0 : 6}개가 모두 매칭됐어요</div>
+              <div style={{ fontSize: 12, color: C.faint, marginTop: 5, lineHeight: 1.5 }}>컬럼 6개가 같아 안전하게 합쳐져요. 빈 값이나 제거되는 칼럼이 없어요.</div>
+            </div>
+            <button
+              disabled={loading}
+              onClick={() => onConfirm && onConfirm([UM_BASE_NAME, UM_ADD_NAME])}
+              style={{ width: "100%", marginTop: 14, height: 46, borderRadius: 11, border: "none", background: loading ? "#C9CCD1" : C.dark, color: "#fff", fontSize: 14.5, fontWeight: 700, cursor: loading ? "default" : "pointer", fontFamily: FONT }}>
+              데이터 결합하기
+            </button>
+          </div>
+        </div>
+
+        {/* 결과 미리보기 */}
+        <div style={{ fontSize: 15, fontWeight: 700, margin: "30px 0 14px" }}>결과 미리보기</div>
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
+          <div style={{ overflowX: "auto" }}>
+            <div style={{ minWidth: 900 }}>
+              {/* 헤더 */}
+              <div style={{ display: "grid", gridTemplateColumns: `160px repeat(${UM_PREVIEW_COLS.length - 1}, minmax(150px,1fr))`, background: "#FAFBFC", borderBottom: `1px solid ${C.border}` }}>
+                {UM_PREVIEW_COLS.map((col, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "12px 14px", fontSize: 12.5, color: C.sub, fontWeight: 600, borderRight: i === UM_PREVIEW_COLS.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
+                    <span style={{ color: C.faint, display: "flex" }}>{kindGlyph(col.kind)}</span>{col.name}
+                  </div>
+                ))}
+              </div>
+              {/* 행 */}
+              {loading
+                ? Array.from({ length: 8 }).map((_, r) => (
+                    <div key={r} style={{ display: "grid", gridTemplateColumns: `160px repeat(${UM_PREVIEW_COLS.length - 1}, minmax(150px,1fr))`, borderBottom: r === 7 ? "none" : `1px solid ${C.borderSoft}` }}>
+                      {UM_PREVIEW_COLS.map((_, c) => (
+                        <div key={c} style={{ padding: "13px 14px" }}><div style={sk(c === 0 ? "70px" : "54px", 11)} /></div>
+                      ))}
+                    </div>
+                  ))
+                : rows.map((row, r) => (
+                    <div key={r} style={{ display: "grid", gridTemplateColumns: `160px repeat(${UM_PREVIEW_COLS.length - 1}, minmax(150px,1fr))`, borderBottom: r === rows.length - 1 ? "none" : `1px solid ${C.borderSoft}`, background: row.ds2 ? "#F5F8FF" : "#fff" }}>
+                      {UM_PREVIEW_COLS.map((col, c) => (
+                        <div key={c} style={{ padding: "12px 14px", fontSize: 12.5, color: c === 0 ? C.text : C.sub, fontFamily: c === 0 ? "ui-monospace, monospace" : "ui-monospace, monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {c === 0 ? row.src : c === 1 ? "UTC+09:00" : "ios"}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <style>{`@keyframes umPulse{0%,100%{opacity:1}50%{opacity:.45}}@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
+
 export default function DatasetsApp() {
   const [screen, setScreen] = useState("list"); // list | detail | merge | merging | result
   const [tab, setTab] = useState("AI Readiness");
@@ -3687,7 +3822,7 @@ export default function DatasetsApp() {
 
   const sidebarActive = screen === "agent" ? "Agent Analysis"
     : screen === "workbench" ? "Performance Proof"
-    : (screen === "combine" || screen === "merge" || screen === "merging" || screen === "result") ? "Combine"
+    : (screen === "combine" || screen === "union" || screen === "merge" || screen === "merging" || screen === "result") ? "Combine"
     : "Dataset";
 
   const handleNav = (label) => {
@@ -3747,7 +3882,8 @@ export default function DatasetsApp() {
           </>
         )}
         {screen === "refine" && <RefinePage onBack={() => setScreen("detail")} />}
-        {screen === "combine" && <CombinePage key={`combine-${combineNav}-${selected.join("-")}`} selected={selected} onRun={startMerge} />}
+        {screen === "combine" && <CombinePage key={`combine-${combineNav}-${selected.join("-")}`} selected={selected} onRun={() => setScreen("union")} />}
+        {screen === "union" && <UnionMatchPage onBack={() => setScreen("combine")} onConfirm={startMerge} />}
         {screen === "merge" && <MergePage key={`merge-${selected.join("-")}`} selected={selected} onBack={() => { setSelected([]); setScreen("list"); }} onRun={startMerge} />}
         {screen === "merging" && <MergingPage names={mergeJob?.names || DEFAULT_NAMES} onLeave={() => setScreen("list")} />}
         {screen === "result" && <ResultPage names={resultNames} onClose={closeResult} />}
