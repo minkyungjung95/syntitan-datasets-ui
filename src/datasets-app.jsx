@@ -3710,10 +3710,11 @@ const UM_PREVIEW_COLS = [
   { name: "time_period_06", kind: "A" },
   { name: "time_period_07", kind: "A" },
 ];
-function UnionMatchPage({ onBack, onConfirm }) {
+function UnionMatchPage({ onBack, onConfirm, err = false }) {
   const [loading, setLoading] = useState(true);
   useEffect(() => { const t = setTimeout(() => setLoading(false), 1900); return () => clearTimeout(t); }, []);
   const sk = (w, h = 13) => ({ height: h, width: w, borderRadius: 6, background: "#EAECEF", animation: "umPulse 1.3s ease-in-out infinite" });
+  const canRun = !loading && !err; // 매칭이 정상일 때만 결합 가능
 
   // 결과 미리보기 행 (Datset_1 5행 + Datset_2 나머지)
   const rows = Array.from({ length: 13 }, (_, i) => ({ src: i < 5 ? "Datset_1" : "Datset_2", ds2: i >= 5 }));
@@ -3788,14 +3789,23 @@ function UnionMatchPage({ onBack, onConfirm }) {
                   : <span style={{ fontSize: 16, fontWeight: 700 }}>{val}</span>}
               </div>
             ))}
-            <div style={{ marginTop: 14, background: "#F5F4FE", borderRadius: 10, padding: "12px 13px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: C.purple }}><Icon.spark width={14} height={14} /> 컬럼 {loading ? 0 : 6}개가 모두 매칭됐어요</div>
-              <div style={{ fontSize: 12, color: C.faint, marginTop: 5, lineHeight: 1.5 }}>컬럼 6개가 같아 안전하게 합쳐져요. 빈 값이나 제거되는 칼럼이 없어요.</div>
+            <div style={{ marginTop: 14, background: err ? "#FEF2F2" : "#F5F4FE", borderRadius: 10, padding: "12px 13px" }}>
+              {err ? (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#DC2626" }}><Icon.infoCircle width={14} height={14} /> 결합을 진행할 수 없어요</div>
+                  <div style={{ fontSize: 12, color: C.sub, marginTop: 5, lineHeight: 1.5 }}>매칭이 맞지 않아 결과가 어긋나요. 위 매칭을 맞춰주세요.</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: C.purple }}><Icon.spark width={14} height={14} /> 컬럼 {loading ? 0 : 6}개가 모두 매칭됐어요</div>
+                  <div style={{ fontSize: 12, color: C.faint, marginTop: 5, lineHeight: 1.5 }}>컬럼 6개가 같아 안전하게 합쳐져요. 빈 값이나 제거되는 칼럼이 없어요.</div>
+                </>
+              )}
             </div>
             <button
-              disabled={loading}
-              onClick={() => onConfirm && onConfirm([UM_BASE_NAME, UM_ADD_NAME])}
-              style={{ width: "100%", marginTop: 14, height: 46, borderRadius: 11, border: "none", background: loading ? "#C9CCD1" : C.dark, color: "#fff", fontSize: 14.5, fontWeight: 700, cursor: loading ? "default" : "pointer", fontFamily: FONT }}>
+              disabled={!canRun}
+              onClick={() => canRun && onConfirm && onConfirm([UM_BASE_NAME, UM_ADD_NAME])}
+              style={{ width: "100%", marginTop: 14, height: 46, borderRadius: 11, border: "none", background: canRun ? C.dark : "#C9CCD1", color: "#fff", fontSize: 14.5, fontWeight: 700, cursor: canRun ? "pointer" : "default", fontFamily: FONT }}>
               데이터 결합하기
             </button>
           </div>
@@ -3803,6 +3813,13 @@ function UnionMatchPage({ onBack, onConfirm }) {
 
         {/* 결과 미리보기 */}
         <div style={{ fontSize: 15, fontWeight: 700, margin: "30px 0 14px" }}>결과 미리보기</div>
+        {err ? (
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: "#fff", padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 6 }}>
+            <span style={{ display: "flex", color: "#E0A100", marginBottom: 4 }}><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 3.5 22 20H2L12 3.5z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="M12 10v4M12 17h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span>
+            <div style={{ fontSize: 14.5, fontWeight: 700 }}>매칭이 맞지 않아 결과가 어긋나 미리보기가 보이지 않아요</div>
+            <div style={{ fontSize: 13, color: C.faint }}>칼럼 값을 조정해보세요.</div>
+          </div>
+        ) : (
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fff" }}>
           <div style={{ overflowX: "auto" }}>
             <div style={{ minWidth: 900 }}>
@@ -3835,6 +3852,7 @@ function UnionMatchPage({ onBack, onConfirm }) {
             </div>
           </div>
         </div>
+        )}
       </div>
       <style>{`@keyframes umPulse{0%,100%{opacity:1}50%{opacity:.45}}@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
