@@ -3700,7 +3700,17 @@ function UnionMatchPage({ onBack, onConfirm }) {
 
       {/* 스크롤 본문 */}
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 24px 28px" }}>
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>컬럼 매칭 결과를 확인해주세요</div>
+        {loading ? (
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 11, marginBottom: 14 }}>
+            <span style={{ width: 18, height: 18, border: `2px solid #DDD6FE`, borderTopColor: C.purple, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite", marginTop: 1, flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>AI가 두 데이터의 컬럼을 맞춰보고 있어요…</div>
+              <div style={{ fontSize: 12.5, color: C.faint, marginTop: 3 }}>이름·타입·값 분포를 비교해 짝을 찾는 중이라, 컬럼이 많으면 조금 더 걸려요.</div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>컬럼 매칭 결과를 확인해주세요</div>
+        )}
 
         <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
           {/* 매칭 카드 */}
