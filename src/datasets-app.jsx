@@ -2755,6 +2755,15 @@ function CombinePage({ selected, onRun }) {
             <span style={{ color: C.faint, display: "flex" }}><Icon.search width={15} height={15} /></span>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="검색어를 입력해주세요" style={{ border: "none", outline: "none", flex: 1, fontSize: 13, fontFamily: FONT, background: "transparent" }} />
           </div>
+          {picked.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "0 16px 6px", padding: "0 2px" }}>
+              <span style={{ fontSize: 12, color: C.faint, fontWeight: 600 }}>{picked.length}/{MAX_MERGE} 선택됨</span>
+              <button onClick={() => { setPicked([]); setSwapToast(null); setSwapInId(-1); }} style={{ display: "flex", alignItems: "center", gap: 4, border: "none", background: "transparent", color: C.sub, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: FONT, padding: "3px 4px" }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 4v6h6M20 20v-6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 10a8 8 0 0 0-14.9-3M4 14a8 8 0 0 0 14.9 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                초기화
+              </button>
+            </div>
+          )}
           <div style={{ flex: 1, overflowY: "auto", padding: "2px 8px 16px" }}>
             {(() => {
               const q2 = q.trim().toLowerCase();
