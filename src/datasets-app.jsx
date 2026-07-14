@@ -2577,13 +2577,13 @@ function CombinePage({ selected, onRun }) {
       const s = dragStart.current; if (!s) return;
       if (!s.started) { if (Math.abs(e.clientX - s.sx) + Math.abs(e.clientY - s.sy) < 5) return; s.started = true; }
       setDrag({ idx: s.idx, x: e.clientX, y: e.clientY });
-      setOverZone(pickedRef.current.length < MAX_MERGE && hit(dropRef, e.clientX, e.clientY) ? "drop" : null);
+      setOverZone(!pickedRef.current.includes(s.idx) && hit(dropRef, e.clientX, e.clientY) ? "drop" : null);
     };
     const up = (e) => {
       const s = dragStart.current; dragStart.current = null;
       if (s && s.started) {
         suppressClick.current = true;
-        if (pickedRef.current.length < MAX_MERGE && hit(dropRef, e.clientX, e.clientY)) setPicked((p) => (p.includes(s.idx) || p.length >= MAX_MERGE ? p : [...p, s.idx]));
+        if (hit(dropRef, e.clientX, e.clientY)) addOrSwapRef.current(s.idx); // 한도 초과 시 자동 교체
       }
       setDrag(null); setOverZone(null);
     };
@@ -2594,7 +2594,26 @@ function CombinePage({ selected, onRun }) {
 
   const ready = done && !loading;
   const names = picked.map(poolLabel);
-  const togglePick = (i) => setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : p.length >= MAX_MERGE ? p : [...p, i]));
+  // 자동 교체 토스트 + 방금 교체된 행 하이라이트
+  const [swapToast, setSwapToast] = useState(null); // { out, in }
+  const [swapInId, setSwapInId] = useState(-1);      // 방금 들어온 데이터셋 idx (반짝임)
+  const swapTimer = useRef(null);
+  const flashSwap = (outIdx, inIdx) => {
+    setSwapToast({ out: dsName(outIdx), in: dsName(inIdx) });
+    setSwapInId(inIdx);
+    if (swapTimer.current) clearTimeout(swapTimer.current);
+    swapTimer.current = setTimeout(() => { setSwapToast(null); setSwapInId(-1); }, 2600);
+  };
+  // 기준(picked[0])은 유지, 그 다음으로 먼저 선택된 것을 빼고 새 항목을 넣음
+  const addOrSwap = (i) => {
+    const p = pickedRef.current;
+    if (p.includes(i)) return;
+    if (p.length >= MAX_MERGE) { const dropIdx = p[1]; setPicked([p[0], ...p.slice(2), i]); flashSwap(dropIdx, i); }
+    else setPicked([...p, i]);
+  };
+  const togglePick = (i) => { if (pickedRef.current.includes(i)) setPicked((p) => p.filter((x) => x !== i)); else addOrSwap(i); };
+  const addOrSwapRef = useRef(addOrSwap);
+  addOrSwapRef.current = addOrSwap;
   const editAuto = (idx, v) => { setAutoSel((s) => s.map((x, i) => (i === idx ? v : x))); setStale(true); };
   const editReview = (idx, v) => { setReviewSel((s) => s.map((x, i) => (i === idx ? v : x))); setStale(true); };
 
@@ -2731,7 +2750,7 @@ function CombinePage({ selected, onRun }) {
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         {/* LEFT — 데이터셋 트리 (선택 단계에서만) */}
         {!done && (
-        <aside style={{ width: 280, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <aside style={{ position: "relative", width: 280, flexShrink: 0, borderRight: `1px solid ${C.border}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 16px 10px", padding: "0 12px", height: 38, border: `1px solid ${C.border}`, borderRadius: 9, background: "#fff" }}>
             <span style={{ color: C.faint, display: "flex" }}><Icon.search width={15} height={15} /></span>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="검색어를 입력해주세요" style={{ border: "none", outline: "none", flex: 1, fontSize: 13, fontFamily: FONT, background: "transparent" }} />
@@ -2742,15 +2761,16 @@ function CombinePage({ selected, onRun }) {
               const match = (nm) => !q2 || nm.toLowerCase().includes(q2);
               const dsRow = (nm, i, indent) => {
                 const checked = picked.includes(i);
-                const atMax = !checked && picked.length >= MAX_MERGE;
-                const order = picked.indexOf(i) + 1;
+                const isBase = checked && picked[0] === i;
+                const justIn = swapInId === i;
                 return (
                   <div key={"d" + i}
-                    onMouseDown={(e) => { if (atMax) return; e.preventDefault(); dragStart.current = { idx: i, sx: e.clientX, sy: e.clientY, started: false }; }}
-                    onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } if (!atMax) togglePick(i); }}
-                    style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", paddingLeft: indent ? 34 : 10, borderRadius: 9, cursor: atMax ? "default" : (drag && drag.idx === i ? "grabbing" : "pointer"), background: checked ? "#EEF4FF" : (drag && drag.idx === i ? "#F3F4F6" : "transparent"), opacity: atMax ? 0.4 : 1, userSelect: "none" }}>
+                    onMouseDown={(e) => { e.preventDefault(); dragStart.current = { idx: i, sx: e.clientX, sy: e.clientY, started: false }; }}
+                    onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } togglePick(i); }}
+                    style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", paddingLeft: indent ? 34 : 10, borderRadius: 9, cursor: drag && drag.idx === i ? "grabbing" : "pointer", background: justIn ? "#DDEBFF" : checked ? "#EEF4FF" : (drag && drag.idx === i ? "#F3F4F6" : "transparent"), boxShadow: justIn ? `inset 0 0 0 1.5px ${C.blue}` : "none", transition: "background .25s, box-shadow .25s", userSelect: "none" }}>
                     <span style={{ display: "flex", color: checked ? C.blue : C.sub, flexShrink: 0 }}><Icon.db width={16} height={16} /></span>
                     <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: checked ? 700 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nm}</span>
+                    {isBase && <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, color: C.blue, background: "#fff", border: `1px solid ${C.blue}`, borderRadius: 4, padding: "1px 5px" }}>기준</span>}
                     {checked && <span style={{ flexShrink: 0, display: "flex", color: C.blue }}><Icon.checkCircle width={17} height={17} /></span>}
                   </div>
                 );
@@ -2774,6 +2794,14 @@ function CombinePage({ selected, onRun }) {
           <div style={{ padding: 12, borderTop: `1px solid ${C.border}`, background: "#fff" }}>
             <button disabled={picked.length !== MAX_MERGE} onClick={() => { if (picked.length === MAX_MERGE) setMethodChoice(true); }} style={{ width: "100%", padding: "13px 0", borderRadius: 11, border: "none", background: picked.length === MAX_MERGE ? C.dark : "#EEF0F3", color: picked.length === MAX_MERGE ? "#fff" : C.faint, fontSize: 14, fontWeight: 700, cursor: picked.length === MAX_MERGE ? "pointer" : "default", fontFamily: FONT }}>{picked.length === MAX_MERGE ? "다음 →" : `데이터셋 선택 (${picked.length}/${MAX_MERGE})`}</button>
           </div>
+          {/* 자동 교체 토스트 */}
+          {swapToast && (
+            <div style={{ position: "absolute", left: 12, right: 12, bottom: 76, display: "flex", alignItems: "center", gap: 9, padding: "11px 13px", borderRadius: 11, background: C.dark, color: "#fff", boxShadow: "0 10px 30px rgba(0,0,0,0.24)", zIndex: 20, animation: "swapToastIn .22s ease-out" }}>
+              <span style={{ display: "flex", flexShrink: 0, color: "#9DBBF5" }}><Icon.swap width={15} height={15} /></span>
+              <span style={{ fontSize: 12.5, lineHeight: 1.45 }}><b style={{ color: "#fff" }}>{swapToast.out}</b> 대신 <b style={{ color: "#fff" }}>{swapToast.in}</b> 선택됨</span>
+            </div>
+          )}
+          <style>{`@keyframes swapToastIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}`}</style>
           {methodChoice && (() => {
             const closeM = () => { setMethodChoice(false); setMethodPick(null); };
             const goNext = () => { if (!methodPick) return; setMethod(methodPick); setMethodSrc("user"); setMethodChoice(false); setMethodPick(null); setDone(true); };
