@@ -3660,14 +3660,19 @@ function ProfilingTray({ files, onClose }) {
   const doneCount = doneList.length;
   const allDone = doneCount >= files.length;
   const mmss = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`;
+  // 남은 시간(대략) = 아직 진단 중인 파일 중 가장 큰 예상 시간 (병렬이라 합이 아님)
+  const pending = files.filter((_, i) => !doneList.includes(i));
+  const remEst = pending.length ? pending.reduce((a, b) => (estSec(a.est) >= estSec(b.est) ? a : b)).est : null;
+  const remLabel = remEst ? `약 ${String(remEst).replace(/[~약\s]/g, "")} 남음` : null;
   return (
     <div style={{ position: "fixed", bottom: 0, right: 24, width: 330, background: "#fff", border: `1px solid ${C.border}`, borderBottom: "none", borderRadius: "14px 14px 0 0", boxShadow: "0 -8px 32px rgba(0,0,0,0.12)", zIndex: 260, fontFamily: FONT, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 15px" }}>
         {allDone ? <span style={{ color: "#1D9E75", display: "flex" }}><Icon.checkCircle /></span> : <span style={{ display: "flex", alignItems: "flex-end", gap: 2, width: 24, height: 20, flexShrink: 0 }}>{[13, 19, 15, 20, 12].map((h, b) => <span key={b} style={{ width: 3, height: h, borderRadius: 1.5, background: WB_BLUE, transformOrigin: "bottom", animation: `scanBar 1.1s ease-in-out ${b * 0.12}s infinite` }} />)}</span>}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allDone ? "데이터 프로파일링 완료" : "데이터 프로파일링 중"}</div>
-          <div style={{ fontSize: 12, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allDone ? `${files.length} files 진단 완료 · 총 ${mmss} 소요` : `${STAGES[stage]} · ${doneCount}/${files.length} 완료 · ${mmss} 경과`}</div>
+          <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allDone ? "데이터 프로파일링 완료" : "AI가 데이터를 진단하는 중"}</div>
+          <div style={{ fontSize: 12, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allDone ? `${files.length}개 진단 완료 · 총 ${mmss} 소요` : `${STAGES[stage]} · ${doneCount}/${files.length} 완료 · ${mmss} 경과`}</div>
         </div>
+        {!allDone && remLabel && <span style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: WB_BLUE, background: WB_BLUE_BG, borderRadius: 999, padding: "3px 9px" }}><Icon.clock width={11} height={11} /> {remLabel}</span>}
         <span onClick={onClose} style={{ display: "flex", cursor: "pointer", color: C.faint }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span>
       </div>
       <div style={{ padding: "6px 8px", borderTop: `1px solid ${C.borderSoft}` }}>
@@ -3690,7 +3695,7 @@ function ProfilingTray({ files, onClose }) {
       </div>
       <div style={{ display: "flex", gap: 7, padding: "10px 14px", borderTop: `1px solid ${C.borderSoft}`, background: "#FAFAFB", fontSize: 12, color: C.sub, lineHeight: 1.5 }}>
         <span style={{ display: "flex", flexShrink: 0, color: C.faint, marginTop: 1 }}><Icon.infoCircle width={13} height={13} /></span>
-        {allDone ? "진단이 끝났어요. 목록에서 확인하세요." : "창을 닫아도 백그라운드에서 계속돼요. 파일이 크면 더 걸릴 수 있어요."}
+        {allDone ? "진단이 끝났어요. 목록에서 확인하세요." : <span>업로드가 아니라 <b style={{ color: C.sub, fontWeight: 600 }}>품질·결측·이상치·컨텍스트를 점검하는 중</b>이에요. 창을 닫아도 계속되고, 파일이 크면 예상보다 걸릴 수 있어요.</span>}
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes trayPulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes trayIndet{0%{transform:translateX(-120%)}100%{transform:translateX(360%)}}@keyframes scanBar{0%,100%{opacity:.35;transform:scaleY(.55)}50%{opacity:1;transform:scaleY(1)}}`}</style>
     </div>
