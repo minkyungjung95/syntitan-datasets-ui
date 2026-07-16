@@ -3864,8 +3864,133 @@ function UnionMatchPage({ onBack, onConfirm, err = false }) {
   );
 }
 
+/* ── 홈 랜딩 (히어로 + 시작 지점 캐러셀 + 하단 카드) ─────────── */
+const HOME_SLIDES = [
+  { tag: "AI 준비도", title: "학습 전에, 데이터가 준비됐는지 진단하세요", desc: "6가지 축으로 AI 준비도를 측정하고, 무엇부터 고칠지 짚어 드려요.", cta: "데이터 진단 실행", go: "Dataset", viz: "diag" },
+  { tag: "AI 정제", title: "값과 분포를 바로잡고, AI에 필요한 맥락을 더하세요", desc: "결측치·이상치·민감정보 치환·합성 증강을 한 번에 처리해요.", cta: "정제 실행", go: "Dataset", viz: "refine" },
+  { tag: "설문조사", title: "합성 페르소나 1만 명의 응답을 패널 모집 없이 받으세요", desc: "응답 분포를 통계적으로 재현해, 리서치를 4주에서 1시간으로 단축해요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "survey" },
+  { tag: "가격 전략", title: "출시 전에 가격 반응을 시뮬레이션하세요", desc: "가격대별 수용도를 비교해 최적 지점을 찾아요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "price" },
+  { tag: "이탈 예측", title: "고객이 떠나기 전에 이탈 신호를 잡으세요", desc: "이탈 위험 고객을 조기에 찾아, 늦지 않게 붙잡아요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "churn" },
+  { tag: "PR 시뮬레이션", title: "발표 전에 메시지 반응을 검증하세요", desc: "대중 반응을 예측해, 메시지와 타이밍을 조정해요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "pr" },
+];
+function HomeViz({ kind }) {
+  const bar = (label, pct, color, extra) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, color: C.faint, margin: "6px 0" }}>
+      <span style={{ width: 92, flexShrink: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
+      <span style={{ flex: 1, height: 7, borderRadius: 99, background: "#EEF0F3", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${pct}%`, background: color, borderRadius: 99 }} /></span>
+      <span style={{ width: 58, textAlign: "right", color: C.text, fontWeight: 600 }}>{pct}%{extra ? <span style={{ color: C.faint, fontWeight: 400 }}> {extra}</span> : null}</span>
+    </div>
+  );
+  if (kind === "diag") return (
+    <div style={{ display: "flex", gap: 10, width: "100%" }}>
+      <div style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 8 }}><span style={{ color: C.faint }}>Before</span><span style={{ color: C.red, fontWeight: 700 }}>19%</span></div>
+        {bar("Privacy", 20, C.red)}{bar("Integrity", 10, C.red)}{bar("Context", 10, C.red)}{bar("Consistency", 25, C.yellow)}
+      </div>
+      <div style={{ flex: 1, border: `1px solid #BBF7D0`, borderRadius: 12, padding: 14, background: "#F0FDF4" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 8 }}><span style={{ color: C.faint }}>After</span><span style={{ color: C.greenText, fontWeight: 700 }}>99%</span></div>
+        {bar("Privacy", 99, "#22C55E")}{bar("Integrity", 99, "#22C55E")}{bar("Context", 98, "#22C55E")}{bar("Consistency", 97, "#22C55E")}
+      </div>
+    </div>
+  );
+  if (kind === "refine") return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%" }}>
+      {["피처 증강", "민감정보 치환", "결측치 처리", "이상치 정제", "클래스 균형", "저신호 제거"].map((o) => (
+        <div key={o} style={{ border: `1px solid ${C.border}`, borderRadius: 9, padding: "10px 11px", fontSize: 12, fontWeight: 500, background: C.panel }}>{o}</div>
+      ))}
+    </div>
+  );
+  if (kind === "survey") return (
+    <div style={{ width: "100%", border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 10 }}>Q. 합리적인 월 구독 가격은 얼마라고 생각하십니까?</div>
+      {bar("5달러 미만", 32, "#84CC16", "(9,999)")}{bar("5–9.99달러", 14, "#D1D5DB", "(123)")}{bar("10–14.99달러", 32, C.blue, "(9,999)")}{bar("15–19.99달러", 8, "#D1D5DB", "(60)")}
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        {[["정민주", "여자, 32세, 디자이너"], ["강혁준", "남자, 42세, CEO"]].map(([n, m]) => (
+          <div key={n} style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 10px" }}><span style={{ width: 22, height: 22, borderRadius: "50%", background: "#EEF2FF", color: C.purple, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.spark width={12} height={12} /></span><div style={{ minWidth: 0 }}><div style={{ fontSize: 11.5, fontWeight: 600 }}>{n}</div><div style={{ fontSize: 10.5, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m}</div></div></div>
+        ))}
+      </div>
+    </div>
+  );
+  if (kind === "price") return (
+    <div style={{ display: "flex", gap: 12, width: "100%", justifyContent: "center" }}>
+      <div style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 12, padding: "18px 12px", textAlign: "center" }}><div style={{ fontSize: 13, color: C.faint }}>★★☆☆☆</div><div style={{ fontSize: 22, fontWeight: 700, color: C.faint, marginTop: 6 }}>$120</div></div>
+      <div style={{ flex: 1, border: `2px solid ${C.purple}`, borderRadius: 12, padding: "18px 12px", textAlign: "center", background: "#F5F3FE" }}><div style={{ fontSize: 13, color: C.purple }}>★★★★★</div><div style={{ fontSize: 22, fontWeight: 700, color: C.purple, marginTop: 6 }}>$150</div></div>
+    </div>
+  );
+  if (kind === "churn") return (
+    <svg viewBox="0 0 260 130" style={{ width: "100%", height: "auto" }}><polyline fill="none" stroke={C.purple} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" points="10,104 54,86 98,92 142,58 186,46 250,18" /><circle cx="142" cy="58" r="3.6" fill={C.purple} /><circle cx="250" cy="18" r="3.6" fill={C.purple} /></svg>
+  );
+  return <div style={{ width: "100%" }}>{bar("긍정", 58, "#22C55E")}{bar("중립", 27, "#AFA9EC")}{bar("부정", 15, C.red)}</div>;
+}
+function HomePage({ user = "minkyung", onNav = () => {} }) {
+  const [idx, setIdx] = useState(0);
+  const N = HOME_SLIDES.length;
+  const go = (n) => setIdx((n + N) % N);
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "ArrowRight") go(idx + 1); else if (e.key === "ArrowLeft") go(idx - 1); };
+    window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
+  }, [idx]);
+  const arrow = (dir) => (
+    <button onClick={() => go(idx + (dir === "next" ? 1 : -1))} style={{ width: 38, height: 38, borderRadius: "50%", border: `1px solid ${C.border}`, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}>
+      {dir === "next" ? <Icon.chevR width={17} height={17} /> : <span style={{ transform: "rotate(180deg)", display: "flex" }}><Icon.chevR width={17} height={17} /></span>}
+    </button>
+  );
+  const bottomCard = (icon, title, desc) => (
+    <div onClick={() => {}} style={{ flex: 1, display: "flex", alignItems: "center", gap: 14, border: `1px solid ${C.border}`, borderRadius: 14, padding: "16px 18px", background: "#fff", cursor: "pointer" }}>
+      <span style={{ width: 40, height: 40, borderRadius: 10, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{title}</div><div style={{ fontSize: 12.5, color: C.faint, marginTop: 2 }}>{desc}</div></div>
+      <span style={{ color: C.faint, display: "flex" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 17 17 7M9 7h8v8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+    </div>
+  );
+  return (
+    <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 48px" }}>
+        <div style={{ fontSize: 14, color: C.faint, fontWeight: 500 }}>Welcome, {user}</div>
+        <div style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.3, marginTop: 8 }}>
+          <span style={{ color: C.faint }}>운영 환경에서 작동할 것이라는 희망을 버리세요.</span><br />
+          <span style={{ color: C.text }}>자신의 데이터로 증명하세요.</span>
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 700, margin: "34px 0 14px" }}>어디서 시작하고 싶으신가요?</div>
+
+        {/* 캐러셀 */}
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden", background: "#fff" }}>
+          <div style={{ overflow: "hidden" }}>
+            <div style={{ display: "flex", transition: "transform .38s cubic-bezier(.22,.61,.36,1)", transform: `translateX(${-idx * 100}%)` }}>
+              {HOME_SLIDES.map((s, i) => (
+                <div key={i} style={{ flex: "0 0 100%", boxSizing: "border-box", display: "flex", gap: 28, alignItems: "center", padding: "34px 36px", minHeight: 300 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: C.purple, background: "#EEF2FF", borderRadius: 99, padding: "5px 12px" }}><Icon.spark width={13} height={13} /> {s.tag}</span>
+                    <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.4, margin: "16px 0 10px" }}>{s.title}</div>
+                    <div style={{ fontSize: 14, color: C.sub, lineHeight: 1.6, marginBottom: 22 }}>{s.desc}</div>
+                    <button onClick={() => onNav(s.go)} style={{ background: C.purple, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", fontFamily: FONT }}>{s.cta} <Icon.chevR width={16} height={16} /></button>
+                  </div>
+                  <div style={{ width: 420, flexShrink: 0, background: "#FAFBFC", border: `1px solid ${C.borderSoft}`, borderRadius: 14, padding: 20, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 220 }}><HomeViz kind={s.viz} /></div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", borderTop: `1px solid ${C.borderSoft}` }}>
+            <div style={{ display: "flex", gap: 7 }}>
+              {HOME_SLIDES.map((_, i) => (
+                <button key={i} onClick={() => go(i)} aria-label={`${i + 1}번 슬라이드`} style={{ width: i === idx ? 22 : 8, height: 8, padding: 0, borderRadius: 99, border: "none", background: i === idx ? C.purple : "#D6D8DD", cursor: "pointer", transition: "width .25s, background .25s" }} />
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>{arrow("prev")}{arrow("next")}</div>
+          </div>
+        </div>
+
+        {/* 하단 카드 */}
+        <div style={{ display: "flex", gap: 16, marginTop: 20 }}>
+          {bottomCard(<Icon.spark width={18} height={18} />, "Claude Code에서 SynTitan 사용하기", "데이터셋 조회·전처리·버전 비교를 Claude Code에서 한 번에 진행하세요.")}
+          {bottomCard(<span style={{ width: 22, height: 22, borderRadius: 6, background: C.dark, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>◎</span>, "DTS 시작하기", "민감 데이터를 AI-Ready 데이터셋으로 변환하세요.")}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DatasetsApp() {
-  const [screen, setScreen] = useState("list"); // list | detail | merge | merging | result
+  const [screen, setScreen] = useState("home"); // home | list | detail | merge | merging | result
   const [tab, setTab] = useState("AI 준비도");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
@@ -3890,16 +4015,18 @@ export default function DatasetsApp() {
     if (screen === "merging" && mergeJob?.done) setScreen("result");
   }, [screen, mergeJob?.done]);
 
-  const sidebarActive = screen === "agent" ? "Agent Analysis"
+  const sidebarActive = screen === "home" ? "Home"
+    : screen === "agent" ? "Agent Analysis"
     : screen === "workbench" ? "Performance Proof"
     : (screen === "combine" || screen === "union" || screen === "merge" || screen === "merging" || screen === "result") ? "Combine"
     : "Dataset";
 
   const handleNav = (label) => {
-    if (label === "Agent Analysis") setScreen("agent");
+    if (label === "Home") { setSelected([]); setScreen("home"); }
+    else if (label === "Agent Analysis") setScreen("agent");
     else if (label === "Performance Proof") setScreen("workbench");
     else if (label === "Combine") { setSelected([]); setCombineNav((n) => n + 1); setScreen("combine"); }
-    else if (label === "Home" || label === "Dataset") { setSelected([]); setScreen("list"); }
+    else if (label === "Dataset") { setSelected([]); setScreen("list"); }
   };
 
   const startMerge = (names) => { setMergeJob({ names, done: false }); setSelected([]); setScreen("merging"); };
@@ -3924,6 +4051,12 @@ export default function DatasetsApp() {
     <div style={{ width: "100%", minWidth: 1280, maxWidth: 1920, margin: "0 auto", display: "flex", height: "100vh", overflow: "hidden", background: C.bg, fontFamily: FONT, color: C.text }}>
       <Sidebar active={sidebarActive} onNav={handleNav} />
       <main style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+        {screen === "home" && (
+          <>
+            <TopBar crumb="Home" onAsk={() => setAskOpen(true)} />
+            <HomePage onNav={handleNav} />
+          </>
+        )}
         {screen === "agent" && (
           <>
             <TopBar crumb="Agent Analysis" onAsk={() => setAskOpen(true)} />
