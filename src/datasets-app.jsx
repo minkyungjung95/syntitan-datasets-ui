@@ -3952,6 +3952,18 @@ function HomePage({ user = "minkyung", onNav = () => {} }) {
         </div>
         <div style={{ fontSize: 16, fontWeight: 700, margin: "34px 0 14px" }}>어디서 시작하고 싶으신가요?</div>
 
+        {/* 필 탭 — 6개를 라벨로 노출 (발견성↑) */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+          {HOME_SLIDES.map((s, i) => {
+            const on = i === idx;
+            return (
+              <button key={i} onClick={() => go(i)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 15px", borderRadius: 99, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, border: on ? `1.5px solid ${C.purple}` : "1.5px solid transparent", background: on ? "#fff" : "#F1F2F4", color: on ? C.purple : C.sub, transition: "all .15s" }}>
+                {on && <Icon.spark width={13} height={13} />}{s.tag}
+              </button>
+            );
+          })}
+        </div>
+
         {/* 캐러셀 */}
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden", background: "#fff" }}>
           <div style={{ overflow: "hidden" }}>
@@ -3959,8 +3971,7 @@ function HomePage({ user = "minkyung", onNav = () => {} }) {
               {HOME_SLIDES.map((s, i) => (
                 <div key={i} style={{ flex: "0 0 100%", boxSizing: "border-box", display: "flex", gap: 28, alignItems: "center", padding: "34px 36px", minHeight: 300 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: C.purple, background: "#EEF2FF", borderRadius: 99, padding: "5px 12px" }}><Icon.spark width={13} height={13} /> {s.tag}</span>
-                    <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.4, margin: "16px 0 10px" }}>{s.title}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.4, margin: "0 0 10px" }}>{s.title}</div>
                     <div style={{ fontSize: 14, color: C.sub, lineHeight: 1.6, marginBottom: 22 }}>{s.desc}</div>
                     <button onClick={() => onNav(s.go)} style={{ background: C.purple, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", fontFamily: FONT }}>{s.cta} <Icon.chevR width={16} height={16} /></button>
                   </div>
@@ -3970,11 +3981,7 @@ function HomePage({ user = "minkyung", onNav = () => {} }) {
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", borderTop: `1px solid ${C.borderSoft}` }}>
-            <div style={{ display: "flex", gap: 7 }}>
-              {HOME_SLIDES.map((_, i) => (
-                <button key={i} onClick={() => go(i)} aria-label={`${i + 1}번 슬라이드`} style={{ width: i === idx ? 22 : 8, height: 8, padding: 0, borderRadius: 99, border: "none", background: i === idx ? C.purple : "#D6D8DD", cursor: "pointer", transition: "width .25s, background .25s" }} />
-              ))}
-            </div>
+            <span style={{ fontSize: 12.5, color: C.faint, fontWeight: 500 }}>{idx + 1} / {N}</span>
             <div style={{ display: "flex", gap: 10 }}>{arrow("prev")}{arrow("next")}</div>
           </div>
         </div>
