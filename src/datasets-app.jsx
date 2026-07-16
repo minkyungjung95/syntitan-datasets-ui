@@ -3866,61 +3866,122 @@ function UnionMatchPage({ onBack, onConfirm, err = false }) {
 
 /* ── 홈 랜딩 (히어로 + 시작 지점 캐러셀 + 하단 카드) ─────────── */
 const HOME_SLIDES = [
-  { tag: "AI 준비도", title: "학습 전에, 데이터가 준비됐는지 진단하세요", desc: "6가지 축으로 AI 준비도를 측정하고, 무엇부터 고칠지 짚어 드려요.", cta: "데이터 진단 실행", go: "Dataset", viz: "diag" },
-  { tag: "AI 정제", title: "값과 분포를 바로잡고, AI에 필요한 맥락을 더하세요", desc: "결측치·이상치·민감정보 치환·합성 증강을 한 번에 처리해요.", cta: "정제 실행", go: "Dataset", viz: "refine" },
-  { tag: "설문조사", title: "합성 페르소나 1만 명의 응답을 패널 모집 없이 받으세요", desc: "응답 분포를 통계적으로 재현해, 리서치를 4주에서 1시간으로 단축해요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "survey" },
-  { tag: "가격 전략", title: "출시 전에 가격 반응을 시뮬레이션하세요", desc: "가격대별 수용도를 비교해 최적 지점을 찾아요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "price" },
-  { tag: "이탈 예측", title: "고객이 떠나기 전에 이탈 신호를 잡으세요", desc: "이탈 위험 고객을 조기에 찾아, 늦지 않게 붙잡아요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "churn" },
-  { tag: "PR 시뮬레이션", title: "발표 전에 메시지 반응을 검증하세요", desc: "대중 반응을 예측해, 메시지와 타이밍을 조정해요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "pr" },
+  { tag: "데이터 진단", title: "모델 학습 전에,\n데이터가 준비됐는지 진단하세요", desc: "6가지 축으로 AI 준비도를 측정하고, 무엇부터 고칠지 짚어 드려요.", cta: "데이터 진단하기", go: "Dataset", viz: "diag" },
+  { tag: "데이터 전처리", title: "값과 분포를 바로잡고,\nAI에 필요한 맥락을 더하세요", desc: "결측치·이상치·민감정보 치환·합성 증강을 한 번에 처리해요.", cta: "데이터 정제하기", go: "Dataset", viz: "preprocess" },
+  { tag: "설문조사", title: "합성 페르소나 1만 명의 응답을\n패널 모집 없이 받으세요", desc: "응답 분포를 통계적으로 재현해, 리서치를 4주에서 1시간으로 단축해요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "survey" },
+  { tag: "가격 전략", title: "신제품 출시 전에,\n가격 반응을 시뮬레이션하세요", desc: "가격대별 수용도를 비교해 최적 지점을 찾아요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "price" },
+  { tag: "이탈 예측", title: "고객이 떠나기 전에\n이탈 신호를 잡으세요", desc: "이탈 위험 고객을 조기에 찾아, 늦지 않게 붙잡아요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "churn" },
+  { tag: "PR 시뮬레이션", title: "발표 전에\n메시지 반응을 검증하세요", desc: "대중 반응을 예측해, 메시지와 타이밍을 조정해요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "pr" },
+  { tag: "전략 제안", title: "고객을 행동·인구 통계에 따라\nROI 기반 전략을 시뮬레이션하세요", desc: "어떤 고객에 집중할지 확인하세요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "strategy" },
 ];
 function HomeViz({ kind }) {
-  const bar = (label, pct, color, extra) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, color: C.faint, margin: "6px 0" }}>
-      <span style={{ width: 92, flexShrink: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
-      <span style={{ flex: 1, height: 7, borderRadius: 99, background: "#EEF0F3", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${pct}%`, background: color, borderRadius: 99 }} /></span>
-      <span style={{ width: 58, textAlign: "right", color: C.text, fontWeight: 600 }}>{pct}%{extra ? <span style={{ color: C.faint, fontWeight: 400 }}> {extra}</span> : null}</span>
+  const Frame = ({ children, pad = 16 }) => (
+    <div style={{ width: "100%", background: "#F1F3F6", borderRadius: 16, padding: 12, boxShadow: "0 10px 30px rgba(0,0,0,0.07)" }}>
+      <div style={{ background: "#fff", borderRadius: 12, border: `1px solid ${C.borderSoft}`, padding: pad, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>{children}</div>
     </div>
   );
-  if (kind === "diag") return (
-    <div style={{ display: "flex", gap: 10, width: "100%" }}>
-      <div style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 8 }}><span style={{ color: C.faint }}>Before</span><span style={{ color: C.red, fontWeight: 700 }}>19%</span></div>
-        {bar("Privacy", 20, C.red)}{bar("Integrity", 10, C.red)}{bar("Context", 10, C.red)}{bar("Consistency", 25, C.yellow)}
-      </div>
-      <div style={{ flex: 1, border: `1px solid #BBF7D0`, borderRadius: 12, padding: 14, background: "#F0FDF4" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 8 }}><span style={{ color: C.faint }}>After</span><span style={{ color: C.greenText, fontWeight: 700 }}>99%</span></div>
-        {bar("Privacy", 99, "#22C55E")}{bar("Integrity", 99, "#22C55E")}{bar("Context", 98, "#22C55E")}{bar("Consistency", 97, "#22C55E")}
-      </div>
+  const pbar = (label, pct, color) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 10.5, margin: "5px 0" }}>
+      <span style={{ width: 62, flexShrink: 0, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
+      <span style={{ flex: 1, height: 6, borderRadius: 99, background: "#EEF0F3", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${pct}%`, background: color, borderRadius: 99 }} /></span>
+      <span style={{ width: 30, textAlign: "right", color: C.text, fontWeight: 600 }}>{pct}%</span>
     </div>
   );
-  if (kind === "refine") return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%" }}>
-      {["피처 증강", "민감정보 치환", "결측치 처리", "이상치 정제", "클래스 균형", "저신호 제거"].map((o) => (
-        <div key={o} style={{ border: `1px solid ${C.border}`, borderRadius: 9, padding: "10px 11px", fontSize: 12, fontWeight: 500, background: C.panel }}>{o}</div>
+  const Toggle = ({ on }) => (
+    <span style={{ width: 30, height: 17, borderRadius: 99, background: on ? WB_BLUE : "#D6D8DD", position: "relative", flexShrink: 0, display: "inline-block" }}><span style={{ position: "absolute", top: 2, left: on ? 15 : 2, width: 13, height: 13, borderRadius: "50%", background: "#fff", transition: "left .15s" }} /></span>
+  );
+  const AXES = ["Privacy", "Integrity", "Contextuality", "Conciseness", "Operational R.", "Traceability"];
+
+  if (kind === "diag") {
+    const bef = [20, 10, 10, 9, 25, 32], aft = [99, 99, 98, 97, 100, 100];
+    const panel = (title, chip, chipColor, pct, statusBg, statusFg, status, vals, colorFn, note) => (
+      <div style={{ flex: 1, minWidth: 0, border: `1px solid ${C.borderSoft}`, borderRadius: 10, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderBottom: `1px solid ${C.borderSoft}` }}><span style={{ fontSize: 11, fontWeight: 700 }}>{title}</span><span style={{ fontSize: 9, color: C.faint, background: "#F1F2F4", borderRadius: 4, padding: "1px 5px" }}>{chip}</span></div>
+        <div style={{ padding: "10px 10px 8px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}><span style={{ fontSize: 11, fontWeight: 600 }}>AI Readiness</span><span style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ fontSize: 15, fontWeight: 800, color: chipColor }}>{pct}%</span><span style={{ fontSize: 9, fontWeight: 700, color: statusFg, background: statusBg, borderRadius: 4, padding: "1px 5px" }}>{status}</span></span></div>
+          {AXES.map((a, i) => pbar(a, vals[i], colorFn(vals[i])))}
+          <div style={{ display: "flex", gap: 5, marginTop: 8, background: note.bg, borderRadius: 7, padding: "7px 8px" }}><span style={{ color: note.fg, flexShrink: 0, fontSize: 10 }}>●</span><div><div style={{ fontSize: 9.5, fontWeight: 700, color: note.fg }}>AI 분석 결과</div><div style={{ fontSize: 9, color: C.faint, lineHeight: 1.4, marginTop: 1 }}>{note.text}</div></div></div>
+        </div>
+      </div>
+    );
+    return <Frame pad={12}><div style={{ display: "flex", gap: 8 }}>
+      {panel("Before", "v1", C.red, 19, "#FDE7E7", C.red, "Critical", bef, (v) => v < 20 ? C.red : C.yellow, { bg: "#FDF2F2", fg: C.red, text: "정합성과 컨텍스트 개선이 필요합니다." })}
+      {panel("After", "Snapshot · d34kqdf", C.greenText, 99, "#DCFCE7", C.greenText, "AI Ready", aft, () => "#22C55E", { bg: "#F0FDF4", fg: C.greenText, text: "AI 준비 완료 — 신뢰할 수 있는 분석 기준을 충족해요." })}
+    </div></Frame>;
+  }
+
+  if (kind === "preprocess") {
+    const row = (title, on, chips) => (
+      <div style={{ border: `1px solid ${C.borderSoft}`, borderRadius: 9, padding: "9px 11px", marginBottom: 7 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}><div><span style={{ fontSize: 9.5, fontWeight: 700, color: WB_BLUE }}>✦ AI 추천</span><div style={{ fontSize: 11.5, fontWeight: 600, marginTop: 2 }}>{title}</div></div><Toggle on={on} /></div>
+        {chips && <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 7 }}>{chips.map((c, i) => <span key={i} style={{ fontSize: 9, color: i === 0 ? "#fff" : C.sub, background: i === 0 ? C.dark : "#F1F2F4", borderRadius: 5, padding: "2px 6px" }}>{c}</span>)}</div>}
+      </div>
+    );
+    const rowPlain = (title, on) => (
+      <div style={{ flex: 1, border: `1px solid ${C.borderSoft}`, borderRadius: 9, padding: "9px 11px", display: "flex", alignItems: "center", justifyContent: "space-between" }}><span style={{ fontSize: 11, fontWeight: 600, color: on ? C.text : C.faint }}>{title}</span><Toggle on={on} /></div>
+    );
+    return <Frame><div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 10 }}>데이터 품질 개선</div>
+      {row("민감 데이터 탐지 및 마스킹", true, ["전체 이름", "전화번호", "국가 ID", "이메일 주소", "은행 계좌 번호"])}
+      <div style={{ display: "flex", gap: 7, marginBottom: 7 }}>
+        <div style={{ flex: 1, border: `1px solid ${C.borderSoft}`, borderRadius: 9, padding: "9px 11px", display: "flex", alignItems: "center", justifyContent: "space-between" }}><div><span style={{ fontSize: 9.5, fontWeight: 700, color: WB_BLUE }}>✦ AI 추천</span><div style={{ fontSize: 11, fontWeight: 600, marginTop: 2 }}>결측값 처리</div></div><Toggle on={true} /></div>
+        <div style={{ flex: 1, border: `1px solid ${C.borderSoft}`, borderRadius: 9, padding: "9px 11px", display: "flex", alignItems: "center", justifyContent: "space-between" }}><div><span style={{ fontSize: 9.5, fontWeight: 700, color: WB_BLUE }}>✦ AI 추천</span><div style={{ fontSize: 11, fontWeight: 600, marginTop: 2 }}>이상치·범주 정제</div></div><Toggle on={true} /></div>
+      </div>
+      <div style={{ display: "flex", gap: 7 }}>{rowPlain("저신호 열 제거", false)}{rowPlain("행 증강·클래스 균형", false)}</div>
+    </Frame>;
+  }
+
+  if (kind === "survey") return <Frame>
+    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Q. 합리적인 월 구독 가격은 얼마라고 생각하십니까?</div>
+    {[["5달러 미만", 32, "#84CC16", "9,999"], ["5–9.99달러", 14, "#D1D5DB", "123"], ["10–14.99달러", 32, C.blue, "9,999"], ["15–19.99달러", 8, "#D1D5DB", "60"]].map(([l, p, c, n], i) => (
+      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, margin: "7px 0" }}><span style={{ width: 82, flexShrink: 0, color: C.sub }}>{l}</span><span style={{ flex: 1, height: 7, borderRadius: 99, background: "#EEF0F3", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${p}%`, background: c, borderRadius: 99 }} /></span><span style={{ width: 62, textAlign: "right", fontWeight: 600 }}>{p}% <span style={{ color: C.faint, fontWeight: 400, fontSize: 10 }}>({n})</span></span></div>
+    ))}
+    <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+      {[["정민주", "여자, 32세, 디자이너"], ["강혁준", "남자, 42세, CEO"]].map(([n, m]) => (
+        <div key={n} style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, border: `1px solid ${C.borderSoft}`, borderRadius: 9, padding: "8px 10px" }}><span style={{ width: 22, height: 22, borderRadius: "50%", background: "#EEF2FF", color: C.purple, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.spark width={12} height={12} /></span><div style={{ minWidth: 0 }}><div style={{ fontSize: 11, fontWeight: 600 }}>{n}</div><div style={{ fontSize: 10, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m}</div></div></div>
       ))}
     </div>
-  );
-  if (kind === "survey") return (
-    <div style={{ width: "100%", border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
-      <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 10 }}>Q. 합리적인 월 구독 가격은 얼마라고 생각하십니까?</div>
-      {bar("5달러 미만", 32, "#84CC16", "(9,999)")}{bar("5–9.99달러", 14, "#D1D5DB", "(123)")}{bar("10–14.99달러", 32, C.blue, "(9,999)")}{bar("15–19.99달러", 8, "#D1D5DB", "(60)")}
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        {[["정민주", "여자, 32세, 디자이너"], ["강혁준", "남자, 42세, CEO"]].map(([n, m]) => (
-          <div key={n} style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, border: `1px solid ${C.border}`, borderRadius: 9, padding: "8px 10px" }}><span style={{ width: 22, height: 22, borderRadius: "50%", background: "#EEF2FF", color: C.purple, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.spark width={12} height={12} /></span><div style={{ minWidth: 0 }}><div style={{ fontSize: 11.5, fontWeight: 600 }}>{n}</div><div style={{ fontSize: 10.5, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m}</div></div></div>
-        ))}
+  </Frame>;
+
+  if (kind === "price") return <Frame>
+    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>PSM 가격-수요 곡선 · 주요 교차점</div>
+    <div style={{ position: "relative", border: `1px solid ${C.borderSoft}`, borderRadius: 8, padding: "10px 8px 4px" }}>
+      <svg viewBox="0 0 300 120" style={{ width: "100%", height: "auto" }}>
+        <polyline fill="none" stroke="#33A87C" strokeWidth="1.8" points="6,20 60,44 120,66 180,86 240,100 294,108" />
+        <polyline fill="none" stroke="#E9B93C" strokeWidth="1.8" strokeDasharray="4 3" points="6,14 60,32 120,54 180,78 240,96 294,106" />
+        <polyline fill="none" stroke="#8479D6" strokeWidth="1.8" strokeDasharray="4 3" points="6,108 60,92 120,66 180,40 240,22 294,14" />
+        <polyline fill="none" stroke="#E05A8E" strokeWidth="1.8" points="6,112 60,104 120,84 180,56 240,32 294,20" />
+        <circle cx="120" cy="66" r="3" fill={C.text} />
+      </svg>
+      <div style={{ position: "absolute", top: 30, left: "34%", fontSize: 9, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 7px", boxShadow: "0 2px 6px rgba(0,0,0,0.1)", whiteSpace: "nowrap" }}><span style={{ color: "#22C55E" }}>●</span> IPP (무관심 가격대) <b>$1,181.82</b></div>
+    </div>
+    <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+      {[["$1,408.00", "Premium Strategy", "#EEF2FF", C.purple], ["$1,311.48", "Balanced Strategy", "#E6F1FB", C.blue]].map(([v, s, bg, fg], i) => (
+        <div key={i} style={{ flex: 1, border: `1px solid ${C.borderSoft}`, borderRadius: 9, padding: "10px 11px" }}><div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}><span style={{ fontSize: 15, fontWeight: 800 }}>{v}</span><span style={{ fontSize: 9, fontWeight: 700, color: fg, background: bg, borderRadius: 5, padding: "2px 6px" }}>{s}</span></div><div style={{ height: 5, background: "#EEF0F3", borderRadius: 99, marginTop: 8 }} /></div>
+      ))}
+    </div>
+  </Frame>;
+
+  if (kind === "churn") return <Frame>
+    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>이탈률 추이 · 위험 고객 조기 탐지</div>
+    <svg viewBox="0 0 300 150" style={{ width: "100%", height: "auto" }}>
+      {[30, 60, 90, 120].map((y) => <line key={y} x1="6" y1={y} x2="294" y2={y} stroke="#EEF0F3" strokeWidth="1" />)}
+      <polygon fill="#EEEDFE" points="6,120 54,104 108,110 162,74 216,58 294,26 294,138 6,138" />
+      <polyline fill="none" stroke={C.purple} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" points="6,120 54,104 108,110 162,74 216,58 294,26" />
+      <circle cx="162" cy="74" r="3.4" fill={C.purple} /><circle cx="294" cy="26" r="3.4" fill={C.purple} />
+    </svg>
+  </Frame>;
+
+  if (kind === "strategy") return <Frame>
+    <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 10 }}>페르소나 군집</div>
+    {[["프리미엄 애호가", "Main Target", "프리미엄 애호가에게 자원의 40~50%를 집중하는 것이 가장 높은 ROI를 기대할 수 있어요."], ["가치 최적화 선호자", null, "가격 대비 가치를 꼼꼼히 따지는 층으로, 할인·번들·리뷰에 민감하게 반응해요. 명확한 가치 제안과 묶음 혜택이 효과적이에요."]].map(([n, badge, d], i) => (
+      <div key={i} style={{ border: `1px solid ${C.borderSoft}`, borderRadius: 10, padding: "11px 12px", marginBottom: i === 0 ? 8 : 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}><span style={{ width: 22, height: 22, borderRadius: 6, background: "#F1F2F4", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.spark width={12} height={12} /></span><span style={{ fontSize: 12.5, fontWeight: 700 }}>{n}</span>{badge && <span style={{ fontSize: 9.5, fontWeight: 700, color: C.blue, background: "#E6F1FB", borderRadius: 5, padding: "2px 7px" }}>{badge}</span>}</div>
+        <div style={{ fontSize: 11, color: C.sub, lineHeight: 1.55, background: "#FAFBFC", borderRadius: 7, padding: "8px 10px" }}>{d}</div>
       </div>
-    </div>
-  );
-  if (kind === "price") return (
-    <div style={{ display: "flex", gap: 12, width: "100%", justifyContent: "center" }}>
-      <div style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 12, padding: "18px 12px", textAlign: "center" }}><div style={{ fontSize: 13, color: C.faint }}>★★☆☆☆</div><div style={{ fontSize: 22, fontWeight: 700, color: C.faint, marginTop: 6 }}>$120</div></div>
-      <div style={{ flex: 1, border: `2px solid ${C.purple}`, borderRadius: 12, padding: "18px 12px", textAlign: "center", background: "#F5F3FE" }}><div style={{ fontSize: 13, color: C.purple }}>★★★★★</div><div style={{ fontSize: 22, fontWeight: 700, color: C.purple, marginTop: 6 }}>$150</div></div>
-    </div>
-  );
-  if (kind === "churn") return (
-    <svg viewBox="0 0 260 130" style={{ width: "100%", height: "auto" }}><polyline fill="none" stroke={C.purple} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" points="10,104 54,86 98,92 142,58 186,46 250,18" /><circle cx="142" cy="58" r="3.6" fill={C.purple} /><circle cx="250" cy="18" r="3.6" fill={C.purple} /></svg>
-  );
-  return <div style={{ width: "100%" }}>{bar("긍정", 58, "#22C55E")}{bar("중립", 27, "#AFA9EC")}{bar("부정", 15, C.red)}</div>;
+    ))}
+  </Frame>;
+
+  return null;
 }
 function HomePage({ user = "minkyung", onNav = () => {} }) {
   const [idx, setIdx] = useState(0);
@@ -3947,8 +4008,8 @@ function HomePage({ user = "minkyung", onNav = () => {} }) {
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 48px" }}>
         <div style={{ fontSize: 14, color: C.faint, fontWeight: 500 }}>Welcome, {user}</div>
         <div style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.3, marginTop: 8 }}>
-          <span style={{ color: C.faint }}>운영 환경에서 작동할 것이라는 희망을 버리세요.</span><br />
-          <span style={{ color: C.text }}>자신의 데이터로 증명하세요.</span>
+          <span style={{ color: C.text }}>Syntitan은 진단 · 개선 · 검증까지 데이터로 증명합니다.</span><br />
+          <span style={{ color: C.faint }}>모델 교체 전, 데이터가 준비되었는지 확인하세요.</span>
         </div>
         <div style={{ fontSize: 16, fontWeight: 700, margin: "34px 0 14px" }}>어디서 시작하고 싶으신가요?</div>
 
@@ -3957,8 +4018,8 @@ function HomePage({ user = "minkyung", onNav = () => {} }) {
           {HOME_SLIDES.map((s, i) => {
             const on = i === idx;
             return (
-              <button key={i} onClick={() => go(i)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 15px", borderRadius: 99, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, border: on ? `1.5px solid ${C.purple}` : "1.5px solid transparent", background: on ? "#fff" : "#F1F2F4", color: on ? C.purple : C.sub, transition: "all .15s" }}>
-                {on && <Icon.spark width={13} height={13} />}{s.tag}
+              <button key={i} onClick={() => go(i)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 99, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, border: "1.5px solid transparent", background: on ? C.purple : "#F1F2F4", color: on ? "#fff" : C.sub, transition: "all .15s" }}>
+                {s.tag}
               </button>
             );
           })}
@@ -3971,11 +4032,11 @@ function HomePage({ user = "minkyung", onNav = () => {} }) {
               {HOME_SLIDES.map((s, i) => (
                 <div key={i} style={{ flex: "0 0 100%", boxSizing: "border-box", display: "flex", gap: 28, alignItems: "center", padding: "34px 36px", minHeight: 300 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.4, margin: "0 0 10px" }}>{s.title}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.4, margin: "0 0 10px" }}>{s.title.split("\n").map((line, li) => <span key={li}>{line}{li === 0 && s.title.includes("\n") ? <br /> : null}</span>)}</div>
                     <div style={{ fontSize: 14, color: C.sub, lineHeight: 1.6, marginBottom: 22 }}>{s.desc}</div>
                     <button onClick={() => onNav(s.go)} style={{ background: C.purple, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", fontFamily: FONT }}>{s.cta} <Icon.chevR width={16} height={16} /></button>
                   </div>
-                  <div style={{ width: 420, flexShrink: 0, background: "#FAFBFC", border: `1px solid ${C.borderSoft}`, borderRadius: 14, padding: 20, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 220 }}><HomeViz kind={s.viz} /></div>
+                  <div style={{ width: 468, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><HomeViz kind={s.viz} /></div>
                 </div>
               ))}
             </div>
