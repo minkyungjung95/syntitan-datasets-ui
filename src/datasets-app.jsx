@@ -2238,7 +2238,7 @@ function DetailTab() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 24px", borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: C.sub }}>데이터 미리보기</span>
             <span style={{ fontSize: 12.5, color: C.faint }}>· 상위 {D_NAMES.length}행</span>
-            <button onClick={startEdit} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, border: `1px solid ${C.purple}`, background: "#F3F0FC", color: C.purple, borderRadius: 8, padding: "7px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}><Icon.spark width={14} height={14} /> 컬럼 비식별·합성 편집</button>
+            <button onClick={startEdit} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 7, border: "none", background: C.purple, color: "#fff", borderRadius: 10, padding: "10px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT, boxShadow: "0 2px 8px rgba(108,92,231,0.28)" }}><Icon.spark width={15} height={15} /> 비식별·합성으로 편집</button>
           </div>
           )}
           <div style={{ overflowX: "auto" }}>
