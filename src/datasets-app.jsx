@@ -2152,10 +2152,11 @@ const SYNTH_NAMES = ["김민아", "이서준", "박지후", "최유나", "정하
 const SYNTH_SIZES = ["320-800", "900-1,500", "2,000-4,000", "6,000-9,000", "12,000-20,000"];
 const SYNTH_OS = ["iOS", "Web", "Android"];
 function DetailTab() {
-  const [view, setView] = useState("schema"); // schema(컬럼 메타데이터) | data(행 미리보기)
-  const [dataView, setDataView] = useState("graph"); // graph(스켈레톤·그래프형) | plain(스켈레톤·막대형) | real
   const [editing, setEditing] = useState(false); // 편집 모드
   const [sel, setSel] = useState({}); // { 컬럼index: "deid" | "synth" }
+  const [proc, setProc] = useState({}); // 변환 처리 중인 컬럼
+  const [applying, setApplying] = useState(false); // 적용 중
+  const [applied, setApplied] = useState(false); // 적용 완료
   const cols = [
     { icon: <Icon.key />, name: "customer_id", special: "unique" },
     { icon: <Icon.clock />, name: "time_zone", hist: H1, axis: ["UTC+01:00", "UTC+23:59"] },
@@ -2187,12 +2188,25 @@ function DetailTab() {
   };
   const selCount = Object.keys(sel).length;
   const allOn = selCount === cols.length;
-  const toggleCol = (ci) => setSel((s) => { const n = { ...s }; if (n[ci]) delete n[ci]; else n[ci] = "deid"; return n; });
-  const setMode = (ci, m) => setSel((s) => ({ ...s, [ci]: m }));
-  const toggleAll = () => setSel(allOn ? {} : Object.fromEntries(cols.map((_, i) => [i, "deid"])));
-  const setAllMode = (m) => setSel((s) => Object.fromEntries(Object.keys(s).map((k) => [k, m])));
-  const startEdit = () => { setDataView("real"); setEditing(true); };
-  const cancelEdit = () => { setEditing(false); setSel({}); };
+  // 컬럼 변환 처리 로딩(약 0.7초)
+  const markProc = (idxs) => {
+    setProc((p) => { const n = { ...p }; idxs.forEach((i) => (n[i] = true)); return n; });
+    setTimeout(() => setProc((p) => { const n = { ...p }; idxs.forEach((i) => delete n[i]); return n; }), 750);
+  };
+  const toggleCol = (ci) => {
+    const turningOn = !sel[ci];
+    setSel((s) => { const n = { ...s }; if (n[ci]) delete n[ci]; else n[ci] = "deid"; return n; });
+    if (turningOn) markProc([ci]);
+  };
+  const setMode = (ci, m) => { if (sel[ci] === m) return; setSel((s) => ({ ...s, [ci]: m })); markProc([ci]); };
+  const toggleAll = () => { if (allOn) { setSel({}); } else { setSel(Object.fromEntries(cols.map((_, i) => [i, "deid"]))); markProc(cols.map((_, i) => i)); } };
+  const startEdit = () => setEditing(true);
+  const cancelEdit = () => { setEditing(false); setSel({}); setApplying(false); setApplied(false); };
+  const applyEdit = () => {
+    if (!selCount || applying) return;
+    setApplying(true);
+    setTimeout(() => { setApplying(false); setApplied(true); setTimeout(() => cancelEdit(), 1100); }, 1500);
+  };
 
   return (
     <div style={{ padding: "20px 32px 60px" }}>
@@ -2200,60 +2214,35 @@ function DetailTab() {
         <div style={{ padding: "20px 24px", borderBottom: `1px solid ${C.border}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ fontSize: 18, fontWeight: 700 }}>Sample ._voc_data.csvta.csv <span style={{ color: C.faint, fontWeight: 500, fontSize: 15 }}>(99.8MB)</span></div><button style={{ width: 36, height: 36, borderRadius: 9, border: `1px solid ${C.border}`, background: C.panel, color: C.sub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.download /></button></div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>{["Snapshot - 238fkj", "247 columns · 47 rows", "Updated Mar 25, 10:01 AM"].map((t) => <span key={t} style={{ fontSize: 13, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px" }}>{t}</span>)}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}>
-            <div style={{ display: "inline-flex", background: "#F2F4F6", borderRadius: 11, padding: 4 }}>
-              {[["schema", "스키마 · 247컬럼"], ["data", "데이터 미리보기"]].map(([k, lab]) => (
-                <button key={k} onClick={() => setView(k)} style={{ border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT, background: view === k ? "#fff" : "transparent", color: view === k ? C.text : C.sub, boxShadow: view === k ? "0 1px 2px rgba(0,0,0,0.06)" : "none" }}>{lab}</button>
-              ))}
-            </div>
-            {view === "schema"
-              ? <button style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: C.purple, background: "#F3F0FC", border: "none", borderRadius: 8, padding: "7px 13px", cursor: "pointer", fontFamily: FONT }}><Icon.spark /> AI가 설명·태그 생성</button>
-              : <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 12px", cursor: "pointer" }}>15 Columns <Icon.chevD /></span>}
-          </div>
         </div>
-        {view === "schema" ? (
-          <div>
-            <div style={{ display: "grid", gridTemplateColumns: GRID, padding: "11px 24px", background: "#FCFCFD", borderBottom: `1px solid ${C.border}`, fontSize: 12.5, fontWeight: 600, color: C.faint }}>
-              <span>컬럼</span><span>타입</span><span>설명</span><span>태그</span><span>컬럼 마스킹</span>
-            </div>
-            {COL_META.map((m, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: GRID, padding: "13px 24px", borderBottom: i === COL_META.length - 1 ? "none" : `1px solid ${C.borderSoft}`, fontSize: 13.5, alignItems: "center" }}>
-                <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600 }}><span style={{ color: C.faint, display: "flex" }}>{m.icon}</span>{m.name}</span>
-                  <span style={{ fontSize: 11, color: C.faint, marginLeft: 24 }}>결측 {m.nullp} · 고유 {m.uniq}</span>
-                </span>
-                <span style={{ color: C.sub, fontSize: 12.5 }}>{m.type}</span>
-                <span style={{ color: C.sub, fontSize: 13, lineHeight: 1.45 }}>{m.desc}</span>
-                <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{m.tags.length ? m.tags.map(([lab, k]) => (<span key={lab} style={{ fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 20, background: TAG_C[k][0], color: TAG_C[k][1] }}>{lab}</span>)) : <span style={{ color: C.faint }}>—</span>}</span>
-                <span style={{ fontSize: 12.5, color: m.mask === "—" ? C.faint : C.text, fontWeight: m.mask === "—" ? 400 : 600 }}>{m.mask}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-        <div>
+        <div style={{ position: "relative" }}>
           {editing ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 24px", borderBottom: `1px solid ${C.border}`, background: "#F7F5FE" }}>
+            <>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 24px", borderBottom: `1px solid ${C.borderSoft}`, background: "#F7F5FE" }}>
               <span onClick={toggleAll} style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.text }}>
                 <span style={{ width: 17, height: 17, borderRadius: 5, border: `1.5px solid ${allOn ? C.purple : C.border}`, background: allOn ? C.purple : "#fff", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{allOn && <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4 10-11" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>}</span>
                 전체 컬럼 선택
               </span>
-              <span style={{ fontSize: 12.5, color: C.faint }}>컬럼을 골라 <b style={{ color: C.purple, fontWeight: 600 }}>비식별화</b>하거나 <b style={{ color: "#1D9E75", fontWeight: 600 }}>합성 데이터</b>로 바꿔요.</span>
+              <span style={{ fontSize: 12.5, color: C.faint }}>{selCount ? `${selCount}개 컬럼 선택됨` : "변환할 컬럼을 골라주세요"}</span>
               <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                 <button onClick={cancelEdit} style={{ border: `1px solid ${C.border}`, background: "#fff", color: C.sub, borderRadius: 9, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>취소</button>
-                <button onClick={cancelEdit} disabled={selCount === 0} style={{ border: "none", background: selCount ? C.dark : "#E5E7EB", color: selCount ? "#fff" : C.faint, borderRadius: 9, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: selCount ? "pointer" : "default", fontFamily: FONT }}>적용 완료</button>
+                <button onClick={applyEdit} disabled={selCount === 0 || applying} style={{ border: "none", background: selCount && !applying ? C.dark : "#E5E7EB", color: selCount && !applying ? "#fff" : C.faint, borderRadius: 9, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: selCount && !applying ? "pointer" : "default", fontFamily: FONT }}>적용 완료</button>
               </div>
             </div>
+            <div style={{ display: "flex", gap: 20, padding: "12px 24px", borderBottom: `1px solid ${C.border}`, background: "#FBFAFF", fontSize: 12.5, lineHeight: 1.5 }}>
+              <div style={{ flex: 1, display: "flex", gap: 8 }}><span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: C.purple, background: "#EEE9FE", borderRadius: 5, padding: "2px 7px", height: "fit-content" }}>비식별</span><span style={{ color: C.sub }}>값을 <b style={{ color: C.text, fontWeight: 600 }}>이름 A</b>처럼 일반화해 누가 누군지 알 수 없게 만들어요. 분포·통계 구조는 그대로 남아요.</span></div>
+              <div style={{ flex: 1, display: "flex", gap: 8 }}><span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: "#1D9E75", background: "#E3F7EE", borderRadius: 5, padding: "2px 7px", height: "fit-content" }}>합성</span><span style={{ color: C.sub }}>통계 특성은 살리고 값만 가짜로 바꿔요. <b style={{ color: C.text, fontWeight: 600 }}>정민경 → 김민아</b>처럼 실제 같은 데이터로요.</span></div>
+            </div>
+            </>
           ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "12px 24px", borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
-            {[["graph", "스켈레톤 · 그래프형"], ["plain", "스켈레톤 · 막대형"], ["real", "실제 데이터"]].map(([k, lab]) => (
-              <button key={k} onClick={() => setDataView(k)} style={{ border: `1px solid ${dataView === k ? WB_BLUE : C.border}`, background: dataView === k ? WB_BLUE_BG : "#fff", color: dataView === k ? WB_BLUE : C.sub, borderRadius: 8, padding: "6px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>{lab}</button>
-            ))}
-            <button onClick={startEdit} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, border: `1px solid ${C.purple}`, background: "#F3F0FC", color: C.purple, borderRadius: 8, padding: "6px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}><Icon.spark width={14} height={14} /> 컬럼 비식별·합성 편집</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 24px", borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.sub }}>데이터 미리보기</span>
+            <span style={{ fontSize: 12.5, color: C.faint }}>· 상위 {D_NAMES.length}행</span>
+            <button onClick={startEdit} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, border: `1px solid ${C.purple}`, background: "#F3F0FC", color: C.purple, borderRadius: 8, padding: "7px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}><Icon.spark width={14} height={14} /> 컬럼 비식별·합성 편집</button>
           </div>
           )}
           <div style={{ overflowX: "auto" }}>
             <div style={{ minWidth: 1100 }}>
-              {dataView === "real" ? (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
                     {cols.map((c, i) => {
@@ -2291,43 +2280,33 @@ function DetailTab() {
                         const on = editing && sel[ci];
                         const err = !editing && ci === 2 && D_SIZES[r].length > 14;
                         return (
-                          <div key={ci} style={{ padding: "11px 14px", borderRight: ci === cols.length - 1 ? "none" : `1px solid ${C.borderSoft}`, background: err ? "#FEE2E2" : on ? (sel[ci] === "synth" ? "#F3FBF7" : "#FAF9FE") : "transparent", color: err ? "#B91C1C" : on ? C.text : ci === 0 ? C.sub : C.text, fontWeight: on ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tf(ci, r)}</div>
+                          <div key={ci} style={{ padding: "11px 14px", borderRight: ci === cols.length - 1 ? "none" : `1px solid ${C.borderSoft}`, background: err ? "#FEE2E2" : on ? (sel[ci] === "synth" ? "#F3FBF7" : "#FAF9FE") : "transparent", color: err ? "#B91C1C" : on ? C.text : ci === 0 ? C.sub : C.text, fontWeight: on ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{on && proc[ci] ? <span style={{ display: "inline-block", height: 10, width: "62%", borderRadius: 5, background: sel[ci] === "synth" ? "#CDEEDE" : "#DED8F6", animation: "skelPulse .9s ease-in-out infinite" }} /> : tf(ci, r)}</div>
                         );
                       })}
                     </div>
                   ))}
                 </>
-              ) : (
-                <div style={{ animation: "skelPulse 1.4s ease-in-out infinite" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
-                    {cols.map((c, i) => (
-                      <div key={i} style={{ padding: "12px 14px 14px", borderRight: i === cols.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
-                        <div style={{ height: 9, width: `${46 + (i * 11) % 34}%`, borderRadius: 5, background: "#E4E7EB", marginBottom: dataView === "graph" ? 14 : 0 }} />
-                        {dataView === "graph" && (
-                          <div style={{ height: 64 }}>
-                            <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 46 }}>
-                              {Array.from({ length: 7 }).map((_, b) => <div key={b} style={{ flex: 1, height: `${26 + ((i * 13 + b * 19) % 66)}%`, background: "#E4E7EB", borderRadius: "2px 2px 0 0" }} />)}
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}><div style={{ height: 7, width: 24, borderRadius: 4, background: "#EDEFF2" }} /><div style={{ height: 7, width: 24, borderRadius: 4, background: "#EDEFF2" }} /></div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  {Array.from({ length: 16 }).map((_, r) => (
-                    <div key={r} style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.borderSoft}` }}>
-                      {cols.map((_, ci) => (
-                        <div key={ci} style={{ padding: "13px 14px", borderRight: ci === cols.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}><div style={{ height: 11, borderRadius: 6, background: "#EDEFF2", width: `${42 + ((r * 7 + ci * 13) % 46)}%` }} /></div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
-          <style>{`@keyframes skelPulse{0%,100%{opacity:1}50%{opacity:.55}}`}</style>
+          {(applying || applied) && (
+            <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.86)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, zIndex: 5 }}>
+              {applying ? (
+                <>
+                  <span style={{ width: 34, height: 34, border: `3px solid #E4E0F6`, borderTopColor: C.purple, borderRadius: "50%", display: "inline-block", animation: "spin .8s linear infinite" }} />
+                  <div style={{ fontSize: 14.5, fontWeight: 700 }}>변환을 적용하는 중…</div>
+                  <div style={{ fontSize: 12.5, color: C.faint }}>선택한 {selCount}개 컬럼을 비식별·합성 처리하고 있어요.</div>
+                </>
+              ) : (
+                <>
+                  <span style={{ display: "flex" }}><svg width="38" height="38" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#22C55E" /><path d="M7.5 12.5l3 3 6-7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                  <div style={{ fontSize: 14.5, fontWeight: 700 }}>적용됐어요</div>
+                  <div style={{ fontSize: 12.5, color: C.faint }}>새 스냅샷으로 저장됩니다.</div>
+                </>
+              )}
+            </div>
+          )}
+          <style>{`@keyframes skelPulse{0%,100%{opacity:1}50%{opacity:.55}}@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
-        )}
       </div>
     </div>
   );
