@@ -155,12 +155,11 @@ function Sidebar({ active = "Home", onNav = () => {} }) {
         <span onClick={() => setCollapsed(false)} title="사이드바 펼치기" style={{ color: C.sub, cursor: "pointer", display: "flex", padding: 6, borderRadius: 8, marginBottom: 14 }}><Icon.panel /></span>
         <NavItem icon={<Icon.home />} label="Home" active={active === "Home"} onClick={() => onNav("Home")} collapsed />
         <div style={{ height: 14 }} />
-        <NavItem icon={<Icon.db />} label="Dataset" active={active === "Dataset"} onClick={() => onNav("Dataset")} collapsed />
-        <div style={{ height: 14 }} />
+        <NavItem icon={<Icon.db />} label="Edit Dataset" active={active === "Edit Dataset"} onClick={() => onNav("Edit Dataset")} collapsed />
         <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} collapsed />
-        <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} collapsed />
+        <NavItem icon={<Icon.users />} label="Discussion Room" active={active === "Discussion Room"} onClick={() => onNav("Discussion Room")} collapsed />
         <div style={{ height: 14 }} />
-        <NavItem icon={<Icon.users />} label="Discussion Room" onClick={() => onNav("Discussion Room")} collapsed />
+        <NavItem icon={<Icon.report />} label="Report Hub" active={active === "Report Hub"} onClick={() => onNav("Report Hub")} collapsed />
         <div style={{ flex: 1 }} />
         <div title="Basic plan" style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#5B9BFF 0%,#7FB6FF 100%)", color: "#fff", fontWeight: 700, fontSize: 12, fontStyle: "italic", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>Basic</div>
         <Avatar size={30} />
@@ -174,14 +173,12 @@ function Sidebar({ active = "Home", onNav = () => {} }) {
         <span onClick={() => setCollapsed(true)} title="사이드바 접기" style={{ color: C.faint, cursor: "pointer", display: "flex", padding: 2 }}><Icon.panel /></span>
       </div>
       <NavItem icon={<Icon.home />} label="Home" active={active === "Home"} onClick={() => onNav("Home")} />
-      <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Edit dataset</div>
-      <NavItem icon={<Icon.db />} label="Dataset" active={active === "Dataset"} onClick={() => onNav("Dataset")} />
-      <NavItem icon={<Icon.trend />} label="Performance Proof" active={active === "Performance Proof"} onClick={() => onNav("Performance Proof")} />
-      <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Analyze</div>
-      <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} />
-      <NavItem icon={<Icon.report />} label="Report Hub" onClick={() => onNav("Report Hub")} />
       <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Workspace</div>
-      <NavItem icon={<Icon.users />} label="Discussion Room" onClick={() => onNav("Discussion Room")} />
+      <NavItem icon={<Icon.db />} label="Edit Dataset" active={active === "Edit Dataset"} onClick={() => onNav("Edit Dataset")} />
+      <NavItem icon={<Icon.agent />} label="Agent Analysis" active={active === "Agent Analysis"} onClick={() => onNav("Agent Analysis")} />
+      <NavItem icon={<Icon.users />} label="Discussion Room" active={active === "Discussion Room"} onClick={() => onNav("Discussion Room")} />
+      <div style={{ fontSize: 12, color: C.faint, fontWeight: 600, padding: "14px 10px 6px" }}>Analyze</div>
+      <NavItem icon={<Icon.report />} label="Report Hub" active={active === "Report Hub"} onClick={() => onNav("Report Hub")} />
       <div style={{ flex: 1 }} />
       <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2150,9 +2147,15 @@ const COL_META = [
   { icon: <Icon.hash />, name: "purchase_count", type: "Int", desc: "누적 구매 횟수 · 타겟 기여 낮음", tags: [["저기여", "low"]], mask: "—", nullp: "0%", uniq: "—" },
 ];
 
+const DEID_PREFIX = ["이름", "지역", "규모", "기기", "가입", "세션", "구매"];
+const SYNTH_NAMES = ["김민아", "이서준", "박지후", "최유나", "정하람", "윤도경", "장세윤", "한지안", "오세훈", "임가온", "서라온", "노하율"];
+const SYNTH_SIZES = ["320-800", "900-1,500", "2,000-4,000", "6,000-9,000", "12,000-20,000"];
+const SYNTH_OS = ["iOS", "Web", "Android"];
 function DetailTab() {
   const [view, setView] = useState("schema"); // schema(컬럼 메타데이터) | data(행 미리보기)
   const [dataView, setDataView] = useState("graph"); // graph(스켈레톤·그래프형) | plain(스켈레톤·막대형) | real
+  const [editing, setEditing] = useState(false); // 편집 모드
+  const [sel, setSel] = useState({}); // { 컬럼index: "deid" | "synth" }
   const cols = [
     { icon: <Icon.key />, name: "customer_id", special: "unique" },
     { icon: <Icon.clock />, name: "time_zone", hist: H1, axis: ["UTC+01:00", "UTC+23:59"] },
@@ -2164,6 +2167,33 @@ function DetailTab() {
   ];
   const cellD = (error, first, last) => ({ padding: "11px 14px", borderRight: last ? "none" : `1px solid ${C.borderSoft}`, background: error ? "#FEE2E2" : "transparent", color: error ? "#B91C1C" : first ? C.sub : C.text });
   const GRID = "1.6fr 0.8fr 2fr 1.3fr 1fr";
+
+  // ── 편집 모드: 원본 행 값 + 비식별/합성 변환 ──
+  const rowVal = (ci, r) => [D_NAMES[r], "UTC+12:00", D_SIZES[r], "Android", "2026.11.12", D_SESS[r], D_SESS[r]][ci];
+  const distinct = useMemo(() => cols.map((_, ci) => { const m = {}; let n = 0; for (let r = 0; r < D_NAMES.length; r++) { const v = rowVal(ci, r); if (!(v in m)) m[v] = n++; } return m; }), []);
+  const tf = (ci, r) => {
+    const mode = sel[ci], v = rowVal(ci, r);
+    if (!editing || !mode) return v;
+    const di = distinct[ci][v] ?? 0;
+    if (mode === "deid") return `${DEID_PREFIX[ci] || "값"} ${String.fromCharCode(65 + (di % 26))}`;
+    switch (ci) {
+      case 0: return SYNTH_NAMES[di % SYNTH_NAMES.length];
+      case 1: return "UTC+09:00";
+      case 2: return SYNTH_SIZES[di % SYNTH_SIZES.length];
+      case 3: return SYNTH_OS[r % 3];
+      case 4: return `2025.${String((r % 12) + 1).padStart(2, "0")}.${String((r % 27) + 1).padStart(2, "0")}`;
+      default: return (parseFloat(v) + (r % 5) * 0.4).toFixed(1);
+    }
+  };
+  const selCount = Object.keys(sel).length;
+  const allOn = selCount === cols.length;
+  const toggleCol = (ci) => setSel((s) => { const n = { ...s }; if (n[ci]) delete n[ci]; else n[ci] = "deid"; return n; });
+  const setMode = (ci, m) => setSel((s) => ({ ...s, [ci]: m }));
+  const toggleAll = () => setSel(allOn ? {} : Object.fromEntries(cols.map((_, i) => [i, "deid"])));
+  const setAllMode = (m) => setSel((s) => Object.fromEntries(Object.keys(s).map((k) => [k, m])));
+  const startEdit = () => { setDataView("real"); setEditing(true); };
+  const cancelEdit = () => { setEditing(false); setSel({}); };
+
   return (
     <div style={{ padding: "20px 32px 60px" }}>
       <div style={{ border: `1px solid ${C.border}`, borderRadius: 16, background: C.panel, overflow: "hidden" }}>
@@ -2201,30 +2231,69 @@ function DetailTab() {
           </div>
         ) : (
         <div>
-          <div style={{ display: "flex", gap: 6, padding: "12px 24px", borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
+          {editing ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 24px", borderBottom: `1px solid ${C.border}`, background: "#F7F5FE" }}>
+              <span onClick={toggleAll} style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.text }}>
+                <span style={{ width: 17, height: 17, borderRadius: 5, border: `1.5px solid ${allOn ? C.purple : C.border}`, background: allOn ? C.purple : "#fff", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{allOn && <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4 10-11" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>}</span>
+                전체 컬럼 선택
+              </span>
+              <span style={{ fontSize: 12.5, color: C.faint }}>컬럼을 골라 <b style={{ color: C.purple, fontWeight: 600 }}>비식별화</b>하거나 <b style={{ color: "#1D9E75", fontWeight: 600 }}>합성 데이터</b>로 바꿔요.</span>
+              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                <button onClick={cancelEdit} style={{ border: `1px solid ${C.border}`, background: "#fff", color: C.sub, borderRadius: 9, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>취소</button>
+                <button onClick={cancelEdit} disabled={selCount === 0} style={{ border: "none", background: selCount ? C.dark : "#E5E7EB", color: selCount ? "#fff" : C.faint, borderRadius: 9, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: selCount ? "pointer" : "default", fontFamily: FONT }}>적용 완료</button>
+              </div>
+            </div>
+          ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "12px 24px", borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
             {[["graph", "스켈레톤 · 그래프형"], ["plain", "스켈레톤 · 막대형"], ["real", "실제 데이터"]].map(([k, lab]) => (
               <button key={k} onClick={() => setDataView(k)} style={{ border: `1px solid ${dataView === k ? WB_BLUE : C.border}`, background: dataView === k ? WB_BLUE_BG : "#fff", color: dataView === k ? WB_BLUE : C.sub, borderRadius: 8, padding: "6px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>{lab}</button>
             ))}
+            <button onClick={startEdit} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, border: `1px solid ${C.purple}`, background: "#F3F0FC", color: C.purple, borderRadius: 8, padding: "6px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}><Icon.spark width={14} height={14} /> 컬럼 비식별·합성 편집</button>
           </div>
+          )}
           <div style={{ overflowX: "auto" }}>
             <div style={{ minWidth: 1100 }}>
               {dataView === "real" ? (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.border}`, background: "#FCFCFD" }}>
-                    {cols.map((c, i) => (
-                      <div key={i} style={{ padding: "12px 14px 14px", borderRight: i === cols.length - 1 ? "none" : `1px solid ${C.borderSoft}` }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600 }}><span style={{ color: C.faint, display: "flex" }}>{c.icon}</span> {c.name}</div>
+                    {cols.map((c, i) => {
+                      const on = editing && sel[i];
+                      const modeC = sel[i] === "synth" ? "#1D9E75" : C.purple;
+                      return (
+                      <div key={i} style={{ padding: "12px 14px 14px", borderRight: i === cols.length - 1 ? "none" : `1px solid ${C.borderSoft}`, background: on ? (sel[i] === "synth" ? "#EEFBF4" : "#F5F3FE") : "transparent", boxShadow: on ? `inset 0 2px 0 ${modeC}` : "none" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 600 }}>
+                          {editing && <span onClick={() => toggleCol(i)} style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${on ? modeC : C.border}`, background: on ? modeC : "#fff", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }}>{on && <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4 10-11" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}</span>}
+                          <span style={{ color: C.faint, display: "flex" }}>{c.icon}</span><span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</span>
+                        </div>
+                        {editing ? (
+                          <div style={{ marginTop: 10, height: 64 }}>
+                            {on ? (
+                              <div style={{ display: "flex", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, padding: 3 }}>
+                                {[["deid", "비식별", C.purple], ["synth", "합성", "#1D9E75"]].map(([m, lab, cc]) => (
+                                  <button key={m} onClick={() => setMode(i, m)} style={{ flex: 1, border: "none", borderRadius: 6, padding: "5px 0", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT, background: sel[i] === m ? cc : "transparent", color: sel[i] === m ? "#fff" : C.sub }}>{lab}</button>
+                                ))}
+                              </div>
+                            ) : <div onClick={() => toggleCol(i)} style={{ fontSize: 11.5, color: C.faint, cursor: "pointer", paddingTop: 6 }}>선택 안 함</div>}
+                          </div>
+                        ) : (
                         <div style={{ marginTop: 12, height: 64 }}>
                           {c.special === "unique" && <div style={{ textAlign: "center", paddingTop: 8 }}><div style={{ fontSize: 22, fontWeight: 700 }}>893건</div><div style={{ fontSize: 12, color: C.faint }}>unique values</div></div>}
                           {c.dist && <div style={{ fontSize: 12 }}>{[["Korean", "20%"], ["En", "15%"], ["Jap", "5%"], ["Other", "60%"]].map(([k, v]) => <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}><span style={{ color: C.sub }}>{k}</span><span style={{ fontWeight: 600 }}>{v}</span></div>)}</div>}
                           {c.hist && <div><Histogram heights={c.hist} /><div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: C.faint, marginTop: 3 }}><span>{c.axis[0]}</span><span>{c.axis[1]}</span></div></div>}
                         </div>
+                        )}
                       </div>
-                    ))}
+                    ); })}
                   </div>
                   {D_NAMES.map((nm, r) => (
                     <div key={r} style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))`, borderBottom: `1px solid ${C.borderSoft}`, fontSize: 13.5 }}>
-                      <div style={cellD(false, true)}>{nm}</div><div style={cellD()}>UTC+12:00</div><div style={cellD(D_SIZES[r].length > 14)}>{D_SIZES[r]}</div><div style={cellD()}>Android</div><div style={cellD()}>2026.11.12</div><div style={cellD()}>{D_SESS[r]}</div><div style={cellD(false, false, true)}>{D_SESS[r]}</div>
+                      {cols.map((c, ci) => {
+                        const on = editing && sel[ci];
+                        const err = !editing && ci === 2 && D_SIZES[r].length > 14;
+                        return (
+                          <div key={ci} style={{ padding: "11px 14px", borderRight: ci === cols.length - 1 ? "none" : `1px solid ${C.borderSoft}`, background: err ? "#FEE2E2" : on ? (sel[ci] === "synth" ? "#F3FBF7" : "#FAF9FE") : "transparent", color: err ? "#B91C1C" : on ? C.text : ci === 0 ? C.sub : C.text, fontWeight: on ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tf(ci, r)}</div>
+                        );
+                      })}
                     </div>
                   ))}
                 </>
@@ -3866,13 +3935,13 @@ function UnionMatchPage({ onBack, onConfirm, err = false }) {
 
 /* ── 홈 랜딩 (히어로 + 시작 지점 캐러셀 + 하단 카드) ─────────── */
 const HOME_SLIDES = [
-  { tag: "데이터 진단", title: "모델 학습 전에,\n데이터가 준비됐는지 진단하세요", desc: "6가지 축으로 AI 준비도를 측정하고, 무엇부터 고칠지 짚어 드려요.", cta: "데이터 진단하기", go: "Dataset", viz: "diag" },
-  { tag: "데이터 전처리", title: "값과 분포를 바로잡고,\nAI에 필요한 맥락을 더하세요", desc: "결측치·이상치·민감정보 치환·합성 증강을 한 번에 처리해요.", cta: "데이터 정제하기", go: "Dataset", viz: "preprocess" },
   { tag: "설문조사", title: "합성 페르소나 1만 명의 응답을\n패널 모집 없이 받으세요", desc: "응답 분포를 통계적으로 재현해, 리서치를 4주에서 1시간으로 단축해요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "survey" },
   { tag: "가격 전략", title: "신제품 출시 전에,\n가격 반응을 시뮬레이션하세요", desc: "가격대별 수용도를 비교해 최적 지점을 찾아요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "price" },
   { tag: "이탈 예측", title: "고객이 떠나기 전에\n이탈 신호를 잡으세요", desc: "이탈 위험 고객을 조기에 찾아, 늦지 않게 붙잡아요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "churn" },
   { tag: "PR 시뮬레이션", title: "발표 전에\n메시지 반응을 검증하세요", desc: "대중 반응을 예측해, 메시지와 타이밍을 조정해요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "pr" },
   { tag: "전략 제안", title: "고객을 행동·인구 통계에 따라\nROI 기반 전략을 시뮬레이션하세요", desc: "어떤 고객에 집중할지 확인하세요.", cta: "에이전트 실행하기", go: "Agent Analysis", viz: "strategy" },
+  { tag: "데이터 진단", title: "모델 학습 전에,\n데이터가 준비됐는지 진단하세요", desc: "6가지 축으로 AI 준비도를 측정하고, 무엇부터 고칠지 짚어 드려요.", cta: "데이터 진단하기", go: "Dataset", viz: "diag" },
+  { tag: "데이터 전처리", title: "값과 분포를 바로잡고,\nAI에 필요한 맥락을 더하세요", desc: "결측치·이상치·민감정보 치환·합성 증강을 한 번에 처리해요.", cta: "데이터 정제하기", go: "Dataset", viz: "preprocess" },
 ];
 function HomeViz({ kind }) {
   const Frame = ({ children, pad = 16 }) => (
@@ -3880,8 +3949,8 @@ function HomeViz({ kind }) {
       <div style={{ background: "#fff", borderRadius: 12, border: `1px solid ${C.borderSoft}`, padding: pad, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>{children}</div>
     </div>
   );
-  const pbar = (label, pct, color) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 10.5, margin: "5px 0" }}>
+  const pbar = (label, pct, color, key) => (
+    <div key={key} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 10.5, margin: "5px 0" }}>
       <span style={{ width: 62, flexShrink: 0, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
       <span style={{ flex: 1, height: 6, borderRadius: 99, background: "#EEF0F3", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${pct}%`, background: color, borderRadius: 99 }} /></span>
       <span style={{ width: 30, textAlign: "right", color: C.text, fontWeight: 600 }}>{pct}%</span>
@@ -3899,7 +3968,7 @@ function HomeViz({ kind }) {
         <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderBottom: `1px solid ${C.borderSoft}` }}><span style={{ fontSize: 11, fontWeight: 700 }}>{title}</span><span style={{ fontSize: 9, color: C.faint, background: "#F1F2F4", borderRadius: 4, padding: "1px 5px" }}>{chip}</span></div>
         <div style={{ padding: "10px 10px 8px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}><span style={{ fontSize: 11, fontWeight: 600 }}>AI Readiness</span><span style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ fontSize: 15, fontWeight: 800, color: chipColor }}>{pct}%</span><span style={{ fontSize: 9, fontWeight: 700, color: statusFg, background: statusBg, borderRadius: 4, padding: "1px 5px" }}>{status}</span></span></div>
-          {AXES.map((a, i) => pbar(a, vals[i], colorFn(vals[i])))}
+          {AXES.map((a, i) => pbar(a, vals[i], colorFn(vals[i]), i))}
           <div style={{ display: "flex", gap: 5, marginTop: 8, background: note.bg, borderRadius: 7, padding: "7px 8px" }}><span style={{ color: note.fg, flexShrink: 0, fontSize: 10 }}>●</span><div><div style={{ fontSize: 9.5, fontWeight: 700, color: note.fg }}>AI 분석 결과</div><div style={{ fontSize: 9, color: C.faint, lineHeight: 1.4, marginTop: 1 }}>{note.text}</div></div></div>
         </div>
       </div>
@@ -3930,17 +3999,66 @@ function HomeViz({ kind }) {
     </Frame>;
   }
 
-  if (kind === "survey") return <Frame>
-    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Q. 합리적인 월 구독 가격은 얼마라고 생각하십니까?</div>
-    {[["5달러 미만", 32, "#84CC16", "9,999"], ["5–9.99달러", 14, "#D1D5DB", "123"], ["10–14.99달러", 32, C.blue, "9,999"], ["15–19.99달러", 8, "#D1D5DB", "60"]].map(([l, p, c, n], i) => (
-      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, margin: "7px 0" }}><span style={{ width: 82, flexShrink: 0, color: C.sub }}>{l}</span><span style={{ flex: 1, height: 7, borderRadius: 99, background: "#EEF0F3", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${p}%`, background: c, borderRadius: 99 }} /></span><span style={{ width: 62, textAlign: "right", fontWeight: 600 }}>{p}% <span style={{ color: C.faint, fontWeight: 400, fontSize: 10 }}>({n})</span></span></div>
-    ))}
-    <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-      {[["정민주", "여자, 32세, 디자이너"], ["강혁준", "남자, 42세, CEO"]].map(([n, m]) => (
-        <div key={n} style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, border: `1px solid ${C.borderSoft}`, borderRadius: 9, padding: "8px 10px" }}><span style={{ width: 22, height: 22, borderRadius: "50%", background: "#EEF2FF", color: C.purple, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon.spark width={12} height={12} /></span><div style={{ minWidth: 0 }}><div style={{ fontSize: 11, fontWeight: 600 }}>{n}</div><div style={{ fontSize: 10, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m}</div></div></div>
-      ))}
-    </div>
-  </Frame>;
+  if (kind === "survey") {
+    const bars = [
+      ["5달러 미만", 24, "#84CC16"],
+      ["5달러 - 9.99달러", 14, "#D9DCE2"],
+      ["10달러 - 14.99달러", 50, C.blue],
+      ["5달러 - 9.99달러", 14, "#D9DCE2"],
+      ["15달러 - 19.99달러", 0, "#D9DCE2"],
+    ];
+    const hexIcon = (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3l7.5 4.3v9.4L12 21l-7.5-4.3V7.3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>
+    );
+    const persona = (name, meta) => (
+      <div style={{ flexShrink: 0, width: 214, border: `1px solid ${C.borderSoft}`, borderRadius: 12, padding: "13px 15px", background: "#fff" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 13 }}>
+          <span style={{ width: 28, height: 28, borderRadius: 9, background: "#F3F4F6", color: C.faint, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{hexIcon}</span>
+          <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{name}</div><div style={{ fontSize: 11, color: C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</div></div>
+        </div>
+        <div style={{ height: 8, borderRadius: 5, background: "#EEF0F3", marginBottom: 8 }} />
+        <div style={{ height: 8, borderRadius: 5, background: "#EEF0F3", width: "62%", marginBottom: 15 }} />
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 0", textAlign: "center", fontSize: 12.5, fontWeight: 600, color: C.sub }}>View Detail</div>
+      </div>
+    );
+    const avatars = [
+      ["#EBD3BE", "#CBA184"], ["#C6D0FA", "#8A98E8"], ["#BFE6D0", "#84C2A0"],
+      ["#AFC7EE", "#6F94D6"], ["#D8C2EC", "#A981D6"], ["#F2C4CF", "#DD97A9"],
+    ];
+    return (
+      <div style={{ flex: 1, alignSelf: "stretch", position: "relative", overflow: "hidden", background: "linear-gradient(158deg, #EDF2FF 0%, #DEE9FF 52%, #CBDCFF 100%)" }}>
+        {/* 디바이스 카드 (우/하단으로 살짝 잘려나가는 목업) */}
+        <div style={{ position: "absolute", top: 28, left: 30, right: -58, bottom: -44, background: "#fff", borderRadius: 18, border: "1px solid rgba(15,23,42,0.05)", boxShadow: "0 26px 64px rgba(37,64,120,0.18)", padding: "22px 24px", overflow: "hidden" }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 16 }}>Q1. 합리적인 월 구독 가격은 얼마라고 생각하십니까?</div>
+          <div style={{ border: `1px solid ${C.borderSoft}`, borderRadius: 14, padding: "16px 18px" }}>
+            {bars.map(([l, p, c], i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 13, margin: "10px 0" }}>
+                <span style={{ width: 108, flexShrink: 0, fontSize: 12.5, fontWeight: 600, color: C.text }}>{l}</span>
+                <span style={{ height: 12, width: Math.round(p * 3.3), background: c, borderRadius: 6, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 800, color: p === 0 ? C.faint : C.text }}>{p}%</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 12, marginTop: 15 }}>
+            {persona("정민주", "여자, 32세, 디자이너")}
+            {persona("강혁준", "남자, 42세, CEO")}
+          </div>
+        </div>
+        {/* 플로팅 알림 — 1만명 투표 완료 + 아바타 스택 */}
+        <div style={{ position: "absolute", right: 8, bottom: 66, background: "#fff", borderRadius: 18, boxShadow: "0 20px 46px rgba(37,64,120,0.24)", padding: "13px 17px", zIndex: 2 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill={C.purple} /><path d="m7.8 12.2 2.7 2.7L16.4 9" stroke="#fff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <span style={{ fontSize: 14, fontWeight: 800, color: C.purple }}>1만명 투표 완료</span>
+          </div>
+          <div style={{ display: "flex" }}>
+            {avatars.map(([a, b], i) => (
+              <span key={i} style={{ width: 30, height: 30, borderRadius: "50%", background: `linear-gradient(140deg, ${a}, ${b})`, border: "2.5px solid #fff", marginLeft: i ? -10 : 0, boxShadow: "0 1px 3px rgba(0,0,0,0.14)" }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (kind === "price") return <Frame>
     <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>PSM 가격-수요 곡선 · 주요 교차점</div>
@@ -3985,31 +4103,53 @@ function HomeViz({ kind }) {
 }
 function HomePage({ user = "minkyung", onNav = () => {} }) {
   const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
   const N = HOME_SLIDES.length;
   const go = (n) => setIdx((n + N) % N);
   useEffect(() => {
     const onKey = (e) => { if (e.key === "ArrowRight") go(idx + 1); else if (e.key === "ArrowLeft") go(idx - 1); };
     window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
   }, [idx]);
-  const arrow = (dir) => (
-    <button onClick={() => go(idx + (dir === "next" ? 1 : -1))} style={{ width: 38, height: 38, borderRadius: "50%", border: `1px solid ${C.border}`, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.sub }}>
-      {dir === "next" ? <Icon.chevR width={17} height={17} /> : <span style={{ transform: "rotate(180deg)", display: "flex" }}><Icon.chevR width={17} height={17} /></span>}
-    </button>
-  );
+  // 3초마다 자동 전환 (호버 시 일시정지, 수동 이동 시 타이머 리셋, 모션 최소화 선호 시 정지)
+  useEffect(() => {
+    if (paused) return;
+    if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setInterval(() => setIdx((i) => (i + 1) % N), 3000);
+    return () => clearInterval(t);
+  }, [paused, idx, N]);
   const bottomCard = (icon, title, desc) => (
-    <div onClick={() => {}} style={{ flex: 1, display: "flex", alignItems: "center", gap: 14, border: `1px solid ${C.border}`, borderRadius: 14, padding: "16px 18px", background: "#fff", cursor: "pointer" }}>
+    <div className="st-card" role="button" tabIndex={0} onClick={() => {}} style={{ flex: 1, display: "flex", alignItems: "center", gap: 14, border: `1px solid ${C.border}`, borderRadius: 14, padding: "16px 18px", background: "#fff", cursor: "pointer" }}>
       <span style={{ width: 40, height: 40, borderRadius: 10, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{icon}</span>
-      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{title}</div><div style={{ fontSize: 12.5, color: C.faint, marginTop: 2 }}>{desc}</div></div>
-      <span style={{ color: C.faint, display: "flex" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 17 17 7M9 7h8v8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{title}</div><div style={{ fontSize: 12.5, color: C.sub, marginTop: 2 }}>{desc}</div></div>
+      <span className="st-card-arr" style={{ color: C.faint, display: "flex" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 17 17 7M9 7h8v8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
     </div>
   );
   return (
     <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+      <style>{`
+        .st-pill{transition:background .15s ease,color .15s ease}
+        .st-pill:not(.on):hover{background:#E6E8EC;color:${C.text}}
+        .st-pill:focus-visible{outline:2px solid ${C.purple};outline-offset:2px}
+        .st-cta{transition:background .15s ease,box-shadow .18s cubic-bezier(.22,.61,.36,1),transform .18s cubic-bezier(.22,.61,.36,1)}
+        .st-cta:hover{background:#5457E5;box-shadow:0 8px 20px rgba(99,102,241,.32);transform:translateY(-1px)}
+        .st-cta:active{transform:translateY(0);box-shadow:0 3px 10px rgba(99,102,241,.28)}
+        .st-cta:focus-visible{outline:2px solid ${C.purple};outline-offset:3px}
+        .st-card{transition:border-color .18s ease,box-shadow .18s ease,transform .18s cubic-bezier(.22,.61,.36,1)}
+        .st-card:hover{border-color:#D5D8DE;box-shadow:0 10px 26px rgba(16,24,40,.08);transform:translateY(-2px)}
+        .st-card:focus-visible{outline:2px solid ${C.purple};outline-offset:2px}
+        .st-card-arr{transition:color .18s ease,transform .18s cubic-bezier(.22,.61,.36,1)}
+        .st-card:hover .st-card-arr{color:${C.purple};transform:translate(2px,-2px)}
+        @media (prefers-reduced-motion: reduce){
+          .st-anim{animation:none!important;opacity:1!important;transform:none!important}
+          .st-cta,.st-card,.st-card-arr,.st-pill{transition:none!important}
+          .st-cta:hover,.st-card:hover{transform:none!important}
+        }
+      `}</style>
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 48px" }}>
-        <div style={{ fontSize: 14, color: C.faint, fontWeight: 500 }}>Welcome, {user}</div>
-        <div style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.3, marginTop: 8 }}>
+        <div style={{ fontSize: 14, color: C.sub, fontWeight: 500 }}>Welcome, {user}</div>
+        <div style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.3, marginTop: 8, textWrap: "balance" }}>
           <span style={{ color: C.text }}>Syntitan은 진단 · 개선 · 검증까지 데이터로 증명합니다.</span><br />
-          <span style={{ color: C.faint }}>모델 교체 전, 데이터가 준비되었는지 확인하세요.</span>
+          <span style={{ color: C.sub }}>모델 교체 전, 데이터가 준비되었는지 확인하세요.</span>
         </div>
         <div style={{ fontSize: 16, fontWeight: 700, margin: "34px 0 14px" }}>어디서 시작하고 싶으신가요?</div>
 
@@ -4018,37 +4158,40 @@ function HomePage({ user = "minkyung", onNav = () => {} }) {
           {HOME_SLIDES.map((s, i) => {
             const on = i === idx;
             return (
-              <button key={i} onClick={() => go(i)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 99, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, border: "1.5px solid transparent", background: on ? C.purple : "#F1F2F4", color: on ? "#fff" : C.sub, transition: "all .15s" }}>
+              <button key={i} className={`st-pill${on ? " on" : ""}`} aria-pressed={on} onClick={() => go(i)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 99, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT, border: "1.5px solid transparent", background: on ? C.purple : "#F1F2F4", color: on ? "#fff" : C.sub }}>
                 {s.tag}
               </button>
             );
           })}
         </div>
 
-        {/* 캐러셀 */}
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden", background: "#fff" }}>
+        {/* 캐러셀 — 탭 전환 시 콘텐츠가 아래에서 위로 올라오며 교체 · 뒤에 카드가 겹쳐 쌓인 스택 효과 */}
+        <div style={{ position: "relative" }} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+          {/* 뒤에 깔린 스택 레이어 — 탭 전환 시 카드 아래에서 위로 확실히 올라와 자리잡음 */}
+          <div key={`deck2-${idx}`} className="st-anim" aria-hidden style={{ position: "absolute", left: 24, right: 24, bottom: -16, height: 40, background: "#fff", border: `1px solid ${C.borderSoft}`, borderRadius: 18, boxShadow: "0 8px 16px rgba(0,0,0,0.05)", zIndex: 0, animation: "deckSettle2 .68s cubic-bezier(.2,.7,.3,1) .08s both" }} />
+          <div key={`deck1-${idx}`} className="st-anim" aria-hidden style={{ position: "absolute", left: 12, right: 12, bottom: -9, height: 40, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 18, zIndex: 1, animation: "deckSettle1 .6s cubic-bezier(.2,.7,.3,1) .04s both" }} />
+        <div style={{ position: "relative", zIndex: 2, border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden", background: "#fff" }}>
+          <style>{`@keyframes homeRise{0%{opacity:0;transform:translateY(34px)}100%{opacity:1;transform:none}}@keyframes homeRiseImg{0%{opacity:0;transform:translateY(64px) scale(.985)}100%{opacity:1;transform:none}}@keyframes deckSettle1{0%{opacity:0;transform:translateY(28px)}16%{opacity:1}86%{transform:translateY(-2px)}100%{opacity:1;transform:none}}@keyframes deckSettle2{0%{opacity:0;transform:translateY(38px)}14%{opacity:1}86%{transform:translateY(-3px)}100%{opacity:1;transform:none}}`}</style>
           <div style={{ overflow: "hidden" }}>
-            <div style={{ display: "flex", transition: "transform .38s cubic-bezier(.22,.61,.36,1)", transform: `translateX(${-idx * 100}%)` }}>
-              {HOME_SLIDES.map((s, i) => (
-                <div key={i} style={{ flex: "0 0 100%", boxSizing: "border-box", display: "flex", gap: 28, alignItems: "center", padding: "34px 36px", minHeight: 300 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
+            {(() => {
+              const s = HOME_SLIDES[idx];
+              return (
+                <div key={idx} style={{ boxSizing: "border-box", display: "flex", gap: 28, alignItems: "center", padding: "34px 36px", minHeight: 300 }}>
+                  <div className="st-anim" style={{ flex: 1, minWidth: 0, animation: "homeRise .5s cubic-bezier(.22,.61,.36,1) both" }}>
                     <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.4, margin: "0 0 10px" }}>{s.title.split("\n").map((line, li) => <span key={li}>{line}{li === 0 && s.title.includes("\n") ? <br /> : null}</span>)}</div>
                     <div style={{ fontSize: 14, color: C.sub, lineHeight: 1.6, marginBottom: 22 }}>{s.desc}</div>
-                    <button onClick={() => onNav(s.go)} style={{ background: C.purple, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", fontFamily: FONT }}>{s.cta} <Icon.chevR width={16} height={16} /></button>
+                    <button className="st-cta" onClick={() => onNav(s.go)} style={{ background: C.purple, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", fontFamily: FONT }}>{s.cta} <Icon.chevR width={16} height={16} /></button>
                   </div>
-                  <div style={{ width: 468, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><HomeViz kind={s.viz} /></div>
+                  <div className="st-anim" style={{ flexShrink: 0, display: "flex", justifyContent: "center", animation: "homeRiseImg .58s cubic-bezier(.22,.61,.36,1) .06s both", ...(s.viz === "survey" ? { alignSelf: "stretch", alignItems: "stretch", width: 512, margin: "-34px -36px -34px 0" } : { width: 468, alignItems: "center" }) }}><HomeViz kind={s.viz} /></div>
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", borderTop: `1px solid ${C.borderSoft}` }}>
-            <span style={{ fontSize: 12.5, color: C.faint, fontWeight: 500 }}>{idx + 1} / {N}</span>
-            <div style={{ display: "flex", gap: 10 }}>{arrow("prev")}{arrow("next")}</div>
-          </div>
+        </div>
         </div>
 
         {/* 하단 카드 */}
-        <div style={{ display: "flex", gap: 16, marginTop: 20 }}>
+        <div style={{ display: "flex", gap: 16, marginTop: 60 }}>
           {bottomCard(<Icon.spark width={18} height={18} />, "Claude Code에서 SynTitan 사용하기", "데이터셋 조회·전처리·버전 비교를 Claude Code에서 한 번에 진행하세요.")}
           {bottomCard(<span style={{ width: 22, height: 22, borderRadius: 6, background: C.dark, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>◎</span>, "DTS 시작하기", "민감 데이터를 AI-Ready 데이터셋으로 변환하세요.")}
         </div>
@@ -4087,14 +4230,14 @@ export default function DatasetsApp() {
     : screen === "agent" ? "Agent Analysis"
     : screen === "workbench" ? "Performance Proof"
     : (screen === "combine" || screen === "union" || screen === "merge" || screen === "merging" || screen === "result") ? "Combine"
-    : "Dataset";
+    : "Edit Dataset";
 
   const handleNav = (label) => {
     if (label === "Home") { setSelected([]); setScreen("home"); }
     else if (label === "Agent Analysis") setScreen("agent");
     else if (label === "Performance Proof") setScreen("workbench");
     else if (label === "Combine") { setSelected([]); setCombineNav((n) => n + 1); setScreen("combine"); }
-    else if (label === "Dataset") { setSelected([]); setScreen("list"); }
+    else if (label === "Edit Dataset" || label === "Dataset") { setSelected([]); setScreen("list"); }
   };
 
   const startMerge = (names) => { setMergeJob({ names, done: false }); setSelected([]); setScreen("merging"); };
